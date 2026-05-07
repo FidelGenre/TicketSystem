@@ -1,0 +1,369 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import api from '@/lib/api';
+import {
+  HiOutlinePlus, HiOutlinePencil, HiOutlineTrash,
+  HiOutlineCheck, HiOutlineX, HiOutlineTag,
+} from 'react-icons/hi';
+
+interface Category {
+  id: string;
+  slug: string;
+  labelEs: string;
+  labelEn: string;
+  icon: string;
+  color: string;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+const PRESET_COLORS = [
+  '#f97316', '#8b5cf6', '#ec4899', '#eab308',
+  '#22c55e', '#06b6d4', '#3b82f6', '#6b7280',
+  '#ef4444', '#10b981', '#f59e0b', '#6366f1',
+];
+
+const PRESET_ICONS = ['🎵','🎭','🎪','😂','⚽','🎤','🧒','🎫','🎬','🏟️','🎺','🥁','🎸','🎹','🎻','🏀','🎾','🏐','🚀','🌟'];
+
+function slugify(text: string) {
+  return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+export default function AdminCategoriesPage() {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+
+  const emptyForm = { slug: '', labelEs: '', labelEn: '', icon: '🎫', color: '#6366f1', sortOrder: 0 };
+  const [form, setForm] = useState(emptyForm);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => { loadCategories(); }, []);
+
+  const loadCategories = async () => {
+    try {
+      const { data } = await api.get('/categories?all=true');
+      setCategories(data);
+    } catch { } finally { setLoading(false); }
+  };
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true); setError('');
+    try {
+      await api.post('/categories', form);
+      setForm(emptyForm);
+      setShowForm(false);
+      await loadCategories();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Error al crear categoría');
+    } finally { setSaving(false); }
+  };
+
+  const handleUpdate = async (id: string, updates: Partial<Category>) => {
+    try {
+      await api.patch(`/categories/${id}`, updates);
+      await loadCategories();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Error');
+    }
+  };
+
+  const handleDelete = async (id: string, label: string) => {
+    if (!confirm(`¿Eliminar categoría "${label}"? Los eventos con esta categoría mostrarán "otro".`)) return;
+    try {
+      await api.delete(`/categories/${id}`);
+      await loadCategories();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Error al eliminar');
+    }
+  };
+
+  const startEdit = (cat: Category) => {
+    setEditingId(cat.id);
+    setForm({ slug: cat.slug, labelEs: cat.labelEs, labelEn: cat.labelEn, icon: cat.icon, color: cat.color, sortOrder: cat.sortOrder });
+    setShowForm(false);
+  };
+
+  const handleSaveEdit = async (id: string) => {
+    setSaving(true); setError('');
+    try {
+      await api.patch(`/categories/${id}`, form);
+      setEditingId(null);
+      await loadCategories();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Error');
+    } finally { setSaving(false); }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-6 space-y-3">
+        <div className="h-8 skeleton rounded w-48" />
+        {[...Array(5)].map((_, i) => <div key={i} className="h-14 skeleton rounded" />)}
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6 lg:p-8 space-y-6 animate-fade-in">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="font-bold text-2xl text-gray-900">Categorías de eventos</h1>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {categories.length} categoría{categories.length !== 1 ? 's' : ''} — los organizadores las verán al crear eventos
+          </p>
+        </div>
+        <button
+          onClick={() => { setShowForm(!showForm); setEditingId(null); setForm(emptyForm); setError(''); }}
+          className="btn-primary text-sm inline-flex items-center gap-2"
+        >
+          <HiOutlinePlus className="w-4 h-4" />
+          Nueva categoría
+        </button>
+      </div>
+
+      {/* Create form */}
+      {showForm && (
+        <form onSubmit={handleCreate} className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+          <h2 className="font-bold text-gray-800 text-sm">Nueva categoría</h2>
+          {error && <div className="p-2 bg-red-50 border border-red-200 rounded text-red-600 text-xs">{error}</div>}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Nombre (ES):</label>
+              <input
+                className="input text-sm"
+                value={form.labelEs}
+                onChange={(e) => setForm({ ...form, labelEs: e.target.value, slug: slugify(e.target.value) })}
+                placeholder="ej. Concierto"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Name (EN):</label>
+              <input
+                className="input text-sm"
+                value={form.labelEn}
+                onChange={(e) => setForm({ ...form, labelEn: e.target.value })}
+                placeholder="e.g. Concert"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Slug (auto-generado):</label>
+              <input
+                className="input text-sm font-mono"
+                value={form.slug}
+                onChange={(e) => setForm({ ...form, slug: slugify(e.target.value) })}
+                placeholder="ej. concierto"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Orden:</label>
+              <input
+                className="input text-sm"
+                type="number"
+                value={form.sortOrder}
+                onChange={(e) => setForm({ ...form, sortOrder: parseInt(e.target.value) || 0 })}
+                min={0}
+              />
+            </div>
+          </div>
+
+          {/* Icon picker */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-2">Ícono:</label>
+            <div className="flex flex-wrap gap-2">
+              {PRESET_ICONS.map((ic) => (
+                <button
+                  key={ic} type="button"
+                  onClick={() => setForm({ ...form, icon: ic })}
+                  className={`w-9 h-9 text-lg rounded-lg border-2 transition-all ${form.icon === ic ? 'border-primary-500 bg-primary-50 scale-110' : 'border-gray-200 hover:border-gray-300'}`}
+                >
+                  {ic}
+                </button>
+              ))}
+              <input
+                className="input text-sm w-20"
+                value={form.icon}
+                onChange={(e) => setForm({ ...form, icon: e.target.value })}
+                placeholder="🎫"
+              />
+            </div>
+          </div>
+
+          {/* Color picker */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-2">Color:</label>
+            <div className="flex flex-wrap gap-2 items-center">
+              {PRESET_COLORS.map((c) => (
+                <button
+                  key={c} type="button"
+                  onClick={() => setForm({ ...form, color: c })}
+                  className={`w-8 h-8 rounded-full border-2 transition-all ${form.color === c ? 'border-gray-900 scale-110' : 'border-transparent'}`}
+                  style={{ background: c }}
+                />
+              ))}
+              <input
+                type="color"
+                value={form.color}
+                onChange={(e) => setForm({ ...form, color: e.target.value })}
+                className="w-8 h-8 rounded cursor-pointer border border-gray-200"
+                title="Color personalizado"
+              />
+              <span className="text-xs text-gray-500 font-mono">{form.color}</span>
+            </div>
+          </div>
+
+          {/* Preview */}
+          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+            <span className="text-xs text-gray-500">Vista previa:</span>
+            <span
+              className="section-badge"
+              style={{ background: form.color }}
+            >
+              {form.icon} {form.labelEs || 'Nombre'}
+            </span>
+          </div>
+
+          <div className="flex gap-3">
+            <button type="submit" disabled={saving} className="btn-primary text-sm px-6">
+              {saving ? 'Guardando...' : 'Crear categoría'}
+            </button>
+            <button type="button" onClick={() => setShowForm(false)} className="btn-secondary text-sm px-4">
+              Cancelar
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* Categories table */}
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <table className="w-full">
+          <thead>
+            <tr className="bg-gray-50 border-b border-gray-200">
+              <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Categoría</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden sm:table-cell">Slug</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">EN</th>
+              <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Estado</th>
+              <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Acciones</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {categories.map((cat) => (
+              <tr key={cat.id} className="hover:bg-gray-50 transition-colors">
+                {editingId === cat.id ? (
+                  /* Inline edit row */
+                  <td colSpan={5} className="px-5 py-3">
+                    {error && <div className="p-2 mb-2 bg-red-50 border border-red-200 rounded text-red-600 text-xs">{error}</div>}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 items-end">
+                      <div>
+                        <label className="text-[10px] text-gray-500 block mb-1">Nombre ES</label>
+                        <input className="input text-sm" value={form.labelEs} onChange={(e) => setForm({ ...form, labelEs: e.target.value })} />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-gray-500 block mb-1">Nombre EN</label>
+                        <input className="input text-sm" value={form.labelEn} onChange={(e) => setForm({ ...form, labelEn: e.target.value })} />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-gray-500 block mb-1">Ícono</label>
+                        <input className="input text-sm" value={form.icon} onChange={(e) => setForm({ ...form, icon: e.target.value })} />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-gray-500 block mb-1">Color</label>
+                        <div className="flex items-center gap-2">
+                          <input type="color" value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })}
+                            className="w-9 h-9 rounded cursor-pointer border border-gray-200" />
+                          <span className="text-xs font-mono text-gray-500">{form.color}</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => handleSaveEdit(cat.id)} disabled={saving}
+                          className="flex items-center gap-1 px-3 py-2 bg-green-500 text-white text-xs font-medium rounded-lg hover:bg-green-600 transition-colors">
+                          <HiOutlineCheck className="w-3.5 h-3.5" /> Guardar
+                        </button>
+                        <button onClick={() => setEditingId(null)}
+                          className="flex items-center gap-1 px-3 py-2 bg-gray-100 text-gray-600 text-xs font-medium rounded-lg hover:bg-gray-200 transition-colors">
+                          <HiOutlineX className="w-3.5 h-3.5" /> Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  </td>
+                ) : (
+                  <>
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-3">
+                        <span
+                          className="w-9 h-9 rounded-lg flex items-center justify-center text-lg shrink-0"
+                          style={{ background: `${cat.color}20`, border: `2px solid ${cat.color}40` }}
+                        >
+                          {cat.icon}
+                        </span>
+                        <div>
+                          <p className="font-semibold text-sm text-gray-900">{cat.labelEs}</p>
+                          <span className="section-badge text-[10px]" style={{ background: cat.color }}>
+                            {cat.icon} {cat.labelEs}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 hidden sm:table-cell">
+                      <code className="text-xs bg-gray-100 px-2 py-1 rounded font-mono text-gray-600">{cat.slug}</code>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500 hidden md:table-cell">{cat.labelEn}</td>
+                    <td className="px-4 py-3 text-center">
+                      <button
+                        onClick={() => handleUpdate(cat.id, { isActive: !cat.isActive })}
+                        className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                          cat.isActive ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                        }`}
+                      >
+                        {cat.isActive ? 'Activa' : 'Inactiva'}
+                      </button>
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => startEdit(cat)}
+                          className="p-1.5 rounded-lg text-blue-500 hover:bg-blue-50 transition-colors"
+                          title="Editar"
+                        >
+                          <HiOutlinePencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(cat.id, cat.labelEs)}
+                          className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
+                          title="Eliminar"
+                        >
+                          <HiOutlineTrash className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {categories.length === 0 && (
+          <div className="px-6 py-16 text-center">
+            <HiOutlineTag className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500">No hay categorías creadas aún</p>
+          </div>
+        )}
+      </div>
+
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-700">
+        <strong>💡 Tip:</strong> Las categorías activas aparecen en el menú del sitio y en el formulario de creación de eventos.
+        El <strong>slug</strong> es el identificador interno (ej: <code className="bg-blue-100 px-1 rounded">concierto</code>).
+      </div>
+    </div>
+  );
+}
