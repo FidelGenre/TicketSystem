@@ -40,6 +40,18 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [customViewport, setCustomViewport] = useState<{ x: number; y: number; scale: number } | null>(null);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+  const templatesRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (templatesRef.current && !templatesRef.current.contains(event.target as Node)) {
+        setTemplatesOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Pan & zoom state stored in refs so we don't re-render on every frame
   const viewRef = useRef({ x: 0, y: 0, scale: 0.6 });
@@ -590,6 +602,7 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
     setSections(templateSections);
     setSelectedId(null);
     setSelectedSeat(null);
+    setTemplatesOpen(false);
     toast.success(
       lang === 'es' 
         ? 'Plantilla cargada con éxito. ¡No olvides guardarla!' 
@@ -674,13 +687,16 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
 
         <div className="hidden lg:flex items-center gap-3">
           {/* Preset Templates Selector */}
-          <div className="relative group/templates">
-            <button className="bg-white hover:bg-gray-50 text-[#1a73e8] text-xs sm:text-sm font-bold py-1.5 px-4 rounded border border-blue-200 shadow-sm transition-colors flex items-center gap-2">
+          <div ref={templatesRef} className="relative">
+            <button 
+              onClick={(e) => { e.stopPropagation(); setTemplatesOpen(!templatesOpen); }}
+              className="bg-white hover:bg-gray-50 text-[#1a73e8] text-xs sm:text-sm font-bold py-1.5 px-4 rounded border border-blue-200 shadow-sm transition-colors flex items-center gap-2"
+            >
               <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
               {lang === 'es' ? 'Plantillas Pre-diseñadas' : 'Pre-designed Templates'}
-              <svg className="w-4 h-4 transition-transform group-hover/templates:rotate-180" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
+              <svg className={`w-4 h-4 transition-transform ${templatesOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
             </button>
-            <div className="absolute top-full right-0 mt-1.5 w-64 bg-white border border-gray-200 rounded-lg shadow-xl py-2 hidden group-hover/templates:block z-50 animate-fade-in divide-y divide-gray-100">
+            <div className={`absolute top-full right-0 mt-1.5 w-64 bg-white border border-gray-200 rounded-lg shadow-xl py-2 z-50 animate-fade-in divide-y divide-gray-100 ${templatesOpen ? 'block' : 'hidden'}`}>
               <div className="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">{lang === 'es' ? 'Cargar Layout Completo' : 'Load Complete Layout'}</div>
               <button onClick={() => loadTemplate('small')} className="w-full text-left px-4 py-2.5 hover:bg-blue-50 text-xs font-semibold text-gray-700 flex items-start gap-3 transition-colors">
                 <span className="text-xl">🎪</span>
