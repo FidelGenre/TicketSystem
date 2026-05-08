@@ -8,6 +8,11 @@ export const metadata: Metadata = {
   title: "LPTicket — Tu plataforma de tickets en línea",
   description: "Compra tickets para los mejores eventos: conciertos, teatro, deportes y más. Plataforma segura con pagos por Stripe.",
   keywords: "tickets, eventos, conciertos, teatro, deportes, comprar boletos, LPTicket",
+  icons: {
+    icon: "/image.png",
+    shortcut: "/image.png",
+    apple: "/image.png",
+  },
 };
 
 export default function RootLayout({
