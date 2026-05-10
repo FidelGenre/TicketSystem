@@ -30,6 +30,7 @@ export interface AuthResponse {
 
 export enum EventStatus {
   DRAFT = 'draft',
+  PENDING_APPROVAL = 'pending_approval',
   PUBLISHED = 'published',
   CANCELLED = 'cancelled',
   COMPLETED = 'completed',
@@ -61,6 +62,13 @@ export interface Event {
   showStage?: boolean;
   createdAt: string;
   updatedAt?: string;
+  pendingTitle?: string;
+  pendingDescription?: string;
+  pendingImageUrl?: string;
+  pendingBannerImageUrl?: string;
+  pendingVenueName?: string;
+  pendingCategory?: string;
+  pendingEventDate?: string;
 }
 
 export enum SectionType {

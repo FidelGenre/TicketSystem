@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useLang } from '@/context/LanguageContext';
 import api from '@/lib/api';
-import { HiOutlineCreditCard, HiOutlineTrash, HiOutlinePlus } from 'react-icons/hi';
+import { HiOutlineTrash, HiOutlinePlus, HiCreditCard } from 'react-icons/hi';
+import toast from 'react-hot-toast';
 
 interface PaymentMethod {
   id: string;
@@ -16,7 +17,17 @@ export default function PaymentMethods() {
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
-  const [newMethod, setNewMethod] = useState({ type: 'credit_card', last4: '', brand: '' });
+
+  // Form Fields
+  const [methodType, setMethodType] = useState<'credit_card' | 'bank_account'>('credit_card');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [cardNumber, setCardNumber] = useState('');
+  const [expiry, setExpiry] = useState('');
+  const [cvc, setCvc] = useState('');
+  const [bankName, setBankName] = useState('');
+  const [routingNumber, setRoutingNumber] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
 
   useEffect(() => {
     loadMethods();
@@ -33,66 +44,310 @@ export default function PaymentMethods() {
     }
   };
 
+  // Live Auto-Formatters
+  const handleCardNumberChange = (val: string) => {
+    // Keep only numbers
+    const clean = val.replace(/\D/g, '');
+    // Limit to 16 digits
+    const limited = clean.slice(0, 16);
+    // Format with spaces
+    const formatted = limited.replace(/(\d{4})(?=\d)/g, '$1 ');
+    setCardNumber(formatted);
+  };
+
+  const handleExpiryChange = (val: string) => {
+    // Keep only numbers
+    const clean = val.replace(/\D/g, '');
+    // Limit to 4 digits (MMYY)
+    const limited = clean.slice(0, 4);
+    // Format with /
+    let formatted = limited;
+    if (limited.length > 2) {
+      formatted = `${limited.slice(0, 2)}/${limited.slice(2)}`;
+    }
+    setExpiry(formatted);
+  };
+
+  const handleRoutingNumberChange = (val: string) => {
+    // Keep only numbers, limit to 9 digits
+    const clean = val.replace(/\D/g, '').slice(0, 9);
+    setRoutingNumber(clean);
+  };
+
+  const handleAccountNumberChange = (val: string) => {
+    // Keep only numbers, limit to 17 digits
+    const clean = val.replace(/\D/g, '').slice(0, 17);
+    setAccountNumber(clean);
+  };
+
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!firstName.trim() || !lastName.trim()) {
+      toast.error(lang === 'es' ? 'Por favor, ingresa tu nombre y apellido.' : 'Please enter your first and last name.');
+      return;
+    }
+
+    let payloadBrand = '';
+    let payloadLast4 = '';
+
+    if (methodType === 'credit_card') {
+      const cleanCard = cardNumber.replace(/\s/g, '');
+      if (cleanCard.length < 15) {
+        toast.error(lang === 'es' ? 'Número de tarjeta inválido.' : 'Invalid card number.');
+        return;
+      }
+      if (expiry.length < 5) {
+        toast.error(lang === 'es' ? 'Fecha de expiración incompleta (MM/YY).' : 'Incomplete expiration date (MM/YY).');
+        return;
+      }
+      if (cvc.length < 3) {
+        toast.error(lang === 'es' ? 'Código CVC inválido.' : 'Invalid CVC code.');
+        return;
+      }
+
+      // Auto-detect brand
+      if (cleanCard.startsWith('4')) {
+        payloadBrand = 'Visa';
+      } else if (/^5[1-5]/.test(cleanCard)) {
+        payloadBrand = 'Mastercard';
+      } else if (/^3[47]/.test(cleanCard)) {
+        payloadBrand = 'American Express';
+      } else {
+        payloadBrand = 'Tarjeta de Crédito';
+      }
+      payloadLast4 = cleanCard.slice(-4);
+
+    } else {
+      // Bank Account validation
+      if (!bankName.trim()) {
+        toast.error(lang === 'es' ? 'Por favor, ingresa el nombre de tu banco.' : 'Please enter your bank name.');
+        return;
+      }
+      if (routingNumber.length !== 9) {
+        toast.error(lang === 'es' ? 'El número de ruta americano (Routing) debe tener exactamente 9 dígitos.' : 'The US routing number must be exactly 9 digits.');
+        return;
+      }
+      if (accountNumber.length < 4) {
+        toast.error(lang === 'es' ? 'El número de cuenta bancaria es demasiado corto.' : 'Bank account number is too short.');
+        return;
+      }
+
+      payloadBrand = bankName;
+      payloadLast4 = accountNumber.slice(-4);
+    }
+
     try {
       await api.post('/payments/methods', {
-        ...newMethod,
+        type: methodType,
+        brand: payloadBrand,
+        last4: payloadLast4,
         providerId: 'mock_' + Date.now(),
       });
+
+      toast.success(lang === 'es' ? '¡Método de pago agregado con éxito!' : 'Payment method successfully added!');
       setAdding(false);
-      setNewMethod({ type: 'credit_card', last4: '', brand: '' });
+      
+      // Reset form
+      setFirstName('');
+      setLastName('');
+      setCardNumber('');
+      setExpiry('');
+      setCvc('');
+      setBankName('');
+      setRoutingNumber('');
+      setAccountNumber('');
+      
       loadMethods();
     } catch (err) {
-      alert('Error adding payment method');
+      toast.error(lang === 'es' ? 'Error al guardar el método de pago.' : 'Error adding payment method.');
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Eliminar método de pago?')) return;
+    const confirmMsg = lang === 'es' ? '¿Estás seguro de que deseas eliminar este método de pago?' : 'Are you sure you want to delete this payment method?';
+    if (!confirm(confirmMsg)) return;
     try {
       await api.delete(`/payments/methods/${id}`);
+      toast.success(lang === 'es' ? 'Método de pago eliminado.' : 'Payment method deleted.');
       loadMethods();
     } catch (err) {
-      alert('Error deleting payment method');
+      toast.error(lang === 'es' ? 'Error al eliminar el método de pago.' : 'Error deleting payment method.');
     }
   };
 
-  if (loading) return <div className="text-center py-8">Cargando...</div>;
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-6 max-w-2xl">
+    <div className="bg-white border border-gray-150 rounded-2xl p-6 max-w-2xl shadow-[0_4px_25px_rgba(0,0,0,0.02)]">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="font-bold text-lg text-gray-900">Métodos de Pago</h3>
+        <div>
+          <h3 className="font-bold text-lg text-gray-900">{lang === 'es' ? 'Métodos de Pago' : 'Payment Methods'}</h3>
+          <p className="text-xs text-gray-500 mt-1">{lang === 'es' ? 'Administra tus tarjetas de crédito y cuentas bancarias asociadas.' : 'Manage your credit cards and bank accounts.'}</p>
+        </div>
         {!adding && (
-          <button onClick={() => setAdding(true)} className="btn-secondary text-xs py-1.5 flex items-center gap-1">
-            <HiOutlinePlus className="w-4 h-4" /> Agregar
+          <button onClick={() => setAdding(true)} className="btn-primary text-xs py-2 px-3 flex items-center gap-1 font-semibold rounded-xl">
+            <HiOutlinePlus className="w-4 h-4" /> {lang === 'es' ? 'Agregar Método' : 'Add Method'}
           </button>
         )}
       </div>
 
       {adding && (
-        <form onSubmit={handleAdd} className="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-6 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={handleAdd} className="bg-gray-50/70 p-6 rounded-2xl border border-gray-200/80 mb-6 space-y-4 animate-fade-in">
+          <div className="border-b border-gray-150 pb-3 mb-2 flex justify-between items-center">
+            <h4 className="font-bold text-sm text-gray-800">{lang === 'es' ? 'Nuevo Método de Pago' : 'New Payment Method'}</h4>
+            <span className="text-[10px] uppercase font-bold text-primary-600 bg-primary-50 px-2 py-0.5 rounded">Secure / SSL</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-gray-700 mb-1">Tipo</label>
-              <select value={newMethod.type} onChange={e => setNewMethod({...newMethod, type: e.target.value})} className="input">
-                <option value="credit_card">Tarjeta de Crédito</option>
-                <option value="bank_account">Cuenta Bancaria</option>
+              <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">{lang === 'es' ? 'Tipo' : 'Type'}</label>
+              <select 
+                value={methodType} 
+                onChange={e => setMethodType(e.target.value as any)} 
+                className="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary-500 bg-white"
+              >
+                <option value="credit_card">{lang === 'es' ? '💳 Tarjeta de Crédito' : '💳 Credit Card'}</option>
+                <option value="bank_account">{lang === 'es' ? '🏦 Cuenta Bancaria' : '🏦 Bank Account'}</option>
               </select>
             </div>
+
+            {/* Standard Account Owner First Name */}
             <div>
-              <label className="block text-sm text-gray-700 mb-1">{newMethod.type === 'credit_card' ? 'Marca (Ej. Visa)' : 'Banco'}</label>
-              <input required type="text" value={newMethod.brand} onChange={e => setNewMethod({...newMethod, brand: e.target.value})} className="input" placeholder={newMethod.type === 'credit_card' ? 'Visa, Mastercard...' : 'Banesco, Mercantil...'} />
+              <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">{lang === 'es' ? 'Nombre Titular' : 'First Name'}</label>
+              <input 
+                required 
+                type="text" 
+                value={firstName} 
+                onChange={e => setFirstName(e.target.value)} 
+                className="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary-500"
+                placeholder={lang === 'es' ? 'Nombre' : 'John'} 
+              />
             </div>
+
+            {/* Standard Account Owner Last Name */}
+            <div>
+              <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">{lang === 'es' ? 'Apellido Titular' : 'Last Name'}</label>
+              <input 
+                required 
+                type="text" 
+                value={lastName} 
+                onChange={e => setLastName(e.target.value)} 
+                className="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary-500"
+                placeholder={lang === 'es' ? 'Apellido' : 'Doe'} 
+              />
+            </div>
+
+            {/* Credit Card Specific Fields */}
+            {methodType === 'credit_card' ? (
+              <>
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">{lang === 'es' ? 'Número de Tarjeta' : 'Card Number'}</label>
+                  <div className="relative">
+                    <input 
+                      required 
+                      type="text" 
+                      value={cardNumber} 
+                      onChange={e => handleCardNumberChange(e.target.value)} 
+                      className="w-full pl-10 pr-3.5 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary-500"
+                      placeholder="4000 1234 5678 9010" 
+                    />
+                    <HiCreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">{lang === 'es' ? 'Vencimiento (MM/YY)' : 'Expiry (MM/YY)'}</label>
+                  <input 
+                    required 
+                    type="text" 
+                    value={expiry} 
+                    onChange={e => handleExpiryChange(e.target.value)} 
+                    className="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary-500"
+                    placeholder="12/29" 
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">CVC / CVV</label>
+                  <input 
+                    required 
+                    type="password" 
+                    maxLength={4}
+                    value={cvc} 
+                    onChange={e => setCvc(e.target.value.replace(/\D/g, ''))} 
+                    className="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary-500"
+                    placeholder="123" 
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Bank Account Specific Fields (USA ONLY) */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">{lang === 'es' ? 'País del Banco' : 'Bank Country'}</label>
+                  <input 
+                    readOnly 
+                    type="text" 
+                    value={lang === 'es' ? '🇺🇸 Estados Unidos (Solo cuentas Americanas)' : '🇺🇸 United States (US Accounts Only)'} 
+                    className="w-full px-3.5 py-2 border border-gray-200 bg-gray-100 rounded-xl text-sm text-gray-600 font-medium focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">{lang === 'es' ? 'Nombre del Banco' : 'Bank Name'}</label>
+                  <input 
+                    required 
+                    type="text" 
+                    value={bankName} 
+                    onChange={e => setBankName(e.target.value)} 
+                    className="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary-500"
+                    placeholder="Chase, Bank of America, Wells Fargo..." 
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">
+                    {lang === 'es' ? 'Número de Ruta (Routing - 9 dígitos)' : 'Routing Number (9-digits)'}
+                  </label>
+                  <input 
+                    required 
+                    type="text" 
+                    value={routingNumber} 
+                    onChange={e => handleRoutingNumberChange(e.target.value)} 
+                    className="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary-500"
+                    placeholder="021000021" 
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">{lang === 'es' ? 'Número de Cuenta' : 'Account Number'}</label>
+                  <input 
+                    required 
+                    type="text" 
+                    value={accountNumber} 
+                    onChange={e => handleAccountNumberChange(e.target.value)} 
+                    className="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary-500"
+                    placeholder="123456789" 
+                  />
+                </div>
+              </>
+            )}
           </div>
-          <div>
-            <label className="block text-sm text-gray-700 mb-1">Últimos 4 dígitos / Final de cuenta</label>
-            <input required type="text" maxLength={4} minLength={4} value={newMethod.last4} onChange={e => setNewMethod({...newMethod, last4: e.target.value.replace(/\D/g, '')})} className="input" placeholder="1234" />
-          </div>
-          <div className="flex gap-2">
-            <button type="submit" className="btn-primary text-sm flex-1">Guardar</button>
-            <button type="button" onClick={() => setAdding(false)} className="btn-secondary text-sm flex-1">Cancelar</button>
+
+          <div className="flex gap-3 pt-2">
+            <button type="submit" className="flex-1 btn-primary py-2.5 text-sm font-semibold rounded-xl">
+              {lang === 'es' ? 'Guardar Método de Pago' : 'Save Payment Method'}
+            </button>
+            <button type="button" onClick={() => setAdding(false)} className="flex-1 py-2.5 text-sm font-semibold text-gray-600 border border-gray-200 bg-white rounded-xl hover:bg-gray-50 transition-all">
+              {lang === 'es' ? 'Cancelar' : 'Cancel'}
+            </button>
           </div>
         </form>
       )}
@@ -100,18 +355,31 @@ export default function PaymentMethods() {
       {methods.length > 0 ? (
         <div className="space-y-3">
           {methods.map(method => (
-            <div key={method.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-primary-300 transition-colors">
+            <div key={method.id} className="flex items-center justify-between p-4 border border-gray-150 rounded-2xl hover:border-primary-400 hover:shadow-[0_4px_15px_rgba(0,0,0,0.015)] transition-all">
               <div className="flex items-center gap-4">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${method.type === 'credit_card' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'}`}>
-                  <HiOutlineCreditCard className="w-5 h-5" />
+                <div className={`w-11 h-11 rounded-full flex items-center justify-center ${method.type === 'credit_card' ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                  {method.type === 'credit_card' ? (
+                    <HiCreditCard className="w-5 h-5" />
+                  ) : (
+                    <span>🏦</span>
+                  )}
                 </div>
                 <div>
-                  <div className="font-semibold text-gray-900">{method.brand}</div>
-                  <div className="text-sm text-gray-500">**** **** **** {method.last4}</div>
+                  <div className="font-bold text-sm text-gray-900">{method.brand}</div>
+                  <div className="text-xs text-gray-500 mt-0.5">
+                    {method.type === 'credit_card' 
+                      ? `${lang === 'es' ? 'Tarjeta finalizada en' : 'Card ending in'} **** ${method.last4}` 
+                      : `${lang === 'es' ? 'Cuenta bancaria (EE.UU.) finalizada en' : 'Bank account (US) ending in'} **** ${method.last4}`
+                    }
+                  </div>
                 </div>
-                {method.isDefault && <span className="ml-2 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">Principal</span>}
+                {method.isDefault && (
+                  <span className="ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-50 text-primary-600">
+                    {lang === 'es' ? 'Principal' : 'Default'}
+                  </span>
+                )}
               </div>
-              <button onClick={() => handleDelete(method.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+              <button onClick={() => handleDelete(method.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
                 <HiOutlineTrash className="w-5 h-5" />
               </button>
             </div>
@@ -119,8 +387,9 @@ export default function PaymentMethods() {
         </div>
       ) : (
         !adding && (
-          <div className="text-center py-8 text-gray-500">
-            No tienes métodos de pago registrados.
+          <div className="text-center py-10 text-gray-500 border border-dashed border-gray-200 rounded-2xl">
+            <span className="text-3xl block mb-2">💸</span>
+            <p className="text-sm font-medium">{lang === 'es' ? 'No tienes métodos de pago registrados.' : 'No payment methods registered yet.'}</p>
           </div>
         )
       )}

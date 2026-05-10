@@ -227,8 +227,16 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
     }
     if (!panningRef.current) return;
     const { mx, my, vx, vy } = panStartRef.current;
-    viewRef.current.x = vx + (e.clientX - mx);
-    viewRef.current.y = vy + (e.clientY - my);
+    
+    // Calculate new position
+    const newX = vx + (e.clientX - mx);
+    const newY = vy + (e.clientY - my);
+    
+    // Apply boundaries so the user doesn't lose the canvas infinitely
+    const LIMIT = 2500;
+    viewRef.current.x = Math.max(-LIMIT, Math.min(LIMIT, newX));
+    viewRef.current.y = Math.max(-LIMIT, Math.min(LIMIT, newY));
+    
     applyTransform();
   }, [applyTransform]);
 
@@ -1307,7 +1315,7 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
                   alignItems: 'center',
                   justifyContent: 'center',
                   outline: 'none',
-                  zIndex: isSelected ? 20 : 10,
+                  zIndex: isSelected ? 20 : isStanding ? 5 : 10,
                   willChange: 'left, top',
                   touchAction: 'none',
                   boxShadow: isStanding ? '0 4px 10px rgba(0,0,0,0.08)' : 'none',

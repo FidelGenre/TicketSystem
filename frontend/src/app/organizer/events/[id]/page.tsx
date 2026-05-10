@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import api from '@/lib/api';
+import api, { getImageUrl } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth';
 import { useLang } from '@/context/LanguageContext';
 import { Event, SalesReport, VenueSection } from '@/types';
@@ -52,7 +52,7 @@ export default function EventDetailPage() {
   const [sections, setSections] = useState<VenueSection[]>([]);
   const [sales, setSales] = useState<SalesReport | null>(null);
   const [attendees, setAttendees] = useState<Attendee[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'attendees' | 'map' | 'blocks'>('overview');
+  const [activeTab, setActiveTab] = useState<'details' | 'overview' | 'attendees' | 'map' | 'blocks'>('details');
   const [selectedBlockSection, setSelectedBlockSection] = useState('');
   const [selectedBlockSeats, setSelectedBlockSeats] = useState<string[]>([]);
   const [inviteForm, setInviteForm] = useState({ name: '', email: '' });
@@ -60,7 +60,6 @@ export default function EventDetailPage() {
   const [loading, setLoading] = useState(true);
 
   // Edit Event States
-  const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     title: '',
     description: '',
@@ -289,7 +288,7 @@ export default function EventDetailPage() {
             </div>
           </div>
           <div className="flex gap-2 shrink-0">
-            <button onClick={() => setIsEditing(true)} className="btn-secondary text-xs py-2 px-4 flex items-center gap-1.5 font-semibold text-gray-700 hover:bg-gray-50 border-gray-300">
+            <button onClick={() => setActiveTab('details')} className={`btn-secondary text-xs py-2 px-4 flex items-center gap-1.5 font-semibold text-gray-700 hover:bg-gray-50 border-gray-300 ${activeTab === 'details' ? 'bg-gray-100 ring-2 ring-primary-500 ring-offset-1' : ''}`}>
               <HiOutlinePencil className="w-4 h-4" /> {lang === 'es' ? 'Editar Detalle' : 'Edit Details'}
             </button>
             {event.status === 'draft' && (
@@ -337,11 +336,48 @@ export default function EventDetailPage() {
         </div>
       )}
 
+      {/* Event Submission Notice */}
+      {event.status === 'pending_approval' && (
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl flex items-start gap-3 text-sm text-blue-800 shadow-sm animate-fade-in">
+          <span className="text-lg">✨</span>
+          <div className="space-y-1">
+            <p className="font-bold text-blue-900">{lang === 'es' ? 'Evento en espera de aprobación' : 'Event pending approval'}</p>
+            <p className="text-xs text-blue-700 leading-relaxed">
+              {lang === 'es' 
+                ? 'Este evento ha sido enviado al administrador para su aprobación. Se publicará automáticamente en la plataforma una vez sea autorizado por el administrador.'
+                : 'This event has been submitted to the administrator for approval. It will be automatically published on the platform once authorized.'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Pending Changes Notice */}
+      {(event.pendingTitle || event.pendingDescription || event.pendingImageUrl || event.pendingBannerImageUrl || event.pendingVenueName || event.pendingCategory || event.pendingEventDate) && (
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3 text-sm text-amber-800 shadow-sm animate-fade-in">
+          <span className="text-lg">⏳</span>
+          <div className="space-y-1">
+            <p className="font-bold text-amber-900">{lang === 'es' ? 'Cambios en espera de aprobación' : 'Edits pending admin approval'}</p>
+            <p className="text-xs text-amber-700 leading-relaxed">
+              {lang === 'es' 
+                ? 'Has guardado cambios en la información o imágenes de este evento. El administrador debe aprobarlos individualmente antes de que se actualicen públicamente. Mientras tanto, el evento sigue visible con su información original.'
+                : 'You have updated information or images for this event. The administrator must approve the edits before they become public. Until approved, the event remains visible with its original details.'}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-gray-200">
+      <div className="flex gap-1 border-b border-gray-200 overflow-x-auto">
+        <button
+          onClick={() => setActiveTab('details')}
+          className={`px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === 'details' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+        >
+          <HiOutlinePencil className="w-4 h-4" />
+          {lang === 'es' ? 'Detalles e Imágenes' : 'Details & Media'}
+        </button>
         <button
           onClick={() => setActiveTab('overview')}
-          className={`px-4 py-3 text-sm font-medium border-b-2 transition-all ${activeTab === 'overview' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+          className={`px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${activeTab === 'overview' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
         >
           {t('orgSections')}
         </button>
@@ -666,118 +702,138 @@ export default function EventDetailPage() {
         </div>
       )}
 
-      {/* Edit Event Modal / Slide-Over */}
-      {isEditing && (
-        <div className="fixed inset-0 z-50 overflow-hidden flex justify-end">
-          {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity"
-            onClick={() => setIsEditing(false)}
-          />
-          
-          {/* Drawer Panel */}
-          <div className="relative w-full max-w-lg bg-white h-full shadow-2xl flex flex-col z-10 animate-[slideOver_0.3s_ease-out]">
-            {/* Drawer Header */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
-              <div>
-                <h2 className="font-bold text-lg text-gray-900">{lang === 'es' ? 'Editar Información del Evento' : 'Edit Event Information'}</h2>
-                <p className="text-xs text-gray-500 mt-0.5">{lang === 'es' ? 'Actualiza los campos de texto y las imágenes del evento' : 'Update text fields and event images'}</p>
-              </div>
-              <button 
-                onClick={() => setIsEditing(false)}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-              >
-                <HiOutlineX className="w-5 h-5" />
-              </button>
+
+
+      {/* Edit Event Tab Content */}
+      {activeTab === 'details' && (
+        <div className="bg-white rounded-xl border border-gray-200 p-6 sm:p-8 animate-fade-in">
+          <div className="mb-6 border-b border-gray-100 pb-4">
+            <h2 className="font-bold text-lg text-gray-900">{lang === 'es' ? 'Editar Información del Evento' : 'Edit Event Information'}</h2>
+            <p className="text-sm text-gray-500 mt-0.5">{lang === 'es' ? 'Actualiza los campos de texto y las imágenes del evento' : 'Update text fields and event images'}</p>
+          </div>
+
+          <form onSubmit={handleSaveEvent} className="space-y-6 max-w-3xl">
+            {/* Title */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">{lang === 'es' ? 'Título' : 'Title'}</label>
+              <input
+                type="text"
+                value={editForm.title}
+                onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-1 focus:ring-primary-500 text-sm focus:border-primary-500 focus:outline-none"
+                required
+              />
             </div>
 
-            {/* Drawer Content */}
-            <form onSubmit={handleSaveEvent} className="flex-1 overflow-y-auto p-6 space-y-5">
-              {/* Title */}
+            {/* Description */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">{lang === 'es' ? 'Descripción' : 'Description'}</label>
+              <textarea
+                value={editForm.description}
+                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-1 focus:ring-primary-500 text-sm focus:border-primary-500 focus:outline-none h-32 resize-none"
+                required
+              />
+            </div>
+
+            {/* Row: Category & Date */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">{lang === 'es' ? 'Título' : 'Title'}</label>
+                <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">{lang === 'es' ? 'Categoría' : 'Category'}</label>
+                <select
+                  value={editForm.category}
+                  onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-1 focus:ring-primary-500 text-sm focus:border-primary-500 focus:outline-none"
+                >
+                  <option value="music">{lang === 'es' ? 'Música' : 'Music'}</option>
+                  <option value="sports">{lang === 'es' ? 'Deportes' : 'Sports'}</option>
+                  <option value="theater">{lang === 'es' ? 'Teatro' : 'Theater'}</option>
+                  <option value="party">{lang === 'es' ? 'Fiesta' : 'Party'}</option>
+                  <option value="other">{lang === 'es' ? 'Otro' : 'Other'}</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">{lang === 'es' ? 'Fecha y Hora' : 'Date & Time'}</label>
                 <input
-                  type="text"
-                  value={editForm.title}
-                  onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-1 focus:ring-primary-500 text-sm focus:border-primary-500 focus:outline-none"
+                  type="datetime-local"
+                  value={editForm.eventDate}
+                  onChange={(e) => setEditForm({ ...editForm, eventDate: e.target.value })}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-1 focus:ring-primary-500 text-sm focus:border-primary-500 focus:outline-none"
                   required
                 />
               </div>
+            </div>
 
-              {/* Description */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">{lang === 'es' ? 'Descripción' : 'Description'}</label>
-                <textarea
-                  value={editForm.description}
-                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-1 focus:ring-primary-500 text-sm focus:border-primary-500 focus:outline-none h-28 resize-none"
-                  required
-                />
+            {/* Venue Name */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">{lang === 'es' ? 'Lugar / Venue' : 'Venue Name'}</label>
+              <input
+                type="text"
+                value={editForm.venueName}
+                onChange={(e) => setEditForm({ ...editForm, venueName: e.target.value })}
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-1 focus:ring-primary-500 text-sm focus:border-primary-500 focus:outline-none"
+                required
+              />
+            </div>
+
+            {/* Toggle Seat Map */}
+            <div className="flex items-center justify-between p-4 bg-gray-50 border border-gray-100 rounded-2xl">
+              <div>
+                <h4 className="font-bold text-sm text-gray-800">{lang === 'es' ? 'Habilitar Mapa de Asientos Interactivo' : 'Enable Interactive Seating Chart'}</h4>
+                <p className="text-xs text-gray-500 mt-1">{lang === 'es' ? 'Permite a los usuarios seleccionar asientos en un lienzo interactivo.' : 'Allows users to choose specific seats on an interactive canvas.'}</p>
               </div>
-
-              {/* Row: Category & Date */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">{lang === 'es' ? 'Categoría' : 'Category'}</label>
-                  <select
-                    value={editForm.category}
-                    onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-1 focus:ring-primary-500 text-sm focus:border-primary-500 focus:outline-none"
-                  >
-                    <option value="music">{lang === 'es' ? 'Música' : 'Music'}</option>
-                    <option value="sports">{lang === 'es' ? 'Deportes' : 'Sports'}</option>
-                    <option value="theater">{lang === 'es' ? 'Teatro' : 'Theater'}</option>
-                    <option value="party">{lang === 'es' ? 'Fiesta' : 'Party'}</option>
-                    <option value="other">{lang === 'es' ? 'Otro' : 'Other'}</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">{lang === 'es' ? 'Fecha y Hora' : 'Date & Time'}</label>
-                  <input
-                    type="datetime-local"
-                    value={editForm.eventDate}
-                    onChange={(e) => setEditForm({ ...editForm, eventDate: e.target.value })}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-1 focus:ring-primary-500 text-sm focus:border-primary-500 focus:outline-none"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Venue Name */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">{lang === 'es' ? 'Lugar / Venue' : 'Venue Name'}</label>
+              <label className="relative inline-flex items-center cursor-pointer">
                 <input
-                  type="text"
-                  value={editForm.venueName}
-                  onChange={(e) => setEditForm({ ...editForm, venueName: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-1 focus:ring-primary-500 text-sm focus:border-primary-500 focus:outline-none"
-                  required
+                  type="checkbox"
+                  checked={editForm.hasSeatMap}
+                  onChange={(e) => setEditForm({ ...editForm, hasSeatMap: e.target.checked })}
+                  className="sr-only peer"
                 />
-              </div>
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
 
-              {/* Toggle Seat Map */}
-              <div className="flex items-center justify-between p-4 bg-gray-50 border border-gray-100 rounded-2xl">
-                <div>
-                  <h4 className="font-bold text-xs text-gray-800">{lang === 'es' ? 'Habilitar Mapa de Asientos Interactivo' : 'Enable Interactive Seating Chart'}</h4>
-                  <p className="text-[10px] text-gray-500">{lang === 'es' ? 'Permite a los usuarios seleccionar asientos en un lienzo interactivo.' : 'Allows users to choose specific seats on an interactive canvas.'}</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={editForm.hasSeatMap}
-                    onChange={(e) => setEditForm({ ...editForm, hasSeatMap: e.target.checked })}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
+            {editForm.hasSeatMap && (
+              <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl text-xs text-blue-800 space-y-2 animate-fade-in">
+                <p className="font-bold flex items-center gap-1.5">
+                  <span>🎨</span>
+                  {lang === 'es' ? 'Cómo diseñar tu escenario:' : 'How to design your stage layout:'}
+                </p>
+                <p className="leading-relaxed">
+                  {lang === 'es' 
+                    ? 'El mapa de asientos (escenario, mesas y sillas) se diseña de manera interactiva en tiempo real utilizando la pestaña ' 
+                    : 'The interactive seat map (stage, tables, and seats) is drawn in real-time using the '}
+                  <strong className="underline cursor-pointer hover:text-blue-600" onClick={() => setActiveTab('map')}>
+                    {lang === 'es' ? '"Mapa Visual"' : '"Venue Map"'}
+                  </strong>
+                  {lang === 'es' 
+                    ? ' que encontrarás en la página principal del evento. Guarda estos cambios primero y luego ve a esa pestaña para comenzar a dibujar.' 
+                    : ' tab on the main event page. Save these changes first, then click that tab to start drawing.'}
+                </p>
               </div>
+            )}
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-100">
               {/* Cover Image Upload */}
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">{lang === 'es' ? 'Foto de Portada' : 'Cover Image'}</label>
-                <div className="border-2 border-dashed border-gray-200 hover:border-gray-300 rounded-2xl p-4 transition-all text-center relative cursor-pointer group bg-gray-50/50">
+                
+                {/* Active Preview */}
+                {(imageFile || event.imageUrl) && (
+                  <div className="w-full aspect-[16/9] relative rounded-2xl border border-gray-200 bg-gray-50 overflow-hidden mb-3 shadow-inner">
+                    <img 
+                      src={imageFile ? URL.createObjectURL(imageFile) : getImageUrl(event.imageUrl)} 
+                      alt="Current Cover" 
+                      className="w-full h-full object-cover" 
+                    />
+                    <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-[10px] font-black text-white px-2.5 py-1 rounded-full uppercase tracking-wider shadow-lg">
+                      {imageFile ? (lang === 'es' ? 'Nueva Selección' : 'New Selection') : (lang === 'es' ? 'Foto Actual' : 'Current Photo')}
+                    </div>
+                  </div>
+                )}
+
+                <div className="border-2 border-dashed border-gray-200 hover:border-gray-300 rounded-2xl p-6 transition-all text-center relative cursor-pointer group bg-gray-50/50">
                   <input
                     type="file"
                     accept="image/*"
@@ -785,17 +841,32 @@ export default function EventDetailPage() {
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   />
                   <HiOutlineCamera className="w-8 h-8 text-gray-400 mx-auto mb-2 group-hover:scale-105 transition-transform" />
-                  <p className="text-xs text-gray-600 font-medium">
+                  <p className="text-sm text-gray-600 font-medium">
                     {imageFile ? imageFile.name : (lang === 'es' ? 'Seleccionar archivo de imagen' : 'Select an image file')}
                   </p>
-                  <p className="text-[10px] text-gray-400 mt-1">{lang === 'es' ? 'Formatos recomendados: JPG, PNG de alta resolución' : 'Recommended formats: high-res JPG, PNG'}</p>
+                  <p className="text-xs text-gray-400 mt-1">{lang === 'es' ? 'Formatos recomendados: JPG, PNG' : 'Recommended formats: high-res JPG, PNG'}</p>
                 </div>
               </div>
 
               {/* Banner Image Upload */}
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">{lang === 'es' ? 'Foto de Banner de Inicio' : 'Homepage Banner Image'}</label>
-                <div className="border-2 border-dashed border-gray-200 hover:border-gray-300 rounded-2xl p-4 transition-all text-center relative cursor-pointer group bg-gray-50/50">
+
+                {/* Active Preview */}
+                {(bannerFile || event.bannerImageUrl) && (
+                  <div className="w-full aspect-[21/9] relative rounded-2xl border border-gray-200 bg-gray-50 overflow-hidden mb-3 shadow-inner">
+                    <img 
+                      src={bannerFile ? URL.createObjectURL(bannerFile) : getImageUrl(event.bannerImageUrl)} 
+                      alt="Current Banner" 
+                      className="w-full h-full object-cover" 
+                    />
+                    <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-[10px] font-black text-white px-2.5 py-1 rounded-full uppercase tracking-wider shadow-lg">
+                      {bannerFile ? (lang === 'es' ? 'Nueva Selección' : 'New Selection') : (lang === 'es' ? 'Banner Actual' : 'Current Banner')}
+                    </div>
+                  </div>
+                )}
+
+                <div className="border-2 border-dashed border-gray-200 hover:border-gray-300 rounded-2xl p-6 transition-all text-center relative cursor-pointer group bg-gray-50/50">
                   <input
                     type="file"
                     accept="image/*"
@@ -803,43 +874,36 @@ export default function EventDetailPage() {
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   />
                   <HiOutlineCamera className="w-8 h-8 text-gray-400 mx-auto mb-2 group-hover:scale-105 transition-transform" />
-                  <p className="text-xs text-gray-600 font-medium">
+                  <p className="text-sm text-gray-600 font-medium">
                     {bannerFile ? bannerFile.name : (lang === 'es' ? 'Seleccionar banner promocional' : 'Select a promotional banner')}
                   </p>
-                  <p className="text-[10px] text-gray-400 mt-1">{lang === 'es' ? 'Formato alargado panorámico ideal para carrusel' : 'Panoramic aspect ratio ideal for home carousel'}</p>
+                  <p className="text-xs text-gray-400 mt-1">{lang === 'es' ? 'Formato panorámico ideal para carrusel' : 'Panoramic aspect ratio ideal for carousel'}</p>
                 </div>
               </div>
+            </div>
 
-              {/* Save & Cancel */}
-              <div className="pt-4 border-t border-gray-100 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsEditing(false)}
-                  className="flex-1 py-3 text-sm font-semibold text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-all"
-                >
-                  {lang === 'es' ? 'Cancelar' : 'Cancel'}
-                </button>
-                <button
-                  type="submit"
-                  disabled={savingEdit}
-                  className="flex-1 py-3 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
-                >
-                  {savingEdit ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    lang === 'es' ? 'Guardar Cambios' : 'Save Changes'
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-
-          <style jsx>{`
-            @keyframes slideOver {
-              from { transform: translateX(100%); }
-              to { transform: translateX(0); }
-            }
-          `}</style>
+            {/* Save & Cancel */}
+            <div className="pt-6 border-t border-gray-100 flex gap-3 max-w-sm">
+              <button
+                type="button"
+                onClick={() => setActiveTab('overview')}
+                className="w-1/3 py-3 text-sm font-semibold text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-all"
+              >
+                {lang === 'es' ? 'Cancelar' : 'Cancel'}
+              </button>
+              <button
+                type="submit"
+                disabled={savingEdit}
+                className="w-2/3 py-3 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
+              >
+                {savingEdit ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  lang === 'es' ? 'Guardar Cambios' : 'Save Changes'
+                )}
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </div>

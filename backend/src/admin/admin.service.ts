@@ -166,6 +166,93 @@ export class AdminService {
     return this.eventRepo.save(event);
   }
 
+  async approveField(eventId: string, field: string) {
+    const event = await this.eventRepo.findOne({ where: { id: eventId } });
+    if (!event) throw new NotFoundException('Evento no encontrado');
+
+    switch (field) {
+      case 'title':
+        if (event.pendingTitle) {
+          event.title = event.pendingTitle;
+          event.pendingTitle = null;
+        }
+        break;
+      case 'description':
+        if (event.pendingDescription) {
+          event.description = event.pendingDescription;
+          event.pendingDescription = null;
+        }
+        break;
+      case 'imageUrl':
+        if (event.pendingImageUrl) {
+          event.imageUrl = event.pendingImageUrl;
+          event.pendingImageUrl = null;
+        }
+        break;
+      case 'bannerImageUrl':
+        if (event.pendingBannerImageUrl) {
+          event.bannerImageUrl = event.pendingBannerImageUrl;
+          event.pendingBannerImageUrl = null;
+        }
+        break;
+      case 'venueName':
+        if (event.pendingVenueName) {
+          event.venueName = event.pendingVenueName;
+          event.pendingVenueName = null;
+        }
+        break;
+      case 'eventDate':
+        if (event.pendingEventDate) {
+          event.eventDate = event.pendingEventDate;
+          event.pendingEventDate = null;
+        }
+        break;
+      case 'category':
+        if (event.pendingCategory) {
+          event.category = event.pendingCategory;
+          event.pendingCategory = null;
+        }
+        break;
+      default:
+        throw new BadRequestException('Campo inválido para aprobar');
+    }
+
+    return this.eventRepo.save(event);
+  }
+
+  async rejectField(eventId: string, field: string) {
+    const event = await this.eventRepo.findOne({ where: { id: eventId } });
+    if (!event) throw new NotFoundException('Evento no encontrado');
+
+    switch (field) {
+      case 'title':
+        event.pendingTitle = null;
+        break;
+      case 'description':
+        event.pendingDescription = null;
+        break;
+      case 'imageUrl':
+        event.pendingImageUrl = null;
+        break;
+      case 'bannerImageUrl':
+        event.pendingBannerImageUrl = null;
+        break;
+      case 'venueName':
+        event.pendingVenueName = null;
+        break;
+      case 'eventDate':
+        event.pendingEventDate = null;
+        break;
+      case 'category':
+        event.pendingCategory = null;
+        break;
+      default:
+        throw new BadRequestException('Campo inválido para rechazar');
+    }
+
+    return this.eventRepo.save(event);
+  }
+
   async toggleFeatured(eventId: string) {
     const event = await this.eventRepo.findOne({ where: { id: eventId } });
     if (!event) throw new NotFoundException('Evento no encontrado');

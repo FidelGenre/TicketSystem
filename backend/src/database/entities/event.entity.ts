@@ -12,6 +12,7 @@ import { User } from './user.entity';
 
 export enum EventStatus {
   DRAFT = 'draft',
+  PENDING_APPROVAL = 'pending_approval',
   PUBLISHED = 'published',
   CANCELLED = 'cancelled',
   COMPLETED = 'completed',
@@ -97,6 +98,27 @@ export class Event {
 
   @Column({ default: false })
   showStage: boolean;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  pendingTitle: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  pendingDescription: string | null;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  pendingImageUrl: string | null;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  pendingBannerImageUrl: string | null;
+
+  @Column({ type: 'varchar', length: 60, nullable: true })
+  pendingVenueName: string | null;
+
+  @Column({ type: 'varchar', length: 40, nullable: true })
+  pendingCategory: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  pendingEventDate: Date | null;
 
   @Column('uuid')
   organizerId: string;

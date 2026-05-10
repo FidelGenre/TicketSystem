@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import api from '@/lib/api';
+import api, { getImageUrl } from '@/lib/api';
+import toast from 'react-hot-toast';
 import { useLang } from '@/context/LanguageContext';
 import { Event } from '@/types';
 import { useCategories } from '@/context/CategoryContext';
@@ -28,6 +29,60 @@ export default function AdminEventsPage() {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [selectedEventForChanges, setSelectedEventForChanges] = useState<Event | null>(null);
+  const [processingField, setProcessingField] = useState<string | null>(null);
+
+  const hasPendingChanges = (ev: Event) => {
+    return !!(
+      ev.pendingTitle ||
+      ev.pendingDescription ||
+      ev.pendingImageUrl ||
+      ev.pendingBannerImageUrl ||
+      ev.pendingVenueName ||
+      ev.pendingCategory ||
+      ev.pendingEventDate
+    );
+  };
+
+  const handleApproveField = async (eventId: string, field: string) => {
+    setProcessingField(field);
+    try {
+      await api.patch(`/admin/events/${eventId}/approve-change`, { field });
+      toast.success(lang === 'es' ? '¡Cambio aprobado con éxito!' : 'Change approved successfully!');
+      
+      const params: any = { page, limit: 15 };
+      if (filter !== 'all') params.status = filter;
+      const { data } = await api.get('/admin/events', { params });
+      setEvents(data.events);
+      
+      const updated = data.events.find((e: any) => e.id === eventId);
+      setSelectedEventForChanges(updated || null);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Error');
+    } finally {
+      setProcessingField(null);
+    }
+  };
+
+  const handleRejectField = async (eventId: string, field: string) => {
+    setProcessingField(field);
+    try {
+      await api.patch(`/admin/events/${eventId}/reject-change`, { field });
+      toast.success(lang === 'es' ? '¡Cambio rechazado con éxito!' : 'Change rejected successfully!');
+      
+      const params: any = { page, limit: 15 };
+      if (filter !== 'all') params.status = filter;
+      const { data } = await api.get('/admin/events', { params });
+      setEvents(data.events);
+      
+      const updated = data.events.find((e: any) => e.id === eventId);
+      setSelectedEventForChanges(updated || null);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Error');
+    } finally {
+      setProcessingField(null);
+    }
+  };
 
   useEffect(() => { loadEvents(); }, [page, filter]);
 
@@ -74,6 +129,7 @@ export default function AdminEventsPage() {
     switch (status) {
       case 'published': return { label: t('adminPublished'), classes: 'bg-green-100 text-green-700' };
       case 'draft': return { label: lang === 'es' ? 'Borrador' : 'Draft', classes: 'bg-yellow-100 text-yellow-700' };
+      case 'pending_approval': return { label: lang === 'es' ? 'Por Aprobar' : 'Pending Approval', classes: 'bg-blue-100 text-blue-700' };
       case 'cancelled': return { label: lang === 'es' ? 'Rechazado' : 'Rejected', classes: 'bg-red-100 text-red-700' };
       default: return { label: status, classes: 'bg-gray-100 text-gray-700' };
     }
@@ -81,6 +137,7 @@ export default function AdminEventsPage() {
 
   const statusFilters = [
     { key: 'all', label: lang === 'es' ? 'Todos' : 'All' },
+    { key: 'pending_approval', label: lang === 'es' ? 'Pendientes de Aprobación' : 'Pending Approval' },
     { key: 'draft', label: t('adminDrafts') },
     { key: 'published', label: t('adminPublished') },
     { key: 'cancelled', label: lang === 'es' ? 'Rechazados' : 'Rejected' },
@@ -153,6 +210,14 @@ export default function AdminEventsPage() {
                           <div className="min-w-0">
                             <p className="font-medium text-gray-900 text-sm truncate max-w-[200px]">{ev.title}</p>
                             <p className="text-xs text-gray-500">{catLabel} · {ev.venueName}</p>
+                            {hasPendingChanges(ev) && (
+                              <button 
+                                onClick={() => setSelectedEventForChanges(ev)}
+                                className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-black bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors animate-pulse uppercase tracking-wider"
+                              >
+                                🔔 {lang === 'es' ? 'Ver Cambios' : 'View Changes'}
+                              </button>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -167,7 +232,7 @@ export default function AdminEventsPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-1.5">
-                          {ev.status === 'draft' && (
+                          {(ev.status === 'draft' || ev.status === 'pending_approval') && (
                             <>
                               <button
                                 onClick={() => handleApprove(ev.id)}
@@ -203,6 +268,16 @@ export default function AdminEventsPage() {
                                 <span>{ev.isFeatured ? (lang === 'es' ? 'Banner Activo' : 'Banner Active') : (lang === 'es' ? 'Poner Banner' : 'Set Banner')}</span>
                               </button>
                             </div>
+                          )}
+                          {hasPendingChanges(ev) && (
+                            <button
+                              onClick={() => setSelectedEventForChanges(ev)}
+                              className="px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 text-xs font-bold hover:bg-amber-100 transition-colors flex items-center gap-1 shrink-0 shadow-sm border border-amber-200"
+                              title={lang === 'es' ? 'Aprobar o Rechazar Cambios' : 'Approve or Reject Changes'}
+                            >
+                              <HiOutlineCheckCircle className="w-4 h-4 text-amber-600 animate-pulse" />
+                              {lang === 'es' ? 'Ver cambios solicitados' : 'Review requested changes'}
+                            </button>
                           )}
                           <Link
                             href={`/organizer/events/${ev.id}`}
@@ -242,6 +317,281 @@ export default function AdminEventsPage() {
         <div className="bg-white rounded-xl border border-gray-200 px-6 py-16 text-center">
           <HiOutlineCalendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <p className="text-gray-600 font-medium">{t('adminNoEvents')}</p>
+        </div>
+      )}
+
+      {/* Pending Changes Modal */}
+      {selectedEventForChanges && (
+        <div className="fixed inset-0 z-50 overflow-hidden flex justify-end">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity"
+            onClick={() => setSelectedEventForChanges(null)}
+          />
+          
+          {/* Drawer Panel */}
+          <div className="relative w-full max-w-2xl bg-white h-full shadow-2xl flex flex-col z-10 animate-[slideOver_0.3s_ease-out] border-l border-gray-150">
+            {/* Drawer Header */}
+            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 shrink-0">
+              <div>
+                <h2 className="font-extrabold text-lg text-gray-900">{lang === 'es' ? 'Revisar Cambios Pendientes' : 'Review Pending Changes'}</h2>
+                <p className="text-xs text-gray-500 mt-0.5">{selectedEventForChanges.title}</p>
+              </div>
+              <button 
+                onClick={() => setSelectedEventForChanges(null)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+              >
+                <HiOutlineXCircle className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Drawer Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              <p className="text-xs text-gray-500 leading-relaxed">
+                {lang === 'es' 
+                  ? 'El organizador ha propuesto los siguientes cambios para este evento ya publicado. Puedes aprobar o rechazar cada cambio de manera independiente.'
+                  : 'The organizer has proposed the following changes for this published event. You can approve or reject each change independently.'}
+              </p>
+
+              <div className="space-y-5">
+                {/* Title Change */}
+                {selectedEventForChanges.pendingTitle && (
+                  <div className="p-4 border border-gray-200 rounded-2xl bg-white space-y-3 shadow-sm">
+                    <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block">{lang === 'es' ? 'Título del Evento' : 'Event Title'}</span>
+                    <div className="grid grid-cols-2 gap-4 text-xs">
+                      <div className="p-2.5 bg-gray-50 rounded-xl border border-gray-100">
+                        <span className="font-bold text-gray-400 block mb-1">{lang === 'es' ? 'Actual:' : 'Current:'}</span>
+                        <p className="text-gray-600 font-medium line-through">{selectedEventForChanges.title}</p>
+                      </div>
+                      <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-100">
+                        <span className="font-bold text-amber-600 block mb-1">{lang === 'es' ? 'Propuesto:' : 'Proposed:'}</span>
+                        <p className="text-amber-900 font-extrabold">{selectedEventForChanges.pendingTitle}</p>
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2 border-t border-dashed border-gray-100">
+                      <button 
+                        disabled={!!processingField}
+                        onClick={() => handleRejectField(selectedEventForChanges.id, 'title')}
+                        className="px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold flex items-center gap-1 active:scale-95 transition-all"
+                      >
+                        ❌ {lang === 'es' ? 'Rechazar' : 'Reject'}
+                      </button>
+                      <button 
+                        disabled={!!processingField}
+                        onClick={() => handleApproveField(selectedEventForChanges.id, 'title')}
+                        className="px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-bold flex items-center gap-1 active:scale-95 transition-all shadow-sm"
+                      >
+                        ✓ {lang === 'es' ? 'Aprobar' : 'Approve'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Description Change */}
+                {selectedEventForChanges.pendingDescription && (
+                  <div className="p-4 border border-gray-200 rounded-2xl bg-white space-y-3 shadow-sm">
+                    <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block">{lang === 'es' ? 'Descripción' : 'Description'}</span>
+                    <div className="grid grid-cols-2 gap-4 text-xs">
+                      <div className="p-2.5 bg-gray-50 rounded-xl border border-gray-100">
+                        <span className="font-bold text-gray-400 block mb-1">{lang === 'es' ? 'Actual:' : 'Current:'}</span>
+                        <p className="text-gray-600 line-clamp-3">{selectedEventForChanges.description}</p>
+                      </div>
+                      <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-100">
+                        <span className="font-bold text-amber-600 block mb-1">{lang === 'es' ? 'Propuesto:' : 'Proposed:'}</span>
+                        <p className="text-amber-900 font-medium whitespace-pre-wrap">{selectedEventForChanges.pendingDescription}</p>
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2 border-t border-dashed border-gray-100">
+                      <button 
+                        disabled={!!processingField}
+                        onClick={() => handleRejectField(selectedEventForChanges.id, 'description')}
+                        className="px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold flex items-center gap-1 active:scale-95 transition-all"
+                      >
+                        ❌ {lang === 'es' ? 'Rechazar' : 'Reject'}
+                      </button>
+                      <button 
+                        disabled={!!processingField}
+                        onClick={() => handleApproveField(selectedEventForChanges.id, 'description')}
+                        className="px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-bold flex items-center gap-1 active:scale-95 transition-all shadow-sm"
+                      >
+                        ✓ {lang === 'es' ? 'Aprobar' : 'Approve'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Venue Name Change */}
+                {selectedEventForChanges.pendingVenueName && (
+                  <div className="p-4 border border-gray-200 rounded-2xl bg-white space-y-3 shadow-sm">
+                    <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block">{lang === 'es' ? 'Lugar / Venue' : 'Venue Name'}</span>
+                    <div className="grid grid-cols-2 gap-4 text-xs">
+                      <div className="p-2.5 bg-gray-50 rounded-xl border border-gray-100">
+                        <span className="font-bold text-gray-400 block mb-1">{lang === 'es' ? 'Actual:' : 'Current:'}</span>
+                        <p className="text-gray-600 font-medium">{selectedEventForChanges.venueName}</p>
+                      </div>
+                      <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-100">
+                        <span className="font-bold text-amber-600 block mb-1">{lang === 'es' ? 'Propuesto:' : 'Proposed:'}</span>
+                        <p className="text-amber-900 font-extrabold">{selectedEventForChanges.pendingVenueName}</p>
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2 border-t border-dashed border-gray-100">
+                      <button 
+                        disabled={!!processingField}
+                        onClick={() => handleRejectField(selectedEventForChanges.id, 'venueName')}
+                        className="px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold flex items-center gap-1 active:scale-95 transition-all"
+                      >
+                        ❌ {lang === 'es' ? 'Rechazar' : 'Reject'}
+                      </button>
+                      <button 
+                        disabled={!!processingField}
+                        onClick={() => handleApproveField(selectedEventForChanges.id, 'venueName')}
+                        className="px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-bold flex items-center gap-1 active:scale-95 transition-all shadow-sm"
+                      >
+                        ✓ {lang === 'es' ? 'Aprobar' : 'Approve'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Event Date Change */}
+                {selectedEventForChanges.pendingEventDate && (
+                  <div className="p-4 border border-gray-200 rounded-2xl bg-white space-y-3 shadow-sm">
+                    <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block">{lang === 'es' ? 'Fecha y Hora' : 'Date & Time'}</span>
+                    <div className="grid grid-cols-2 gap-4 text-xs">
+                      <div className="p-2.5 bg-gray-50 rounded-xl border border-gray-100">
+                        <span className="font-bold text-gray-400 block mb-1">{lang === 'es' ? 'Actual:' : 'Current:'}</span>
+                        <p className="text-gray-600 font-medium">
+                          {format(new Date(selectedEventForChanges.eventDate), "dd MMM yyyy — hh:mm a", { locale: dateFnsLocale })}
+                        </p>
+                      </div>
+                      <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-100">
+                        <span className="font-bold text-amber-600 block mb-1">{lang === 'es' ? 'Propuesto:' : 'Proposed:'}</span>
+                        <p className="text-amber-900 font-extrabold">
+                          {format(new Date(selectedEventForChanges.pendingEventDate), "dd MMM yyyy — hh:mm a", { locale: dateFnsLocale })}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2 border-t border-dashed border-gray-100">
+                      <button 
+                        disabled={!!processingField}
+                        onClick={() => handleRejectField(selectedEventForChanges.id, 'eventDate')}
+                        className="px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold flex items-center gap-1 active:scale-95 transition-all"
+                      >
+                        ❌ {lang === 'es' ? 'Rechazar' : 'Reject'}
+                      </button>
+                      <button 
+                        disabled={!!processingField}
+                        onClick={() => handleApproveField(selectedEventForChanges.id, 'eventDate')}
+                        className="px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-bold flex items-center gap-1 active:scale-95 transition-all shadow-sm"
+                      >
+                        ✓ {lang === 'es' ? 'Aprobar' : 'Approve'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Cover Image Change */}
+                {selectedEventForChanges.pendingImageUrl && (
+                  <div className="p-4 border border-gray-200 rounded-2xl bg-white space-y-3 shadow-sm">
+                    <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block">{lang === 'es' ? 'Foto de Portada / Flyer' : 'Cover Image / Flyer'}</span>
+                    <div className="grid grid-cols-2 gap-4 text-xs">
+                      <div className="space-y-1.5">
+                        <span className="font-bold text-gray-400 block">{lang === 'es' ? 'Actual:' : 'Current:'}</span>
+                        <div className="aspect-video relative rounded-xl border border-gray-100 bg-gray-50 overflow-hidden flex items-center justify-center">
+                          {selectedEventForChanges.imageUrl ? (
+                            <img src={getImageUrl(selectedEventForChanges.imageUrl)} alt="Current" className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-xs text-gray-400 font-medium">{lang === 'es' ? 'Sin imagen' : 'No image'}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <span className="font-bold text-amber-600 block">{lang === 'es' ? 'Propuesto:' : 'Proposed:'}</span>
+                        <div className="aspect-video relative rounded-xl border border-amber-200 bg-amber-50/50 overflow-hidden flex items-center justify-center">
+                          <img src={getImageUrl(selectedEventForChanges.pendingImageUrl)} alt="Proposed" className="w-full h-full object-cover" />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2 border-t border-dashed border-gray-100">
+                      <button 
+                        disabled={!!processingField}
+                        onClick={() => handleRejectField(selectedEventForChanges.id, 'imageUrl')}
+                        className="px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold flex items-center gap-1 active:scale-95 transition-all"
+                      >
+                        ❌ {lang === 'es' ? 'Rechazar' : 'Reject'}
+                      </button>
+                      <button 
+                        disabled={!!processingField}
+                        onClick={() => handleApproveField(selectedEventForChanges.id, 'imageUrl')}
+                        className="px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-bold flex items-center gap-1 active:scale-95 transition-all shadow-sm"
+                      >
+                        ✓ {lang === 'es' ? 'Aprobar' : 'Approve'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Banner Image Change */}
+                {selectedEventForChanges.pendingBannerImageUrl && (
+                  <div className="p-4 border border-gray-200 rounded-2xl bg-white space-y-3 shadow-sm">
+                    <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block">{lang === 'es' ? 'Banner de Inicio' : 'Homepage Carousel Banner'}</span>
+                    <div className="grid grid-cols-2 gap-4 text-xs">
+                      <div className="space-y-1.5">
+                        <span className="font-bold text-gray-400 block">{lang === 'es' ? 'Actual:' : 'Current:'}</span>
+                        <div className="aspect-video relative rounded-xl border border-gray-100 bg-gray-50 overflow-hidden flex items-center justify-center">
+                          {selectedEventForChanges.bannerImageUrl ? (
+                            <img src={getImageUrl(selectedEventForChanges.bannerImageUrl)} alt="Current" className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-xs text-gray-400 font-medium">{lang === 'es' ? 'Sin imagen' : 'No image'}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <span className="font-bold text-amber-600 block">{lang === 'es' ? 'Propuesto:' : 'Proposed:'}</span>
+                        <div className="aspect-video relative rounded-xl border border-amber-200 bg-amber-50/50 overflow-hidden flex items-center justify-center">
+                          <img src={getImageUrl(selectedEventForChanges.pendingBannerImageUrl)} alt="Proposed" className="w-full h-full object-cover" />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2 border-t border-dashed border-gray-100">
+                      <button 
+                        disabled={!!processingField}
+                        onClick={() => handleRejectField(selectedEventForChanges.id, 'bannerImageUrl')}
+                        className="px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold flex items-center gap-1 active:scale-95 transition-all"
+                      >
+                        ❌ {lang === 'es' ? 'Rechazar' : 'Reject'}
+                      </button>
+                      <button 
+                        disabled={!!processingField}
+                        onClick={() => handleApproveField(selectedEventForChanges.id, 'bannerImageUrl')}
+                        className="px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-bold flex items-center gap-1 active:scale-95 transition-all shadow-sm"
+                      >
+                        ✓ {lang === 'es' ? 'Aprobar' : 'Approve'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Drawer Footer */}
+            <div className="p-6 border-t border-gray-100 flex gap-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => setSelectedEventForChanges(null)}
+                className="w-full py-3 text-sm font-semibold text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-all"
+              >
+                {lang === 'es' ? 'Cerrar' : 'Close'}
+              </button>
+            </div>
+          </div>
+
+          <style jsx>{`
+            @keyframes slideOver {
+              from { transform: translateX(100%); }
+              to { transform: translateX(0); }
+            }
+          `}</style>
         </div>
       )}
     </div>

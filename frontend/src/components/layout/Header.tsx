@@ -72,7 +72,7 @@ export default function Header() {
           </div>
 
           {/* Center Search Bar */}
-          <div className="hidden md:flex flex-1 max-w-md mx-6 relative">
+          <div className={`hidden md:flex flex-1 max-w-md relative ${lang === 'es' ? 'lg:ml-28 lg:mr-2' : 'mx-6'}`}>
             <form onSubmit={handleSearch} className="w-full relative">
               <HiOutlineSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary-500 font-bold z-10" />
               <input

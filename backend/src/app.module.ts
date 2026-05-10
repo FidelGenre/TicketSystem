@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ServeStaticModule } from '@nestjs/serve-static';
 import { ScheduleModule } from '@nestjs/schedule';
 import { join } from 'path';
 import { AuthModule } from './auth/auth.module';
@@ -37,10 +36,6 @@ import { User, Event, VenueSection, Seat, Order, Ticket, EventCategoryEntity, Pa
           ssl: isProd ? { rejectUnauthorized: false } : false,
         };
       },
-    }),
-    ServeStaticModule.forRoot({
-      rootPath: join(process.cwd(), 'uploads'),
-      serveRoot: '/uploads',
     }),
     ScheduleModule.forRoot(),
     AuthModule,

@@ -20,25 +20,51 @@ export class MailService {
 
   async sendTicketEmail(to: string, userName: string, eventTitle: string, tickets: any[]) {
     const ticketDetails = tickets.map(t => `
-      <div style="border: 1px solid #eee; padding: 15px; margin-bottom: 10px; border-radius: 8px;">
-        <h3 style="margin-top: 0; color: #6366f1;">${eventTitle}</h3>
-        <p><strong>Asiento:</strong> ${t.sectionName} — ${t.rowLabel}${t.seatNumber}</p>
-        <p><strong>Código:</strong> ${t.ticketCode}</p>
-        <div style="text-align: center;">
-          <img src="${t.qrData}" alt="QR Code" width="150" height="150" />
+      <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+        <!-- Card branding header -->
+        <div style="border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 18px; display: table; width: 100%;">
+          <div style="display: table-cell; font-size: 20px; font-weight: 900; color: #ef4444; font-family: monospace; letter-spacing: -1px;">LPTICKET</div>
+          <div style="display: table-cell; text-align: right; font-size: 9px; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; vertical-align: middle;">Digital Ticket</div>
+        </div>
+
+        <h3 style="margin-top: 0; margin-bottom: 8px; color: #0f172a; font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: -0.5px;">${eventTitle}</h3>
+        
+        <!-- Info labels -->
+        <div style="margin-bottom: 15px; font-size: 12px; color: #475569; line-height: 1.6;">
+          <p style="margin: 4px 0;"><strong>Comprador:</strong> ${userName}</p>
+          <p style="margin: 4px 0;"><strong>Tipo de Entrada:</strong> ${t.sectionName || 'Entrada General'}</p>
+          ${t.rowLabel ? `<p style="margin: 4px 0;"><strong>Ubicación:</strong> Fila ${t.rowLabel}, Asiento ${t.seatNumber}</p>` : ''}
+          <p style="margin: 4px 0; font-family: monospace;"><strong>Código:</strong> <span style="color: #ef4444; font-weight: bold;">${t.ticketCode}</span></p>
+        </div>
+
+        <!-- Center QR -->
+        <div style="text-align: center; margin: 20px 0;">
+          <img src="${t.qrData}" alt="QR Code" width="160" height="160" style="border: 1px solid #e2e8f0; padding: 8px; border-radius: 12px; background: #ffffff;" />
+          <span style="display: block; font-size: 10px; color: #94a3b8; margin-top: 8px; font-weight: bold; letter-spacing: 0.5px; text-transform: uppercase;">Presentar este código QR en el acceso</span>
+        </div>
+
+        <!-- Footer terms info -->
+        <div style="border-top: 1px dashed #cbd5e1; padding-top: 15px; margin-top: 15px; font-size: 9px; color: #94a3b8; text-align: center; line-height: 1.4; text-transform: uppercase; font-weight: bold;">
+          LPTICKET.COM — TUS TICKETS. TUS EVENTOS.
         </div>
       </div>
     `).join('');
 
     const html = `
-      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-        <h1 style="color: #1e1b4b;">¡Hola ${userName}! 👋</h1>
-        <p>Gracias por tu compra. Aquí tienes tus tickets para <strong>${eventTitle}</strong>:</p>
-        ${ticketDetails}
-        <p style="color: #666; font-size: 12px; margin-top: 30px;">
-          Presenta estos códigos QR en la entrada del evento. 
-          También puedes ver tus tickets en cualquier momento en tu perfil de LPTicket.
-        </p>
+      <div style="background-color: #f8fafc; padding: 30px 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+        <div style="max-width: 560px; margin: 0 auto;">
+          <div style="margin-bottom: 25px; text-align: center;">
+            <h1 style="color: #0f172a; font-size: 24px; font-weight: 850; margin: 0; letter-spacing: -0.5px;">¡Hola, ${userName}! 👋</h1>
+            <p style="color: #475569; font-size: 14px; margin-top: 6px; margin-bottom: 0;">Gracias por tu compra. Aquí tienes tus entradas listas para el evento:</p>
+          </div>
+          
+          ${ticketDetails}
+          
+          <div style="text-align: center; margin-top: 25px;">
+            <p style="color: #64748b; font-size: 11px; margin: 0;">Este correo sirve como comprobante de pago oficial y boleto de acceso.</p>
+            <p style="color: #64748b; font-size: 11px; margin: 4px 0 0 0;">Si tienes dudas o inquietudes, por favor contáctanos respondiendo a este email.</p>
+          </div>
+        </div>
       </div>
     `;
 

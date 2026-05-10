@@ -117,8 +117,17 @@ export class EventsService {
     if (event.organizerId !== userId && user?.role !== 'admin') {
       throw new ForbiddenException('No tienes permiso para editar este evento');
     }
-    const status = event.status === EventStatus.PUBLISHED ? EventStatus.DRAFT : event.status;
-    await this.eventRepo.update(id, { ...dto, status });
+    if (event.status === EventStatus.PUBLISHED) {
+      await this.eventRepo.update(id, {
+        pendingTitle: dto.title,
+        pendingDescription: dto.description,
+        pendingVenueName: dto.venueName,
+        pendingEventDate: dto.eventDate ? new Date(dto.eventDate) : undefined,
+        pendingCategory: dto.category,
+      });
+    } else {
+      await this.eventRepo.update(id, dto);
+    }
     return this.findById(id);
   }
 
@@ -136,7 +145,7 @@ export class EventsService {
     const maxPrice = prices.length ? Math.max(...prices) : 0;
 
     await this.eventRepo.update(id, {
-      status: EventStatus.PUBLISHED,
+      status: EventStatus.PENDING_APPROVAL,
       minPrice,
       maxPrice,
     });
@@ -160,8 +169,11 @@ export class EventsService {
       throw new ForbiddenException();
     }
     const imageUrl = `/uploads/${filename}`;
-    const status = event.status === EventStatus.PUBLISHED ? EventStatus.DRAFT : event.status;
-    await this.eventRepo.update(id, { imageUrl, status });
+    if (event.status === EventStatus.PUBLISHED) {
+      await this.eventRepo.update(id, { pendingImageUrl: imageUrl });
+    } else {
+      await this.eventRepo.update(id, { imageUrl });
+    }
     return { imageUrl };
   }
 
@@ -172,8 +184,11 @@ export class EventsService {
       throw new ForbiddenException();
     }
     const bannerImageUrl = `/uploads/${filename}`;
-    const status = event.status === EventStatus.PUBLISHED ? EventStatus.DRAFT : event.status;
-    await this.eventRepo.update(id, { bannerImageUrl, status });
+    if (event.status === EventStatus.PUBLISHED) {
+      await this.eventRepo.update(id, { pendingBannerImageUrl: bannerImageUrl });
+    } else {
+      await this.eventRepo.update(id, { bannerImageUrl });
+    }
     return { bannerImageUrl };
   }
 

@@ -64,6 +64,16 @@ export class AdminController {
     return this.adminService.rejectEvent(id);
   }
 
+  @Patch('events/:id/approve-change')
+  approveChange(@Param('id') id: string, @Body('field') field: string) {
+    return this.adminService.approveField(id, field);
+  }
+
+  @Patch('events/:id/reject-change')
+  rejectChange(@Param('id') id: string, @Body('field') field: string) {
+    return this.adminService.rejectField(id, field);
+  }
+
   @Patch('events/:id/toggle-featured')
   toggleFeatured(@Param('id') id: string) {
     return this.adminService.toggleFeatured(id);
