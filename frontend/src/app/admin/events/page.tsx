@@ -179,20 +179,21 @@ export default function AdminEventsPage() {
         </div>
       </div>
 
-      {/* Events Table */}
+      {/* Events Table/Cards Container */}
       {loading ? (
         <div className="space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="h-16 skeleton rounded-lg" />)}</div>
       ) : filteredEvents.length > 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">{lang === 'es' ? 'Evento' : 'Event'}</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('adminOrganizer')}</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{lang === 'es' ? 'Fecha' : 'Date'}</th>
-                  <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{lang === 'es' ? 'Estado' : 'Status'}</th>
-                  <th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase">{t('adminActions')}</th>
+                  <th className="text-left px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('adminEventTitle')}</th>
+                  <th className="text-left px-4 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('adminCategory')}</th>
+                  <th className="text-left px-4 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('adminDate')}</th>
+                  <th className="text-center px-4 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">{lang === 'es' ? 'Estado' : 'Status'}</th>
+                  <th className="text-right px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">{lang === 'es' ? 'Acciones' : 'Actions'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -204,25 +205,18 @@ export default function AdminEventsPage() {
                     <tr key={ev.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-lg shrink-0">
-                            {catInfo?.icon || '🎫'}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="font-medium text-gray-900 text-sm truncate max-w-[200px]">{ev.title}</p>
-                            <p className="text-xs text-gray-500">{catLabel} · {ev.venueName}</p>
-                            {hasPendingChanges(ev) && (
-                              <button 
-                                onClick={() => setSelectedEventForChanges(ev)}
-                                className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-black bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors animate-pulse uppercase tracking-wider"
-                              >
-                                🔔 {lang === 'es' ? 'Ver Cambios' : 'View Changes'}
-                              </button>
+                          <div className="w-10 h-10 rounded-lg bg-gray-100 overflow-hidden shrink-0 flex items-center justify-center">
+                            {ev.imageUrl ? (
+                              <img src={getImageUrl(ev.imageUrl)} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-lg">{catInfo?.icon || '🎫'}</span>
                             )}
                           </div>
+                          <span className="font-medium text-gray-900 text-sm truncate max-w-[200px]">{ev.title}</span>
                         </div>
                       </td>
                       <td className="px-4 py-4 text-sm text-gray-600">
-                        {ev.organizer ? `${ev.organizer.firstName} ${ev.organizer.lastName}` : '—'}
+                        {catLabel}
                       </td>
                       <td className="px-4 py-4 text-sm text-gray-600">
                         {format(new Date(ev.eventDate), "dd MMM yyyy", { locale: dateFnsLocale })}
@@ -230,7 +224,7 @@ export default function AdminEventsPage() {
                       <td className="px-4 py-4 text-center">
                         <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${badge.classes}`}>{badge.label}</span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           {(ev.status === 'draft' || ev.status === 'pending_approval') && (
                             <>
@@ -252,9 +246,6 @@ export default function AdminEventsPage() {
                           )}
                           {ev.status === 'published' && (
                             <div className="flex items-center gap-2">
-                              <span className="text-xs text-green-600 font-semibold flex items-center gap-1 mr-1">
-                                <HiOutlineCheckCircle className="w-4 h-4" /> {t('adminPublished')}
-                              </span>
                               <button
                                 onClick={() => handleToggleFeatured(ev.id)}
                                 className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 active:scale-95 ${
@@ -262,7 +253,6 @@ export default function AdminEventsPage() {
                                     ? 'bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-200 shadow-sm'
                                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-transparent'
                                 }`}
-                                title={lang === 'es' ? 'Mostrar en banner de inicio' : 'Show in homepage banner'}
                               >
                                 {ev.isFeatured ? <HiStar className="w-4.5 h-4.5 text-amber-500 fill-amber-500 shrink-0" /> : <HiOutlineStar className="w-4.5 h-4.5 text-gray-500 shrink-0" />}
                                 <span>{ev.isFeatured ? (lang === 'es' ? 'Banner Activo' : 'Banner Active') : (lang === 'es' ? 'Poner Banner' : 'Set Banner')}</span>
@@ -276,20 +266,18 @@ export default function AdminEventsPage() {
                               title={lang === 'es' ? 'Aprobar o Rechazar Cambios' : 'Approve or Reject Changes'}
                             >
                               <HiOutlineCheckCircle className="w-4 h-4 text-amber-600 animate-pulse" />
-                              {lang === 'es' ? 'Ver cambios solicitados' : 'Review requested changes'}
+                              {lang === 'es' ? 'Ver cambios' : 'Review changes'}
                             </button>
                           )}
                           <Link
                             href={`/organizer/events/${ev.id}`}
                             className="p-1.5 rounded-lg transition-colors text-blue-500 hover:bg-blue-50"
-                            title={lang === 'es' ? 'Editar evento' : 'Edit event'}
                           >
                             <HiOutlinePencilAlt className="w-4 h-4" />
                           </Link>
                           <button
                             onClick={() => handleDelete(ev.id, ev.title)}
                             className="p-1.5 rounded-lg transition-colors text-red-500 hover:bg-red-50"
-                            title={lang === 'es' ? 'Eliminar evento' : 'Delete event'}
                           >
                             <HiOutlineTrash className="w-4 h-4" />
                           </button>
@@ -302,13 +290,119 @@ export default function AdminEventsPage() {
             </table>
           </div>
 
+          {/* Mobile Card View */}
+          <div className="md:hidden divide-y divide-gray-100">
+            {filteredEvents.map((ev) => {
+              const badge = getStatusBadge(ev.status);
+              const catInfo = getCategoryInfo(ev.category);
+              return (
+                <div key={ev.id} className="p-5 space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-14 h-14 rounded-xl bg-gray-100 overflow-hidden shrink-0 flex items-center justify-center border border-gray-200">
+                      {ev.imageUrl ? (
+                        <img src={getImageUrl(ev.imageUrl)} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-2xl">{catInfo?.icon || '🎫'}</span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-extrabold text-gray-900 text-sm leading-tight mb-1">{ev.title}</h3>
+                      <p className="text-[10px] text-gray-500 flex items-center gap-1 font-medium">
+                        <HiOutlineCalendar className="w-3 h-3" />
+                        {format(new Date(ev.eventDate), "dd MMM yyyy", { locale: dateFnsLocale })}
+                      </p>
+                      <div className="mt-2">
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${badge.classes}`}>
+                          {badge.label}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {(ev.status === 'draft' || ev.status === 'pending_approval') && (
+                      <>
+                        <button
+                          onClick={() => handleApprove(ev.id)}
+                          className="flex-1 bg-green-600 text-white text-[10px] font-bold py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all"
+                        >
+                          <HiOutlineCheckCircle className="w-4 h-4" />
+                          {t('adminApprove')}
+                        </button>
+                        <button
+                          onClick={() => handleReject(ev.id)}
+                          className="flex-1 bg-red-50 text-red-600 border border-red-100 text-[10px] font-bold py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+                        >
+                          <HiOutlineXCircle className="w-4 h-4" />
+                          {t('adminReject')}
+                        </button>
+                      </>
+                    )}
+                    
+                    {ev.status === 'published' && (
+                      <button
+                        onClick={() => handleToggleFeatured(ev.id)}
+                        className={`flex-1 text-[10px] font-bold py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-sm border ${
+                          ev.isFeatured
+                            ? 'bg-amber-100 text-amber-800 border-amber-200'
+                            : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                        }`}
+                      >
+                        {ev.isFeatured ? <HiStar className="w-4 h-4 text-amber-500 fill-amber-500" /> : <HiOutlineStar className="w-4 h-4 text-gray-400" />}
+                        {ev.isFeatured ? (lang === 'es' ? 'BANNER ACTIVO' : 'BANNER ACTIVE') : (lang === 'es' ? 'PONER BANNER' : 'SET BANNER')}
+                      </button>
+                    )}
+
+                    {hasPendingChanges(ev) && (
+                      <button
+                        onClick={() => setSelectedEventForChanges(ev)}
+                        className="w-full bg-amber-500 text-white text-[10px] font-bold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 shadow-md active:scale-95 transition-all"
+                      >
+                        <HiOutlineCheckCircle className="w-4 h-4 text-amber-600 animate-pulse" />
+                        {lang === 'es' ? 'REVISAR CAMBIOS SOLICITADOS' : 'REVIEW REQUESTED CHANGES'}
+                      </button>
+                    )}
+
+                    <div className="flex gap-2 w-full mt-1">
+                      <Link
+                        href={`/organizer/events/${ev.id}`}
+                        className="flex-1 bg-blue-50 text-blue-600 border border-blue-100 text-[10px] font-bold py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+                      >
+                        <HiOutlinePencilAlt className="w-4 h-4" />
+                        {lang === 'es' ? 'EDITAR' : 'EDIT'}
+                      </Link>
+                      <button
+                        onClick={() => handleDelete(ev.id, ev.title)}
+                        className="p-2 bg-red-50 text-red-600 border border-red-100 rounded-lg active:scale-95 transition-all"
+                      >
+                        <HiOutlineTrash className="w-4.5 h-4.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
           {/* Pagination */}
           {total > 15 && (
-            <div className="flex items-center justify-between px-6 py-3 bg-gray-50 border-t border-gray-200">
-              <p className="text-xs text-gray-500">{total} {lang === 'es' ? 'eventos' : 'events'}</p>
-              <div className="flex gap-1">
-                <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1} className="px-3 py-1 text-xs border rounded hover:bg-white disabled:opacity-50">{lang === 'es' ? 'Anterior' : 'Previous'}</button>
-                <button onClick={() => setPage(page + 1)} disabled={events.length < 15} className="px-3 py-1 text-xs border rounded hover:bg-white disabled:opacity-50">{lang === 'es' ? 'Siguiente' : 'Next'}</button>
+            <div className="flex items-center justify-between px-6 py-4 bg-gray-50 border-t border-gray-200">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{total} {lang === 'es' ? 'eventos' : 'events'}</p>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => setPage(Math.max(1, page - 1))} 
+                  disabled={page <= 1} 
+                  className="px-4 py-2 text-[10px] font-bold border border-gray-200 rounded-xl hover:bg-white disabled:opacity-50 transition-colors uppercase tracking-widest shadow-sm"
+                >
+                  {lang === 'es' ? 'Anterior' : 'Previous'}
+                </button>
+                <button 
+                  onClick={() => setPage(page + 1)} 
+                  disabled={filteredEvents.length < 15} 
+                  className="px-4 py-2 text-[10px] font-bold border border-gray-200 rounded-xl hover:bg-white disabled:opacity-50 transition-colors uppercase tracking-widest shadow-sm"
+                >
+                  {lang === 'es' ? 'Siguiente' : 'Next'}
+                </button>
               </div>
             </div>
           )}
@@ -387,6 +481,79 @@ export default function AdminEventsPage() {
                   </div>
                 )}
 
+                {/* Event Image Change */}
+                {selectedEventForChanges.pendingImageUrl && (
+                  <div className="p-4 border border-gray-200 rounded-2xl bg-white space-y-3 shadow-sm">
+                    <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block">{lang === 'es' ? 'Imagen del Evento' : 'Event Image'}</span>
+                    <div className="grid grid-cols-2 gap-4 text-xs">
+                      <div className="p-2 bg-gray-50 rounded-xl border border-gray-100">
+                        <span className="font-bold text-gray-400 block mb-2 px-1">{lang === 'es' ? 'Actual:' : 'Current:'}</span>
+                        <div className="aspect-[4/3] rounded-lg overflow-hidden border border-gray-200 opacity-50 grayscale">
+                          <img src={getImageUrl(selectedEventForChanges.imageUrl)} className="w-full h-full object-cover" />
+                        </div>
+                      </div>
+                      <div className="p-2 bg-amber-50 rounded-xl border border-amber-100">
+                        <span className="font-bold text-amber-600 block mb-2 px-1">{lang === 'es' ? 'Propuesta:' : 'Proposed:'}</span>
+                        <div className="aspect-[4/3] rounded-lg overflow-hidden border border-amber-200 shadow-md">
+                          <img src={getImageUrl(selectedEventForChanges.pendingImageUrl)} className="w-full h-full object-cover" />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2 border-t border-dashed border-gray-100">
+                      <button 
+                        disabled={!!processingField}
+                        onClick={() => handleRejectField(selectedEventForChanges.id, 'imageUrl')}
+                        className="px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold active:scale-95 transition-all"
+                      >
+                        ❌ {lang === 'es' ? 'Rechazar' : 'Reject'}
+                      </button>
+                      <button 
+                        disabled={!!processingField}
+                        onClick={() => handleApproveField(selectedEventForChanges.id, 'imageUrl')}
+                        className="px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-bold active:scale-95 transition-all shadow-sm"
+                      >
+                        ✓ {lang === 'es' ? 'Aprobar' : 'Approve'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Banner Image Change */}
+                {selectedEventForChanges.pendingBannerImageUrl && (
+                  <div className="p-4 border border-gray-200 rounded-2xl bg-white space-y-3 shadow-sm">
+                    <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block">{lang === 'es' ? 'Banner del Evento' : 'Event Banner'}</span>
+                    <div className="space-y-4">
+                      <div className="p-2 bg-gray-50 rounded-xl border border-gray-100">
+                        <span className="font-bold text-gray-400 block mb-2 text-xs">{lang === 'es' ? 'Banner Actual:' : 'Current Banner:'}</span>
+                        <div className="aspect-[21/9] rounded-lg overflow-hidden border border-gray-200 opacity-50 grayscale">
+                          <img src={getImageUrl(selectedEventForChanges.bannerImageUrl || selectedEventForChanges.imageUrl)} className="w-full h-full object-cover" />
+                        </div>
+                      </div>
+                      <div className="p-2 bg-amber-50 rounded-xl border border-amber-100">
+                        <span className="font-bold text-amber-600 block mb-2 text-xs">{lang === 'es' ? 'Banner Propuesto:' : 'Proposed Banner:'}</span>
+                        <div className="aspect-[21/9] rounded-lg overflow-hidden border border-amber-200 shadow-md">
+                          <img src={getImageUrl(selectedEventForChanges.pendingBannerImageUrl)} className="w-full h-full object-cover" />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2 border-t border-dashed border-gray-100">
+                      <button 
+                        disabled={!!processingField}
+                        onClick={() => handleRejectField(selectedEventForChanges.id, 'bannerImageUrl')}
+                        className="px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold active:scale-95 transition-all"
+                      >
+                        ❌ {lang === 'es' ? 'Rechazar' : 'Reject'}
+                      </button>
+                      <button 
+                        disabled={!!processingField}
+                        onClick={() => handleApproveField(selectedEventForChanges.id, 'bannerImageUrl')}
+                        className="px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-bold active:scale-95 transition-all shadow-sm"
+                      >
+                        ✓ {lang === 'es' ? 'Aprobar' : 'Approve'}
+                      </button>
+                    </div>
+                  </div>
+                )}
                 {/* Description Change */}
                 {selectedEventForChanges.pendingDescription && (
                   <div className="p-4 border border-gray-200 rounded-2xl bg-white space-y-3 shadow-sm">

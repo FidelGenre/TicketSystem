@@ -215,12 +215,40 @@ export default function EventDetailPage() {
 
       setImageFile(null);
       setBannerFile(null);
-      toast.success(lang === 'es' ? '¡Cambios guardados con éxito! Debes esperar la aprobación del administrador.' : 'Changes saved successfully! Waiting for admin approval.');
+      
+      const isAutoApproved = user?.role === 'admin' || event.status === 'draft';
+      const successMsg = isAutoApproved 
+        ? (lang === 'es' ? '¡Cambios guardados y publicados con éxito!' : 'Changes saved and published successfully!')
+        : (lang === 'es' ? '¡Cambios guardados! Debes esperar la aprobación del administrador.' : 'Changes saved! Waiting for admin approval.');
+      
+      toast.success(successMsg);
       await loadEvent();
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Error al guardar los cambios');
     } finally {
       setSavingEdit(false);
+    }
+  };
+
+  const handleDeleteImage = async () => {
+    if (!confirm(lang === 'es' ? '¿Estás seguro de que quieres eliminar esta imagen?' : 'Are you sure you want to delete this image?')) return;
+    try {
+      await api.delete(`/events/${id}/image`);
+      toast.success(lang === 'es' ? 'Imagen eliminada' : 'Image deleted');
+      await loadEvent();
+    } catch (err: any) {
+      toast.error(lang === 'es' ? 'Error al eliminar la imagen' : 'Error deleting image');
+    }
+  };
+
+  const handleDeleteBanner = async () => {
+    if (!confirm(lang === 'es' ? '¿Estás seguro de que quieres eliminar el banner?' : 'Are you sure you want to delete the banner?')) return;
+    try {
+      await api.delete(`/events/${id}/image/banner`);
+      toast.success(lang === 'es' ? 'Banner eliminado' : 'Banner deleted');
+      await loadEvent();
+    } catch (err: any) {
+      toast.error(lang === 'es' ? 'Error al eliminar el banner' : 'Error deleting banner');
     }
   };
 
@@ -820,15 +848,38 @@ export default function EventDetailPage() {
                 
                 {/* Active Preview */}
                 {(imageFile || event.imageUrl) && (
-                  <div className="w-full aspect-[16/9] relative rounded-2xl border border-gray-200 bg-gray-50 overflow-hidden mb-3 shadow-inner">
+                  <div className="w-full aspect-[16/9] relative rounded-2xl border border-gray-200 bg-gray-50 overflow-hidden mb-3 shadow-inner group/preview">
                     <img 
                       src={imageFile ? URL.createObjectURL(imageFile) : getImageUrl(event.imageUrl)} 
                       alt="Current Cover" 
                       className="w-full h-full object-cover" 
                     />
-                    <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-[10px] font-black text-white px-2.5 py-1 rounded-full uppercase tracking-wider shadow-lg">
+                    <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-[10px] font-black text-white px-2.5 py-1 rounded-full uppercase tracking-wider shadow-lg">
                       {imageFile ? (lang === 'es' ? 'Nueva Selección' : 'New Selection') : (lang === 'es' ? 'Foto Actual' : 'Current Photo')}
                     </div>
+                    
+                    {/* Delete Action Overlay */}
+                    {!imageFile && event.imageUrl && (
+                      <button
+                        type="button"
+                        onClick={handleDeleteImage}
+                        className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/preview:opacity-100 transition-opacity"
+                      >
+                        <div className="bg-white/90 backdrop-blur-md p-3 rounded-full text-red-600 shadow-xl hover:scale-110 transition-transform">
+                          <HiOutlineTrash className="w-6 h-6" />
+                        </div>
+                      </button>
+                    )}
+                    
+                    {imageFile && (
+                      <button
+                        type="button"
+                        onClick={() => setImageFile(null)}
+                        className="absolute top-3 right-3 bg-red-600 text-white p-1.5 rounded-full shadow-lg hover:bg-red-700 transition-colors"
+                      >
+                        <HiOutlineXCircle className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 )}
 
@@ -853,15 +904,38 @@ export default function EventDetailPage() {
 
                 {/* Active Preview */}
                 {(bannerFile || event.bannerImageUrl) && (
-                  <div className="w-full aspect-[21/9] relative rounded-2xl border border-gray-200 bg-gray-50 overflow-hidden mb-3 shadow-inner">
+                  <div className="w-full aspect-[21/9] relative rounded-2xl border border-gray-200 bg-gray-50 overflow-hidden mb-3 shadow-inner group/preview">
                     <img 
                       src={bannerFile ? URL.createObjectURL(bannerFile) : getImageUrl(event.bannerImageUrl)} 
                       alt="Current Banner" 
                       className="w-full h-full object-cover" 
                     />
-                    <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-[10px] font-black text-white px-2.5 py-1 rounded-full uppercase tracking-wider shadow-lg">
+                    <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-[10px] font-black text-white px-2.5 py-1 rounded-full uppercase tracking-wider shadow-lg">
                       {bannerFile ? (lang === 'es' ? 'Nueva Selección' : 'New Selection') : (lang === 'es' ? 'Banner Actual' : 'Current Banner')}
                     </div>
+
+                    {/* Delete Action Overlay */}
+                    {!bannerFile && event.bannerImageUrl && (
+                      <button
+                        type="button"
+                        onClick={handleDeleteBanner}
+                        className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/preview:opacity-100 transition-opacity"
+                      >
+                        <div className="bg-white/90 backdrop-blur-md p-3 rounded-full text-red-600 shadow-xl hover:scale-110 transition-transform">
+                          <HiOutlineTrash className="w-6 h-6" />
+                        </div>
+                      </button>
+                    )}
+
+                    {bannerFile && (
+                      <button
+                        type="button"
+                        onClick={() => setBannerFile(null)}
+                        className="absolute top-3 right-3 bg-red-600 text-white p-1.5 rounded-full shadow-lg hover:bg-red-700 transition-colors"
+                      >
+                        <HiOutlineXCircle className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 )}
 

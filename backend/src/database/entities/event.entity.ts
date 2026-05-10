@@ -47,10 +47,10 @@ export class Event {
   @Column({ type: 'varchar', length: 40, default: 'otro' })
   category: string;
 
-  @Column({ nullable: true, length: 255 })
+  @Column({ type: 'text', nullable: true })
   imageUrl: string;
 
-  @Column({ nullable: true, length: 255 })
+  @Column({ type: 'text', nullable: true })
   bannerImageUrl: string;
 
   @Column({ length: 60 })
@@ -105,10 +105,10 @@ export class Event {
   @Column({ type: 'text', nullable: true })
   pendingDescription: string | null;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
+  @Column({ type: 'text', nullable: true })
   pendingImageUrl: string | null;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
+  @Column({ type: 'text', nullable: true })
   pendingBannerImageUrl: string | null;
 
   @Column({ type: 'varchar', length: 60, nullable: true })

@@ -4,9 +4,9 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nest-lab/fastify-multer';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { memoryStorage } from 'multer';
 import { EventsService } from './events.service';
+import { StorageService } from '../common/services/storage.service';
 import { CreateEventDto, UpdateEventDto, EventQueryDto } from './dto/event.dto';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -14,7 +14,10 @@ import { UserRole } from '../database/entities';
 
 @Controller('events')
 export class EventsController {
-  constructor(private readonly eventsService: EventsService) {}
+  constructor(
+    private readonly eventsService: EventsService,
+    private readonly storageService: StorageService,
+  ) {}
 
   // Public endpoints
   @Get()
@@ -71,13 +74,7 @@ export class EventsController {
   @Post(':id/image')
   @UseInterceptors(
     FileInterceptor('image', {
-      storage: diskStorage({
-        destination: './uploads',
-        filename: (_req: any, file: any, cb: any) => {
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-          cb(null, uniqueSuffix + extname(file.originalname));
-        },
-      }) as any,
+      storage: memoryStorage(),
       fileFilter: (_req: any, file: any, cb: any) => {
         if (!file.mimetype.match(/\/(jpg|jpeg|png|gif|webp)$/)) {
           cb(new Error('Solo se permiten imágenes'), false);
@@ -87,12 +84,13 @@ export class EventsController {
       limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
     }),
   )
-  uploadImage(
+  async uploadImage(
     @Param('id') id: string,
     @UploadedFile() file: any,
     @Request() req: any,
   ) {
-    return this.eventsService.uploadImage(id, file.filename, req.user.id);
+    const url = await this.storageService.uploadFile(file, 'events');
+    return this.eventsService.uploadImage(id, url, req.user.id);
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -100,13 +98,7 @@ export class EventsController {
   @Post(':id/image/banner')
   @UseInterceptors(
     FileInterceptor('image', {
-      storage: diskStorage({
-        destination: './uploads',
-        filename: (_req: any, file: any, cb: any) => {
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-          cb(null, uniqueSuffix + extname(file.originalname));
-        },
-      }) as any,
+      storage: memoryStorage(),
       fileFilter: (_req: any, file: any, cb: any) => {
         if (!file.mimetype.match(/\/(jpg|jpeg|png|gif|webp)$/)) {
           cb(new Error('Solo se permiten imágenes'), false);
@@ -116,12 +108,29 @@ export class EventsController {
       limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
     }),
   )
-  uploadBannerImage(
+  async uploadBannerImage(
     @Param('id') id: string,
     @UploadedFile() file: any,
     @Request() req: any,
   ) {
-    return this.eventsService.uploadBannerImage(id, file.filename, req.user.id);
+    const url = await this.storageService.uploadFile(file, 'banners');
+    return this.eventsService.uploadBannerImage(id, url, req.user.id);
+  }
+
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.CLIENT, UserRole.ADMIN)
+  @Delete(':id/image')
+  async deleteImage(@Param('id') id: string, @Request() req: any) {
+    console.log(`[DELETE] Request to delete image for event ${id} by user ${req.user.id}`);
+    return this.eventsService.deleteImage(id, req.user.id);
+  }
+
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.CLIENT, UserRole.ADMIN)
+  @Delete(':id/image/banner')
+  async deleteBannerImage(@Param('id') id: string, @Request() req: any) {
+    console.log(`[DELETE] Request to delete banner for event ${id} by user ${req.user.id}`);
+    return this.eventsService.deleteBannerImage(id, req.user.id);
   }
 
   // Sections & Seats

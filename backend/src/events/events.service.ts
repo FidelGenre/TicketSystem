@@ -162,13 +162,16 @@ export class EventsService {
     return { message: 'Evento eliminado' };
   }
 
-  async uploadImage(id: string, filename: string, userId: string) {
+  async uploadImage(id: string, url: string, userId: string) {
     const event = await this.findById(id);
     const user = await this.eventRepo.manager.findOne(User, { where: { id: userId } });
     if (event.organizerId !== userId && user?.role !== 'admin') {
       throw new ForbiddenException();
     }
-    const imageUrl = `/uploads/${filename}`;
+    
+    // If it's a full URL, a data URI (Base64), or already an absolute path, use it as is.
+    const imageUrl = (url.startsWith('http') || url.startsWith('data:') || url.startsWith('/')) ? url : `/uploads/${url}`;
+
     if (event.status === EventStatus.PUBLISHED && user?.role !== 'admin') {
       await this.eventRepo.update(id, { pendingImageUrl: imageUrl });
     } else {
@@ -177,19 +180,50 @@ export class EventsService {
     return { imageUrl };
   }
 
-  async uploadBannerImage(id: string, filename: string, userId: string) {
+  async uploadBannerImage(id: string, url: string, userId: string) {
     const event = await this.findById(id);
     const user = await this.eventRepo.manager.findOne(User, { where: { id: userId } });
     if (event.organizerId !== userId && user?.role !== 'admin') {
       throw new ForbiddenException();
     }
-    const bannerImageUrl = `/uploads/${filename}`;
+    
+    // If it's a full URL, a data URI (Base64), or already an absolute path, use it as is.
+    const bannerImageUrl = (url.startsWith('http') || url.startsWith('data:') || url.startsWith('/')) ? url : `/uploads/${url}`;
+
     if (event.status === EventStatus.PUBLISHED && user?.role !== 'admin') {
       await this.eventRepo.update(id, { pendingBannerImageUrl: bannerImageUrl });
     } else {
       await this.eventRepo.update(id, { bannerImageUrl });
     }
     return { bannerImageUrl };
+  }
+
+  async deleteImage(id: string, userId: string) {
+    const event = await this.findById(id);
+    const user = await this.eventRepo.manager.findOne(User, { where: { id: userId } });
+    if (event.organizerId !== userId && user?.role !== 'admin') throw new ForbiddenException();
+
+    if (event.status === EventStatus.PUBLISHED && user?.role !== 'admin') {
+      event.pendingImageUrl = null;
+    } else {
+      event.imageUrl = null;
+    }
+    await this.eventRepo.save(event);
+    return { success: true };
+  }
+
+  async deleteBannerImage(id: string, userId: string) {
+    const event = await this.findById(id);
+    const user = await this.eventRepo.manager.findOne(User, { where: { id: userId } });
+    if (event.organizerId !== userId && user?.role !== 'admin') throw new ForbiddenException();
+
+    if (event.status === EventStatus.PUBLISHED && user?.role !== 'admin') {
+      event.pendingBannerImageUrl = null;
+    } else {
+      event.bannerImageUrl = null;
+    }
+    await this.eventRepo.save(event);
+    return { success: true };
   }
 
   async getOrganizerEvents(organizerId: string) {
