@@ -192,12 +192,17 @@ export class OrdersService {
     });
     const savedOrder = await this.orderRepo.save(order);
 
+    const rawAppUrl = this.configService.get('APP_URL') || 'http://localhost:3000';
+    const appUrl = (rawAppUrl.startsWith('http://') || rawAppUrl.startsWith('https://')) 
+      ? rawAppUrl 
+      : `https://${rawAppUrl}`;
+
     const session = await this.stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: lineItems,
       mode: 'payment',
-      success_url: `${this.configService.get('APP_URL')}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${this.configService.get('APP_URL')}/checkout/cancel`,
+      success_url: `${appUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${appUrl}/checkout/cancel`,
       metadata: {
         orderId: savedOrder.id,
         userId,
@@ -498,7 +503,10 @@ export class OrdersService {
     const orderId = savedOrder.id;
 
     const createdTickets: any[] = [];
-    const appUrl = this.configService.get('APP_URL') || 'http://localhost:3000';
+    const rawAppUrl = this.configService.get('APP_URL') || 'http://localhost:3000';
+    const appUrl = (rawAppUrl.startsWith('http://') || rawAppUrl.startsWith('https://')) 
+      ? rawAppUrl 
+      : `https://${rawAppUrl}`;
 
     for (const seatId of seatIds) {
       const seat = await this.seatRepo.findOne({ where: { id: seatId }, relations: ['section'] });

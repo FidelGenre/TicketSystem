@@ -204,6 +204,9 @@ const translations = {
     adminNoEvents: 'No hay eventos',
     adminNoOrders: 'No hay órdenes',
     adminTicketsSold: 'Tickets Vendidos',
+    adminEventTitle: 'Evento',
+    adminCategory: 'Categoría',
+    adminDate: 'Fecha',
 
     // Client Dashboard
     clientHello: 'Hola',
@@ -430,6 +433,9 @@ const translations = {
     adminNoEvents: 'No events',
     adminNoOrders: 'No orders',
     adminTicketsSold: 'Tickets Sold',
+    adminEventTitle: 'Event',
+    adminCategory: 'Category',
+    adminDate: 'Date',
 
     // Client Dashboard
     clientHello: 'Hello',
