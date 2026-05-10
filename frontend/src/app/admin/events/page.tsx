@@ -125,6 +125,32 @@ export default function AdminEventsPage() {
 
   const dateFnsLocale = lang === 'es' ? es : enUS;
 
+  const handleApproveAll = async (eventId: string) => {
+    if (!selectedEventForChanges) return;
+    const fields = [];
+    if (selectedEventForChanges.pendingTitle) fields.push('title');
+    if (selectedEventForChanges.pendingDescription) fields.push('description');
+    if (selectedEventForChanges.pendingImageUrl) fields.push('imageUrl');
+    if (selectedEventForChanges.pendingBannerImageUrl) fields.push('bannerImageUrl');
+    if (selectedEventForChanges.pendingVenueName) fields.push('venueName');
+    if (selectedEventForChanges.pendingCategory) fields.push('category');
+    if (selectedEventForChanges.pendingEventDate) fields.push('eventDate');
+
+    if (fields.length === 0) return;
+
+    setProcessingField('all');
+    try {
+      await Promise.all(fields.map(field => api.post(`/events/${eventId}/approve-field`, { field })));
+      toast.success(lang === 'es' ? 'Todos los cambios han sido aprobados' : 'All changes approved');
+      setSelectedEventForChanges(null);
+      fetchEvents();
+    } catch (err) {
+      toast.error(lang === 'es' ? 'Error al aprobar todos los cambios' : 'Error approving all changes');
+    } finally {
+      setProcessingField(null);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'published': return { label: t('adminPublished'), classes: 'bg-green-100 text-green-700' };
@@ -426,17 +452,31 @@ export default function AdminEventsPage() {
           {/* Drawer Panel */}
           <div className="relative w-full max-w-2xl bg-white h-full shadow-2xl flex flex-col z-10 animate-[slideOver_0.3s_ease-out] border-l border-gray-150">
             {/* Drawer Header */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 shrink-0">
-              <div>
-                <h2 className="font-extrabold text-lg text-gray-900">{lang === 'es' ? 'Revisar Cambios Pendientes' : 'Review Pending Changes'}</h2>
-                <p className="text-xs text-gray-500 mt-0.5">{selectedEventForChanges.title}</p>
+            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 shrink-0 bg-gray-50/50">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
+                  <HiOutlineCalendar className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="font-extrabold text-lg text-gray-900 leading-tight">{lang === 'es' ? 'Revisar Cambios' : 'Review Changes'}</h2>
+                  <p className="text-xs text-gray-500 mt-0.5 font-medium">{selectedEventForChanges.title}</p>
+                </div>
               </div>
-              <button 
-                onClick={() => setSelectedEventForChanges(null)}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-              >
-                <HiOutlineXCircle className="w-6 h-6" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button 
+                  disabled={!!processingField}
+                  onClick={() => handleApproveAll(selectedEventForChanges.id)}
+                  className="px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white text-xs font-bold transition-all shadow-lg shadow-green-200 active:scale-95 disabled:opacity-50"
+                >
+                  {lang === 'es' ? 'Aprobar Todo' : 'Approve All'}
+                </button>
+                <button 
+                  onClick={() => setSelectedEventForChanges(null)}
+                  className="w-10 h-10 rounded-xl flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all"
+                >
+                  <HiOutlineXCircle className="w-6 h-6" />
+                </button>
+              </div>
             </div>
 
             {/* Drawer Content */}

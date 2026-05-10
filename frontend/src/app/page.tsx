@@ -70,9 +70,11 @@ export default function HomePage() {
   const [sortBy, setSortBy] = useState('fecha');
   const [categoryOpen, setCategoryOpen] = useState(false);
 
-  // Featured event for banner
-  const featuredEvents = allEvents.filter((e) => e.isFeatured);
-  const bannerEvents = featuredEvents.length > 0 ? featuredEvents : (allEvents.length > 0 ? [allEvents[0]] : []);
+  // bannerEvents: 15 random published events
+  const bannerEvents = allEvents
+    .filter((e) => e.status === EventStatus.PUBLISHED)
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 15);
   const bannerEvent = bannerEvents.length > 0 ? bannerEvents[currentBannerIdx % bannerEvents.length] : null;
 
   useEffect(() => {
