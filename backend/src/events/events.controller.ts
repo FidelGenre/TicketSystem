@@ -3,8 +3,7 @@ import {
   UseGuards, Request, UseInterceptors, UploadedFile,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { FileInterceptor } from '@nest-lab/fastify-multer';
-import { memoryStorage } from 'multer';
+import { FileInterceptor, memoryStorage } from '@nest-lab/fastify-multer';
 import { EventsService } from './events.service';
 import { StorageService } from '../common/services/storage.service';
 import { CreateEventDto, UpdateEventDto, EventQueryDto } from './dto/event.dto';

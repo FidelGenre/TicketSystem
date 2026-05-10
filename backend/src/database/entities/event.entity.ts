@@ -48,10 +48,10 @@ export class Event {
   category: string;
 
   @Column({ type: 'text', nullable: true })
-  imageUrl: string;
+  imageUrl: string | null;
 
   @Column({ type: 'text', nullable: true })
-  bannerImageUrl: string;
+  bannerImageUrl: string | null;
 
   @Column({ length: 60 })
   venueName: string;
