@@ -20,12 +20,6 @@ export default function ModeToggle({ variant = 'pill' }: ModeToggleProps) {
   const toggleMode = () => {
     const newMode: UserMode = mode === 'buyer' ? 'organizer' : 'buyer';
     setMode(newMode);
-    
-    if (newMode === 'organizer' && !pathname.startsWith('/organizer')) {
-      router.push('/organizer');
-    } else if (newMode === 'buyer' && pathname.startsWith('/organizer')) {
-      router.push('/dashboard');
-    }
   };
 
   if (variant === 'dropdown') {
@@ -53,12 +47,7 @@ export default function ModeToggle({ variant = 'pill' }: ModeToggleProps) {
   return (
     <div className="flex items-center gap-3 bg-gray-100/80 p-1 rounded-full border border-gray-200">
       <button
-        onClick={() => {
-          setMode('buyer');
-          if (pathname.startsWith('/organizer')) {
-            router.push('/dashboard');
-          }
-        }}
+        onClick={() => setMode('buyer')}
         className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
           mode === 'buyer'
             ? 'bg-blue-600 text-white shadow-md'
@@ -69,12 +58,7 @@ export default function ModeToggle({ variant = 'pill' }: ModeToggleProps) {
         <span className="inline">{t('buyerMode' as any)}</span>
       </button>
       <button
-        onClick={() => {
-          setMode('organizer');
-          if (!pathname.startsWith('/organizer')) {
-            router.push('/organizer');
-          }
-        }}
+        onClick={() => setMode('organizer')}
         className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
           mode === 'organizer'
             ? 'bg-blue-600 text-white shadow-md'

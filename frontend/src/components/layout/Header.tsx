@@ -48,10 +48,9 @@ export default function Header() {
             <Link href="/support" className="text-blue-600 hover:text-blue-800 font-medium text-[15px] transition-colors whitespace-nowrap">{t('support')}</Link>
           </nav>
 
-          {/* Right: Tools */}
           <div className="hidden lg:flex items-center justify-end gap-6 shrink-0">
-            {/* NEW: Scanner Portal (Only for Admins) */}
-            {user?.role === 'admin' && (
+            {/* Scanner Portal (Available for all authenticated users) */}
+            {isAuthenticated && (
               <Link 
                 href="/verify" 
                 className="flex items-center gap-1.5 px-4 py-1.5 bg-primary-500 text-white rounded-full hover:bg-primary-600 transition-all shadow-md active:scale-95 group"
@@ -130,7 +129,7 @@ export default function Header() {
           {/* Mobile toggle */}
           <div className="lg:hidden flex items-center gap-2 sm:gap-3 shrink-0">
             {/* Mobile Scanner */}
-            {user?.role === 'admin' && (
+            {isAuthenticated && (
               <Link 
                 href="/verify" 
                 className="flex items-center gap-1 px-2.5 py-1 bg-primary-500 text-white rounded-full shadow-sm active:scale-95"

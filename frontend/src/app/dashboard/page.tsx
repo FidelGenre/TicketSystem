@@ -34,7 +34,17 @@ function DashboardPageBody() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [activeTab, setActiveTab] = useState<'tickets' | 'orders' | 'profile' | 'payments'>('tickets');
   const [editMode, setEditMode] = useState(false);
-  const [profileForm, setProfileForm] = useState({ firstName: '', lastName: '', phone: '', email: '', username: '', idType: 'V', idNumber: '', address: '' });
+  const [profileForm, setProfileForm] = useState({ 
+    firstName: '', 
+    lastName: '', 
+    phone: '', 
+    email: '', 
+    username: '', 
+    idType: 'V', 
+    idNumber: '', 
+    address: '', 
+    password: '' 
+  });
 
   useEffect(() => {
 
@@ -84,7 +94,7 @@ function DashboardPageBody() {
   const handleSaveProfile = async () => {
     try { 
       // Si la contraseña está vacía, la omitimos de la actualización
-      const dataToUpdate = { ...profileForm };
+      const dataToUpdate: any = { ...profileForm };
       if (!dataToUpdate.password) {
         delete dataToUpdate.password;
       }
