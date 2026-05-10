@@ -140,7 +140,7 @@ export default function AdminEventsPage() {
 
     setProcessingField('all');
     try {
-      await Promise.all(fields.map(field => api.post(`/events/${eventId}/approve-field`, { field })));
+      await Promise.all(fields.map(field => api.patch(`/admin/events/${eventId}/approve-change`, { field })));
       toast.success(lang === 'es' ? 'Todos los cambios han sido aprobados' : 'All changes approved');
       setSelectedEventForChanges(null);
       await loadEvents();

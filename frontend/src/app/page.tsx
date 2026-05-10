@@ -71,10 +71,12 @@ export default function HomePage() {
   const [categoryOpen, setCategoryOpen] = useState(false);
 
   // bannerEvents: 15 random published events
-  const bannerEvents = allEvents
-    .filter((e) => e.status === EventStatus.PUBLISHED)
-    .sort(() => Math.random() - 0.5)
-    .slice(0, 15);
+  const bannerEvents = useMemo(() => {
+    return allEvents
+      .filter((e) => e.status === EventStatus.PUBLISHED)
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 15);
+  }, [allEvents]);
   const bannerEvent = bannerEvents.length > 0 ? bannerEvents[currentBannerIdx % bannerEvents.length] : null;
 
   useEffect(() => {
