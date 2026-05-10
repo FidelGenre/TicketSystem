@@ -215,9 +215,9 @@ export default function AdminEventsPage() {
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="text-left px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('adminEventTitle')}</th>
-                  <th className="text-left px-4 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('adminCategory')}</th>
-                  <th className="text-left px-4 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('adminDate')}</th>
+                  <th className="text-left px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('adminEventTitle' as any)}</th>
+                  <th className="text-left px-4 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('adminCategory' as any)}</th>
+                  <th className="text-left px-4 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('adminDate' as any)}</th>
                   <th className="text-center px-4 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">{lang === 'es' ? 'Estado' : 'Status'}</th>
                   <th className="text-right px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">{lang === 'es' ? 'Acciones' : 'Actions'}</th>
                 </tr>
@@ -259,14 +259,14 @@ export default function AdminEventsPage() {
                                 className="px-3 py-1.5 rounded-lg bg-green-50 text-green-700 text-xs font-medium hover:bg-green-100 transition-colors flex items-center gap-1"
                               >
                                 <HiOutlineCheckCircle className="w-4 h-4" />
-                                {t('adminApprove')}
+                                {t('adminApprove' as any)}
                               </button>
                               <button
                                 onClick={() => handleReject(ev.id)}
                                 className="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 text-xs font-medium hover:bg-red-100 transition-colors flex items-center gap-1"
                               >
                                 <HiOutlineXCircle className="w-4 h-4" />
-                                {t('adminReject')}
+                                {t('adminReject' as any)}
                               </button>
                             </>
                           )}
