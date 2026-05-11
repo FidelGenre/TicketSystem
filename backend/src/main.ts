@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 import { existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -68,6 +69,7 @@ async function bootstrap() {
 
   // API prefix
   app.setGlobalPrefix('api');
+  app.useGlobalFilters(new AllExceptionsFilter());
 
   // Create uploads directory
   const uploadDir = configService.get('UPLOAD_DIR') || './uploads';
