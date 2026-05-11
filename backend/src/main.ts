@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import fastifyMultipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
+import secureSession from '@fastify/secure-session';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
@@ -17,12 +18,23 @@ async function bootstrap() {
   
   await app.register(fastifyMultipart);
   
+  const configService = app.get(ConfigService);
+  
+  await app.register(secureSession, {
+    secret: configService.get<string>('JWT_SECRET') || 'a-very-long-and-secure-secret-key-at-least-32-chars',
+    salt: 'mq9h9p7uY9sc99h9', // Must be 16 chars
+    cookie: {
+      path: '/',
+      httpOnly: true,
+      secure: configService.get<string>('NODE_ENV') === 'production',
+    }
+  });
+
   await app.register(fastifyStatic, {
     root: join(process.cwd(), 'uploads'),
     prefix: '/uploads/',
     decorateReply: false,
   });
-  const configService = app.get(ConfigService);
 
   // Global validation
   app.useGlobalPipes(
