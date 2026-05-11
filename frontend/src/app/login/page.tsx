@@ -33,7 +33,7 @@ export default function LoginPage() {
 
   const handleSocialLogin = (provider: 'google' | 'facebook') => {
     if (provider === 'google') {
-      let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://ticketsystembackend-1021.onrender.com/api';
+      let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://ticketsystembackend-102j.onrender.com/api';
       // Ensure it ends with /api
       if (!apiUrl.endsWith('/api')) {
         apiUrl = apiUrl.endsWith('/') ? `${apiUrl}api` : `${apiUrl}/api`;

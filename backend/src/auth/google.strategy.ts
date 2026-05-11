@@ -8,13 +8,14 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor(private configService: ConfigService) {
     const clientID = configService.get<string>('GOOGLE_CLIENT_ID');
     const clientSecret = configService.get<string>('GOOGLE_CLIENT_SECRET');
+    const apiUrl = configService.get<string>('API_URL') || 'https://ticketsystembackend-102j.onrender.com';
     
     console.log('Initializing GoogleStrategy with ID:', clientID ? 'OK' : 'MISSING');
     
     super({
       clientID,
       clientSecret,
-      callbackURL: 'https://ticketsystembackend-1021.onrender.com/api/auth/google/callback',
+      callbackURL: `${apiUrl}/api/auth/google/callback`,
       scope: ['email', 'profile'],
     } as any);
   }
