@@ -11,6 +11,8 @@ import {
   HiOutlineZoomIn,
   HiOutlineZoomOut,
   HiOutlineEye,
+  HiOutlineX,
+  HiOutlineArrowLeft,
 } from 'react-icons/hi';
 import { FaWheelchair } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -22,6 +24,7 @@ interface VenueMapBuilderProps {
   onSaved: (sections: VenueSection[]) => void;
   onChange?: (sections: Partial<VenueSection>[]) => void;
   event?: any;
+  isAdmin?: boolean;
 }
 
 const SECTION_COLORS = ['#3b82f6', '#f97316', '#10b981', '#a855f7', '#ec4899', '#ef4444', '#f59e0b', '#6366f1'];
@@ -29,14 +32,16 @@ const SECTION_COLORS = ['#3b82f6', '#f97316', '#10b981', '#a855f7', '#ec4899', '
 // Stage is the anchor: centered horizontally at y=80 in canvas space
 const STAGE_W = 400;
 const STAGE_H = 80;
-const CANVAS_W = 2000;
-const CANVAS_H = 1600;
+const CANVAS_W = 800;
+const CANVAS_H = 600;
 const STAGE_X = (CANVAS_W - STAGE_W) / 2;
 const STAGE_Y = 60;
 
-export default function VenueMapBuilder({ eventId, initialSections, onSaved, onChange, event }: VenueMapBuilderProps) {
+export default function VenueMapBuilder({ eventId, initialSections, onSaved, onChange, event, isAdmin }: VenueMapBuilderProps) {
   const { t, lang } = useLang();
   const [sections, setSections] = useState<Partial<VenueSection>[]>([]);
+  const [dbTemplates, setDbTemplates] = useState<any[]>([]);
+  const [savingTemplate, setSavingTemplate] = useState(false);
   const [dismissWelcome, setDismissWelcome] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -82,7 +87,7 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
   } | null>(null);
   const [selectedSeat, setSelectedSeat] = useState<{ secId: string; seatKey: string } | null>(null);
 
-  const getSeatsConfig = (sec: Partial<VenueSection>): Record<string, { xOffset?: number; yOffset?: number; isWheelchair?: boolean; disabled?: boolean; price?: number }> => {
+  const getSeatsConfig = (sec: Partial<VenueSection>): Record<string, { xOffset?: number; yOffset?: number; isWheelchair?: boolean; disabled?: boolean; reserved?: boolean; price?: number }> => {
     try {
       return sec.seatsConfig ? JSON.parse(sec.seatsConfig) : {};
     } catch (e) {
@@ -130,6 +135,45 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
     if (onChange) onChange(sections);
   }, [sections, onChange]);
 
+  const loadDbTemplates = useCallback(async () => {
+    try {
+      const { data } = await api.get('/venue-templates');
+      setDbTemplates(data);
+    } catch (err) {
+      console.error('Error loading templates:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDbTemplates();
+  }, [loadDbTemplates]);
+
+  const handleSaveAsTemplate = async () => {
+    const name = prompt(lang === 'es' ? 'Nombre de la plantilla:' : 'Template name:');
+    if (!name) return;
+    
+    setSavingTemplate(true);
+    try {
+      const payload = {
+        name,
+        description: `Template created from event ${eventId}`,
+        sections: sections.map(s => {
+          const copy = { ...s };
+          if (copy.id?.startsWith('temp-')) delete copy.id;
+          return copy;
+        }),
+        isSystem: false
+      };
+      await api.post('/venue-templates', payload);
+      toast.success(lang === 'es' ? 'Plantilla guardada' : 'Template saved');
+      loadDbTemplates();
+    } catch (err) {
+      toast.error('Error saving template');
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
   useEffect(() => {
     if (centeredRef.current) return;
     if (!viewportRef.current) return;
@@ -149,7 +193,7 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
         scale: event.defaultViewZoom
       });
     } else {
-      const scale = 0.55;
+      const scale = 1.0;
       // Center so stage top-center is visible
       viewRef.current = {
         scale,
@@ -233,7 +277,7 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
     const newY = vy + (e.clientY - my);
     
     // Apply boundaries so the user doesn't lose the canvas infinitely
-    const LIMIT = 1200;
+    const LIMIT = 500;
     viewRef.current.x = Math.max(-LIMIT, Math.min(LIMIT, newX));
     viewRef.current.y = Math.max(-LIMIT, Math.min(LIMIT, newY));
     
@@ -286,7 +330,7 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
     const zoomSpeed = 0.001;
     const delta = -e.deltaY * zoomSpeed;
     const oldScale = viewRef.current.scale;
-    const newScale = Math.min(3, Math.max(0.1, oldScale + delta));
+    const newScale = Math.min(3, Math.max(0.35, oldScale + delta));
     
     if (newScale === oldScale) return;
 
@@ -313,12 +357,12 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
   }, [onViewportWheel]);
 
   const zoomIn = () => { viewRef.current.scale = Math.min(3, viewRef.current.scale + 0.1); applyTransform(); };
-  const zoomOut = () => { viewRef.current.scale = Math.max(0.2, viewRef.current.scale - 0.1); applyTransform(); };
+  const zoomOut = () => { viewRef.current.scale = Math.max(0.35, viewRef.current.scale - 0.1); applyTransform(); };
   const resetView = () => {
     if (!viewportRef.current) return;
     const vw = viewportRef.current.clientWidth;
     const vh = viewportRef.current.clientHeight;
-    const scale = 0.55;
+    const scale = 1.0;
     viewRef.current = { scale, x: vw / 2 - (STAGE_X + STAGE_W / 2) * scale, y: vh / 4 - STAGE_Y * scale };
     applyTransform();
   };
@@ -391,6 +435,9 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
       defaultName = lang === 'es' ? 'Nueva Sección' : 'New Section';
     }
 
+    const w = type === 'table' ? 80 : (type === 'stage' ? 400 : 160);
+    const h = type === 'table' ? 80 : (type === 'stage' ? 80 : 100);
+
     const newSection: Partial<VenueSection> = {
       id: `temp-${Date.now()}`,
       eventId,
@@ -400,10 +447,14 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
       seatsPerRow: type === 'table' ? 4 : 10,
       price: type === 'stage' ? 0 : 50,
       color: type === 'stage' ? '#1e293b' : SECTION_COLORS[colorIndex],
-      mapX: STAGE_X + Math.random() * 300 - 150 + STAGE_W / 2,
-      mapY: STAGE_Y + STAGE_H + 80 + sections.length * 30,
-      mapWidth: type === 'table' ? 80 : (type === 'stage' ? 400 : 160),
-      mapHeight: type === 'table' ? 80 : (type === 'stage' ? 80 : 100),
+      mapX: viewportRef.current 
+        ? ((viewportRef.current.clientWidth / 2) - viewRef.current.x) / viewRef.current.scale - (w / 2)
+        : (CANVAS_W / 2) - (w / 2),
+      mapY: viewportRef.current 
+        ? ((viewportRef.current.clientHeight / 2) - viewRef.current.y) / viewRef.current.scale - (h / 2)
+        : (CANVAS_H / 2) - (h / 2),
+      mapWidth: w,
+      mapHeight: h,
       capacity: 0,
     };
     setSections(prev => [...prev, newSection]);
@@ -414,204 +465,12 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
     setSections(prev => prev.map(s => s.id === selectedId ? { ...s, [field]: value } : s));
   };
 
-  const loadTemplate = (type: 'small' | 'large' | 'gala') => {
-    let templateSections: Partial<VenueSection>[] = [];
-    
-    if (type === 'small') {
-      templateSections = [
-        {
-          id: `temp-small-1-${Date.now()}`,
-          eventId,
-          name: lang === 'es' ? 'Platea Central' : 'Center Stalls',
-          sectionType: 'seated' as any,
-          rows: 8,
-          seatsPerRow: 14,
-          price: 60,
-          color: '#3b82f6',
-          mapX: 750,
-          mapY: 200,
-          mapWidth: 500,
-          mapHeight: 180,
-          capacity: 112,
-        },
-        {
-          id: `temp-small-2-${Date.now()}`,
-          eventId,
-          name: lang === 'es' ? 'Platea Izquierda' : 'Left Stalls',
-          sectionType: 'seated' as any,
-          rows: 8,
-          seatsPerRow: 6,
-          price: 40,
-          color: '#10b981',
-          mapX: 430,
-          mapY: 200,
-          mapWidth: 260,
-          mapHeight: 180,
-          curve: 20,
-          capacity: 48,
-        },
-        {
-          id: `temp-small-3-${Date.now()}`,
-          eventId,
-          name: lang === 'es' ? 'Platea Derecha' : 'Right Stalls',
-          sectionType: 'seated' as any,
-          rows: 8,
-          seatsPerRow: 6,
-          price: 40,
-          color: '#10b981',
-          mapX: 1310,
-          mapY: 200,
-          mapWidth: 260,
-          mapHeight: 180,
-          curve: -20,
-          capacity: 48,
-        }
-      ];
-    } else if (type === 'large') {
-      templateSections = [
-        {
-          id: `temp-large-1-${Date.now()}`,
-          eventId,
-          name: lang === 'es' ? 'VIP Golden Circle' : 'VIP Golden Circle',
-          sectionType: 'seated' as any,
-          rows: 4,
-          seatsPerRow: 18,
-          price: 150,
-          color: '#a855f7',
-          mapX: 700,
-          mapY: 180,
-          mapWidth: 600,
-          mapHeight: 110,
-          capacity: 72,
-        },
-        {
-          id: `temp-large-2-${Date.now()}`,
-          eventId,
-          name: lang === 'es' ? 'Platea Principal' : 'Main Orchestra',
-          sectionType: 'seated' as any,
-          rows: 10,
-          seatsPerRow: 22,
-          price: 90,
-          color: '#3b82f6',
-          mapX: 600,
-          mapY: 330,
-          mapWidth: 800,
-          mapHeight: 220,
-          curve: 15,
-          capacity: 220,
-        },
-        {
-          id: `temp-large-3-${Date.now()}`,
-          eventId,
-          name: lang === 'es' ? 'Palco Izquierdo' : 'Left Balcony',
-          sectionType: 'seated' as any,
-          rows: 5,
-          seatsPerRow: 8,
-          price: 110,
-          color: '#f97316',
-          mapX: 200,
-          mapY: 330,
-          mapWidth: 340,
-          mapHeight: 130,
-          curve: 30,
-          capacity: 40,
-        },
-        {
-          id: `temp-large-4-${Date.now()}`,
-          eventId,
-          name: lang === 'es' ? 'Palco Derecho' : 'Right Balcony',
-          sectionType: 'seated' as any,
-          rows: 5,
-          seatsPerRow: 8,
-          price: 110,
-          color: '#f97316',
-          mapX: 1460,
-          mapY: 330,
-          mapWidth: 340,
-          mapHeight: 130,
-          curve: -30,
-          capacity: 40,
-        },
-        {
-          id: `temp-large-5-${Date.now()}`,
-          eventId,
-          name: lang === 'es' ? 'General Entrada Libre' : 'General Admission',
-          sectionType: 'standing' as any,
-          price: 45,
-          color: '#6366f1',
-          mapX: 600,
-          mapY: 600,
-          mapWidth: 800,
-          mapHeight: 180,
-          capacity: 500,
-        }
-      ];
-    } else if (type === 'gala') {
-      const tables: Partial<VenueSection>[] = [];
-      
-      // 4 VIP tables
-      for (let i = 0; i < 4; i++) {
-        tables.push({
-          id: `temp-gala-v-${i}-${Date.now()}`,
-          eventId,
-          name: lang === 'es' ? `Mesa VIP ${i + 1}` : `VIP Table ${i + 1}`,
-          sectionType: 'table' as any,
-          rows: 1,
-          seatsPerRow: 8,
-          price: 200,
-          color: '#ec4899',
-          mapX: 600 + i * 250,
-          mapY: 200,
-          mapWidth: 100,
-          mapHeight: 100,
-          tableShape: 'round',
-          capacity: 8,
-        });
-      }
-      
-      // 5 Gold tables
-      for (let i = 0; i < 5; i++) {
-        tables.push({
-          id: `temp-gala-g-${i}-${Date.now()}`,
-          eventId,
-          name: lang === 'es' ? `Mesa Oro ${String.fromCharCode(65 + i)}` : `Gold Table ${String.fromCharCode(65 + i)}`,
-          sectionType: 'table' as any,
-          rows: 1,
-          seatsPerRow: 6,
-          price: 150,
-          color: '#f59e0b',
-          mapX: 450 + i * 250,
-          mapY: 360,
-          mapWidth: 90,
-          mapHeight: 90,
-          tableShape: 'round',
-          capacity: 6,
-        });
-      }
-      
-      // 4 rectangular tables
-      for (let i = 0; i < 4; i++) {
-        tables.push({
-          id: `temp-gala-r-${i}-${Date.now()}`,
-          eventId,
-          name: lang === 'es' ? `Mesa Rectangular ${i + 1}` : `Rectangular Table ${i + 1}`,
-          sectionType: 'table' as any,
-          rows: 1,
-          seatsPerRow: 10,
-          price: 100,
-          color: '#3b82f6',
-          mapX: 550 + i * 300,
-          mapY: 530,
-          mapWidth: 160,
-          mapHeight: 80,
-          tableShape: 'rectangular',
-          capacity: 10,
-        });
-      }
-      
-      templateSections = tables;
-    }
-    
+  const loadTemplate = (tmpl: any) => {
+    const templateSections = tmpl.sections.map((s: any) => ({
+      ...s,
+      id: `temp-${Math.random().toString(36).substr(2, 9)}`,
+      eventId
+    }));
     setSections(templateSections);
     setShowStage(true);
     setSelectedId(null);
@@ -653,17 +512,42 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
     setSaving(true);
     try {
       const sectPayload = sections.map(s => {
-        const copy = { ...s };
-        if (copy.id?.startsWith('temp-')) delete copy.id;
-        return copy;
+        // Clean the object to ensure only valid fields are sent to the backend
+        // This avoids issues with relations or extra frontend state causing 500 errors
+        const clean: any = {
+          name: s.name || (lang === 'es' ? 'Nueva Sección' : 'New Section'),
+          sectionType: s.sectionType || 'seated',
+          rows: Number(s.rows) || 1,
+          seatsPerRow: Number(s.seatsPerRow) || 1,
+          capacity: Number(s.capacity) || 0,
+          price: Number(s.price) || 0,
+          color: s.color || '#6366f1',
+          mapX: s.mapX ? parseFloat(Number(s.mapX).toFixed(2)) : 0,
+          mapY: s.mapY ? parseFloat(Number(s.mapY).toFixed(2)) : 0,
+          mapWidth: s.mapWidth ? parseFloat(Number(s.mapWidth).toFixed(2)) : 100,
+          mapHeight: s.mapHeight ? parseFloat(Number(s.mapHeight).toFixed(2)) : 100,
+          curve: Number(s.curve) || 0,
+          isWheelchair: !!s.isWheelchair,
+          tableShape: s.tableShape || 'round',
+          seatsConfig: s.seatsConfig || null,
+        };
+        
+        // Only include ID if it's a real database UUID (not a temp one)
+        if (s.id && !s.id.startsWith('temp-')) {
+          clean.id = s.id;
+        }
+        
+        return clean;
       });
+
       const payload = {
         sections: sectPayload,
-        showStage,
-        defaultViewX: customViewport ? customViewport.x : (event?.defaultViewX !== undefined ? event.defaultViewX : null),
-        defaultViewY: customViewport ? customViewport.y : (event?.defaultViewY !== undefined ? event.defaultViewY : null),
-        defaultViewZoom: customViewport ? customViewport.scale : (event?.defaultViewZoom !== undefined ? event.defaultViewZoom : null),
+        showStage: !!showStage,
+        defaultViewX: customViewport ? parseFloat(customViewport.x.toFixed(2)) : (event?.defaultViewX ?? null),
+        defaultViewY: customViewport ? parseFloat(customViewport.y.toFixed(2)) : (event?.defaultViewY ?? null),
+        defaultViewZoom: customViewport ? parseFloat(customViewport.scale.toFixed(4)) : (event?.defaultViewZoom ?? null),
       };
+
       const { data } = await api.post(`/events/${eventId}/sections/bulk`, payload);
       toast.success(lang === 'es' ? 'Mapa guardado correctamente' : 'Map saved successfully');
       onSaved(data);
@@ -692,68 +576,60 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
           </div>
         </div>
         
-        {/* Mobile Tools Toggle */}
-        <button 
-          onClick={() => setMobileToolsOpen(!mobileToolsOpen)}
-          className="lg:hidden text-gray-500 hover:text-gray-900"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
-        </button>
-
-        <div className="hidden lg:flex items-center gap-3">
-          {/* Preset Templates Selector */}
+        <div className="flex items-center gap-2 lg:gap-3">
+          {/* Preset Templates Selector - Now visible on mobile */}
           <div ref={templatesRef} className="relative">
             <button 
               onClick={(e) => { e.stopPropagation(); setTemplatesOpen(!templatesOpen); }}
-              className="bg-white hover:bg-gray-50 text-[#1a73e8] text-xs sm:text-sm font-bold py-1.5 px-4 rounded border border-blue-200 shadow-sm transition-colors flex items-center gap-2"
+              className="bg-white hover:bg-gray-50 text-[#1a73e8] text-xs font-bold py-1.5 px-3 sm:px-4 rounded border border-blue-200 shadow-sm transition-colors flex items-center gap-2"
             >
               <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
-              {lang === 'es' ? 'Plantillas Pre-diseñadas' : 'Pre-designed Templates'}
+              <span className="hidden sm:inline">{lang === 'es' ? 'Plantillas' : 'Templates'}</span>
               <svg className={`w-4 h-4 transition-transform ${templatesOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
             </button>
             <div className={`absolute top-full right-0 mt-1.5 w-64 bg-white border border-gray-200 rounded-lg shadow-xl py-2 z-50 animate-fade-in divide-y divide-gray-100 ${templatesOpen ? 'block' : 'hidden'}`}>
-              <div className="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">{lang === 'es' ? 'Cargar Layout Completo' : 'Load Complete Layout'}</div>
-              <button onClick={() => loadTemplate('small')} className="w-full text-left px-4 py-2.5 hover:bg-blue-50 text-xs font-semibold text-gray-700 flex items-start gap-3 transition-colors">
-                <span className="text-xl">🎪</span>
-                <div>
-                  <div className="font-bold text-gray-900">{lang === 'es' ? 'Teatro Pequeño' : 'Small Theatre'}</div>
-                  <div className="text-[10px] text-gray-400 font-medium">{lang === 'es' ? 'Escenario + 3 Secciones (208 as.)' : 'Stage + 3 Sections (208 seats)'}</div>
+              <div className="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">{lang === 'es' ? 'Plantillas del Sistema' : 'System Templates'}</div>
+              {dbTemplates.length > 0 ? dbTemplates.map(tmpl => (
+                <button key={tmpl.id} onClick={() => loadTemplate(tmpl)} className="w-full text-left px-4 py-2.5 hover:bg-blue-50 text-xs font-semibold text-gray-700 flex items-start gap-3 transition-colors">
+                  <span className="text-xl">🗺️</span>
+                  <div>
+                    <div className="font-bold text-gray-900">{tmpl.name}</div>
+                    <div className="text-[10px] text-gray-400 font-medium">{tmpl.description}</div>
+                  </div>
+                </button>
+              )) : (
+                <div className="px-4 py-3 text-[10px] text-gray-400 italic">{lang === 'es' ? 'No hay plantillas guardadas' : 'No saved templates'}</div>
+              )}
+              
+              {isAdmin && (
+                <div className="pt-2 mt-2 px-2 border-t border-gray-100">
+                  <button 
+                    onClick={handleSaveAsTemplate}
+                    disabled={savingTemplate}
+                    className="w-full py-2 bg-green-50 hover:bg-green-100 text-green-700 rounded text-[10px] font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+                  >
+                    <HiOutlinePlus className="w-3.5 h-3.5" />
+                    {lang === 'es' ? 'Guardar como Plantilla' : 'Save as Template'}
+                  </button>
                 </div>
-              </button>
-              <button onClick={() => loadTemplate('large')} className="w-full text-left px-4 py-2.5 hover:bg-blue-50 text-xs font-semibold text-gray-700 flex items-start gap-3 transition-colors">
-                <span className="text-xl">🏟️</span>
-                <div>
-                  <div className="font-bold text-gray-900">{lang === 'es' ? 'Teatro Grande' : 'Large Theatre'}</div>
-                  <div className="text-[10px] text-gray-400 font-medium">{lang === 'es' ? 'VIP, Palcos laterales, Plateas (872 as.)' : 'VIP, Balconies, Stalls & GA (872 cap.)'}</div>
-                </div>
-              </button>
-              <button onClick={() => loadTemplate('gala')} className="w-full text-left px-4 py-2.5 hover:bg-blue-50 text-xs font-semibold text-gray-700 flex items-start gap-3 transition-colors">
-                <span className="text-xl">🍽️</span>
-                <div>
-                  <div className="font-bold text-gray-900">{lang === 'es' ? 'Cena de Gala' : 'Gala Dinner'}</div>
-                  <div className="text-[10px] text-gray-400 font-medium">{lang === 'es' ? '13 mesas redondas y rect. (102 cap.)' : '13 round & rect. tables (102 cap.)'}</div>
-                </div>
-              </button>
+              )}
             </div>
           </div>
 
-          <button className="text-gray-500 hover:text-gray-800 text-sm font-medium px-3 py-1.5 rounded hover:bg-gray-100 transition-colors">
-            {lang === 'es' ? 'Descartar' : 'Discard'}
-          </button>
-          <button onClick={handleSetDefaultView} className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium py-1.5 px-4 rounded border border-gray-300 shadow-sm transition-colors flex items-center gap-2" title={lang === 'es' ? 'Usa tu zoom y posición actuales para guardar la vista inicial de los clientes' : 'Saves current zoom/position as the starting view for customers'}>
-            <HiOutlineEye className="w-4.5 h-4.5 text-gray-500" />
-            {lang === 'es' ? 'Fijar Vista Inicial' : 'Set Initial View'}
-          </button>
-
-
-
-          <button onClick={handleSave} disabled={saving} className="bg-[#1a73e8] hover:bg-[#1557b0] text-white text-sm font-medium py-1.5 px-5 rounded shadow-sm transition-colors flex items-center gap-2">
+          <button onClick={handleSave} disabled={saving} className="bg-[#1a73e8] hover:bg-[#1557b0] text-white text-xs sm:text-sm font-medium py-1.5 px-3 sm:px-5 rounded shadow-sm transition-colors flex items-center gap-2">
             {saving ? (
               <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
             ) : (
               <HiOutlineSave className="w-4 h-4" />
             )}
-            {lang === 'es' ? 'Guardar' : 'Save'}
+            <span className="hidden xs:inline">{lang === 'es' ? 'Guardar' : 'Save'}</span>
+          </button>
+
+          <button 
+            onClick={() => setMobileToolsOpen(!mobileToolsOpen)}
+            className="lg:hidden p-2 text-gray-500 hover:text-gray-900 bg-gray-50 rounded-lg"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
           </button>
         </div>
       </div>
@@ -770,7 +646,15 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
         />
 
       {/* ── Left Sidebar (Tools - Seats.io Style) ─────────────────────────────────────────────────── */}
-      <div className={`${mobileToolsOpen ? 'flex absolute inset-y-0 left-0 shadow-2xl' : 'hidden'} lg:flex w-[50px] bg-[#f9fafb] border-r border-[#e5e7eb] flex-col shrink-0 z-30 py-4 items-center`}>
+      <div className={`${mobileToolsOpen ? 'flex absolute inset-y-0 left-0 shadow-2xl animate-slide-in-left' : 'hidden'} lg:flex w-[55px] bg-[#f9fafb] border-r border-[#e5e7eb] flex-col shrink-0 z-50 lg:z-30 py-4 items-center`}>
+        {/* Mobile Close Sidebar Button */}
+        <button 
+          onClick={() => setMobileToolsOpen(false)}
+          className="lg:hidden absolute top-2 right-2 p-1 text-gray-400 hover:text-gray-600"
+        >
+          <HiOutlineX className="w-4 h-4" />
+        </button>
+
         <div className="flex flex-col gap-4 w-full px-2">
           <button 
             onClick={() => handleAddSection('seated')} 
@@ -822,8 +706,12 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
                 sectionType: SectionType.SEATED,
                 price: 25,
                 color: SECTION_COLORS[colorIndex],
-                mapX: STAGE_X + STAGE_W / 2,
-                mapY: STAGE_Y + STAGE_H + 80,
+                mapX: viewportRef.current 
+                  ? ((viewportRef.current.clientWidth / 2) - viewRef.current.x) / viewRef.current.scale - 15
+                  : (CANVAS_W / 2) - 15,
+                mapY: viewportRef.current 
+                  ? ((viewportRef.current.clientHeight / 2) - viewRef.current.y) / viewRef.current.scale - 15
+                  : (CANVAS_H / 2) - 15,
                 mapWidth: 30,
                 mapHeight: 30,
                 rows: 1,
@@ -864,11 +752,19 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
 
         {/* ── Right Properties Panel (Seats.io Style Inspector) ─────────────────────────────────── */}
         {selectedSection ? (
-          <div className="absolute top-0 right-0 bottom-0 w-[320px] bg-[#ffffff] border-l border-[#e5e7eb] z-40 overflow-y-auto hidden md:flex flex-col">
+          <div className="absolute inset-y-0 right-0 w-[280px] md:w-[320px] bg-[#ffffff] border-l border-[#e5e7eb] z-[60] md:z-40 overflow-y-auto flex flex-col shadow-2xl md:shadow-none animate-slide-in-right">
             <div className="p-4 border-b border-[#e5e7eb] bg-white flex items-center justify-between sticky top-0 z-10">
-              <div>
-                <h3 className="font-bold text-gray-800 text-[13px] uppercase tracking-wide">{lang === 'es' ? 'Inspector de Objeto' : 'Object Inspector'}</h3>
-                <p className="text-[10px] text-gray-500 font-medium mt-0.5">{selectedSection.id}</p>
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={() => setSelectedId(null)}
+                  className="md:hidden p-1.5 hover:bg-gray-100 rounded-lg text-gray-500"
+                >
+                  <HiOutlineArrowLeft className="w-5 h-5" />
+                </button>
+                <div>
+                  <h3 className="font-bold text-gray-800 text-[13px] uppercase tracking-wide">{lang === 'es' ? 'Inspector de Objeto' : 'Object Inspector'}</h3>
+                  <p className="text-[10px] text-gray-500 font-medium mt-0.5">{selectedSection.id}</p>
+                </div>
               </div>
               <button 
                 onClick={handleDeleteSelected} 
@@ -1166,13 +1062,13 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
       {/* ── Canvas Viewport (Seats.io Light Grid Style) ─────────────────────────────────────────── */}
       <div
         ref={viewportRef}
-        className="flex-1 relative overflow-hidden"
+        className="flex-1 relative overflow-hidden bg-[#f3f4f6]"
         style={{ cursor: 'default', userSelect: 'none', touchAction: 'none' }}
         onPointerDown={onViewportPointerDown}
         onPointerMove={onViewportPointerMove}
         onPointerUp={onViewportPointerUp}
         onPointerLeave={onViewportPointerUp}
-        onClick={() => setSelectedId(null)}
+        onClick={() => { setSelectedId(null); setSelectedSeat(null); }}
       >
         {/* Template Welcome Center Screen for 0 Sections */}
         {sections.length === 0 && !dismissWelcome && (
@@ -1337,8 +1233,8 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
                 onClick={e => { e.stopPropagation(); setSelectedId(sec.id!); }}
                 style={{
                   position: 'absolute',
-                  left: sec.mapX || 0,
-                  top: sec.mapY || (STAGE_Y + STAGE_H + 60),
+                  left: sec.mapX ?? ((CANVAS_W / 2) - (sec.mapWidth || 100) / 2),
+                  top: sec.mapY ?? ((CANVAS_H / 2) - (sec.mapHeight || 100) / 2),
                   width: sec.mapWidth || 100,
                   height: sec.mapHeight || 100,
                   background: isStage ? 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)' : (isStanding ? sec.color : 'transparent'),
@@ -1457,6 +1353,7 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
                           const finalYOffset = seatOverride.yOffset || 0;
                           const isSeatWheelchair = seatOverride.isWheelchair || false;
                           const isDisabled = seatOverride.disabled || false;
+                          const isReserved = seatOverride.reserved || false;
                           const isSeatSelected = selectedSeat?.secId === sec.id && selectedSeat?.seatKey === seatKey;
 
                           return (

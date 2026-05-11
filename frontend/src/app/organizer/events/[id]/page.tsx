@@ -465,6 +465,7 @@ export default function EventDetailPage() {
           eventId={id} 
           initialSections={sections} 
           event={event}
+          isAdmin={user?.role === 'admin'}
           onSaved={(newSections) => {
             setSections(newSections);
           }} 
@@ -847,6 +848,7 @@ export default function EventDetailPage() {
               {/* Cover Image Upload */}
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">{lang === 'es' ? 'Foto de Portada' : 'Cover Image'}</label>
+                <p className="text-[10px] text-gray-400 font-medium mb-1.5">{lang === 'es' ? 'Tamaño recomendado: 1280 x 720 px (16:9)' : 'Recommended size: 1280 x 720 px (16:9)'}</p>
                 
                 {/* Active Preview */}
                 {(imageFile || event.imageUrl) && (
@@ -903,6 +905,7 @@ export default function EventDetailPage() {
               {/* Banner Image Upload */}
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">{lang === 'es' ? 'Foto de Banner de Inicio' : 'Homepage Banner Image'}</label>
+                <p className="text-[10px] text-gray-400 font-medium mb-1.5">{lang === 'es' ? 'Tamaño recomendado: 1920 x 600 px (3:1)' : 'Recommended size: 1920 x 600 px (3:1)'}</p>
 
                 {/* Active Preview */}
                 {(bannerFile || event.bannerImageUrl) && (

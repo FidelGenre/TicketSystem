@@ -6,3 +6,4 @@ export { Order, OrderStatus } from './order.entity';
 export { Ticket, TicketStatus } from './ticket.entity';
 export { EventCategoryEntity } from './event-category.entity';
 export { PaymentMethod, PaymentMethodType } from './payment-method.entity';
+export { VenueTemplate } from './venue-template.entity';
