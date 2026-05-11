@@ -1,6 +1,7 @@
 import {
   Controller, Get, Post, Body, Param, Query,
   UseGuards, Request, RawBodyRequest, Req, Headers, Res,
+  HttpException, HttpStatus,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
@@ -112,18 +113,26 @@ export class OrdersController {
   @Get('ticket/:code/apple-wallet')
   async getAppleWallet(@Param('code') code: string, @Res() res: any) {
     const ticket = await this.ordersService.getTicketByCode(code);
-    const buffer = await this.walletService.generateApplePass(ticket);
-    res.type('application/vnd.apple.pkpass');
-    res.header('Content-Disposition', `attachment; filename=ticket-${code}.pkpass`);
-    res.send(buffer);
+    try {
+      const buffer = await this.walletService.generateApplePass(ticket);
+      res.type('application/vnd.apple.pkpass');
+      res.header('Content-Disposition', `attachment; filename=ticket-${code}.pkpass`);
+      res.send(buffer);
+    } catch (err: any) {
+      res.status(503).send({ message: 'Apple Wallet no está configurado aún. Contacta al soporte.' });
+    }
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Get('ticket/:code/google-wallet')
   async getGoogleWallet(@Param('code') code: string) {
     const ticket = await this.ordersService.getTicketByCode(code);
-    const url = await this.walletService.generateGoogleWalletLink(ticket);
-    return { url };
+    try {
+      const url = await this.walletService.generateGoogleWalletLink(ticket);
+      return { url };
+    } catch (err: any) {
+      throw new HttpException('Google Wallet no está configurado aún. Contacta al soporte.', HttpStatus.SERVICE_UNAVAILABLE);
+    }
   }
 
   // Organizer endpoints
