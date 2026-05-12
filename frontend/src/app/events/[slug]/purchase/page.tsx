@@ -78,6 +78,7 @@ export default function PurchasePage() {
   const [invoice, setInvoice] = useState<InvoiceData | null>(null);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
   const [buying, setBuying] = useState(false);
+  const [hasLoadedSaved, setHasLoadedSaved] = useState(false);
 
   // ── Load event ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -111,7 +112,7 @@ export default function PurchasePage() {
   };
 
   useEffect(() => {
-    if (event?.id && seatMap.length > 0) {
+    if (event?.id && seatMap.length > 0 && !hasLoadedSaved) {
       const saved = localStorage.getItem(`selectedSeats_${event.id}`);
       if (saved) {
         try {
@@ -142,8 +143,9 @@ export default function PurchasePage() {
           }
         } catch (e) {}
       }
+      setHasLoadedSaved(true);
     }
-  }, [event, seatMap]);
+  }, [event, seatMap, hasLoadedSaved]);
 
   // ── Step navigation ────────────────────────────────────────────────────────
   const stepIndex = STEPS.findIndex((s) => s.key === step);
@@ -158,15 +160,9 @@ export default function PurchasePage() {
     setStep('seats');
   };
 
-  const isFirstRender = useRef(true);
-
   // Synchronize state changes to localStorage and dispatch cart-updated
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-    if (!event?.id) return;
+    if (!event?.id || !hasLoadedSaved) return;
 
     const cartData = selectedSeats.map(s => ({
       ...s,
@@ -179,7 +175,7 @@ export default function PurchasePage() {
     }));
     localStorage.setItem(`selectedSeats_${event.id}`, JSON.stringify(cartData));
     window.dispatchEvent(new Event('cart-updated'));
-  }, [selectedSeats, event]);
+  }, [selectedSeats, event, hasLoadedSaved]);
 
   // ── Step 2: toggle seat ────────────────────────────────────────────────────
   const toggleSeats = useCallback((seats: Seat[]) => {

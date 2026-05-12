@@ -61,44 +61,41 @@ export default function EventDetailPage() {
     return Number(section.price || 0);
   };
 
-  const isFirstRender = useRef(true);
-
-  // Load initial seats on mount / preparation
-  useEffect(() => {
-    if (event?.id && seatMap.length > 0) {
-      const saved = localStorage.getItem(`selectedSeats_${event.id}`);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) {
-            const valid = parsed.filter((s: any) => !s.addedAt || (Date.now() - s.addedAt < 10 * 60 * 1000));
-            setSelectedSeats(valid);
-          }
-        } catch (e) {}
-      }
-    }
-  }, [event?.id, seatMap.length]);
-
-  // Synchronize state changes to localStorage and dispatch cart-updated
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-    if (!event?.id) return;
-
-    const cartData = selectedSeats.map(s => ({
-      ...s,
-      addedAt: (s as any).addedAt || Date.now(),
-      eventTitle: event.title,
-      eventSlug: event.slug,
-      eventDate: event.eventDate,
-      venueName: event.venueName,
-      currency: event.currency
-    }));
-    localStorage.setItem(`selectedSeats_${event.id}`, JSON.stringify(cartData));
-    window.dispatchEvent(new Event('cart-updated'));
-  }, [selectedSeats, event]);
+  const [hasLoadedSaved, setHasLoadedSaved] = useState(false);
+ 
+   // Load initial seats on mount / preparation
+   useEffect(() => {
+     if (event?.id && seatMap.length > 0 && !hasLoadedSaved) {
+       const saved = localStorage.getItem(`selectedSeats_${event.id}`);
+       if (saved) {
+         try {
+           const parsed = JSON.parse(saved);
+           if (Array.isArray(parsed)) {
+             const valid = parsed.filter((s: any) => !s.addedAt || (Date.now() - s.addedAt < 10 * 60 * 1000));
+             setSelectedSeats(valid);
+           }
+         } catch (e) {}
+       }
+       setHasLoadedSaved(true);
+     }
+   }, [event?.id, seatMap.length, hasLoadedSaved]);
+ 
+   // Synchronize state changes to localStorage and dispatch cart-updated
+   useEffect(() => {
+     if (!event?.id || !hasLoadedSaved) return;
+ 
+     const cartData = selectedSeats.map(s => ({
+       ...s,
+       addedAt: (s as any).addedAt || Date.now(),
+       eventTitle: event.title,
+       eventSlug: event.slug,
+       eventDate: event.eventDate,
+       venueName: event.venueName,
+       currency: event.currency
+     }));
+     localStorage.setItem(`selectedSeats_${event.id}`, JSON.stringify(cartData));
+     window.dispatchEvent(new Event('cart-updated'));
+   }, [selectedSeats, event, hasLoadedSaved]);
 
   const toggleSeats = (seats: Seat[]) => {
     setSelectedSeats((prev) => {
