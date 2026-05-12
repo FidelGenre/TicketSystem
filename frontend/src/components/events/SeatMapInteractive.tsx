@@ -595,6 +595,9 @@ export default function SeatMapInteractive({
 
                                     if (seat.status === SeatStatus.SOLD || seatOverride.reserved) return;
 
+                                    // If table is whole-only, individual seat clicks are blocked
+                                    if (section.tablePurchaseMode === 'whole') return;
+
                                     // Clicking a seat always toggles just that seat (Individual mode)
                                     onToggleSeats([seat]);
                                   }}
@@ -684,6 +687,9 @@ export default function SeatMapInteractive({
                                     const seatOverride = overrides[seatKey] || {};
 
                                     if (seat.status === SeatStatus.SOLD || seatOverride.reserved) return;
+
+                                    // If table is whole-only, individual seat clicks are blocked
+                                    if (section.tablePurchaseMode === 'whole') return;
 
                                     onToggleSeats([seat]);
                                   }}
