@@ -91,8 +91,8 @@ export class OrdersController {
 
   @UseGuards(AuthGuard('jwt'))
   @Get('my-tickets')
-  getMyTickets(@Request() req: any) {
-    return this.ordersService.getUserTickets(req.user.id);
+  getMyTickets(@Request() req: any, @Query('sessionId') sessionId?: string) {
+    return this.ordersService.getUserTickets(req.user.id, sessionId);
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)

@@ -26,10 +26,10 @@ function SuccessContent() {
         // Wait a bit for the webhook to process
         await new Promise(r => setTimeout(r, 2000));
         
-        const { data: myTickets } = await api.get('/orders/my-tickets');
-        // We find tickets that belong to the recent purchase
-        // In a real app, we'd fetch by sessionId or orderId specifically
-        setTickets(myTickets.slice(0, 5)); // Show recent ones
+        const { data: myTickets } = await api.get('/orders/my-tickets', {
+          params: { sessionId }
+        });
+        setTickets(myTickets); // Show only recent ones from this session
         setLoading(false);
       } catch (err) {
         console.error(err);

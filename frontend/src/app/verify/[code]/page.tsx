@@ -16,9 +16,9 @@ import {
 
 // Wavy line SVG separator component
 const WavySeparator = () => (
-  <svg viewBox="0 0 120 12" className="w-24 h-4 text-primary-500 my-2" fill="none" stroke="currentColor" strokeWidth="2.5">
+  <svg viewBox="0 0 120 12" className="w-24 h-4 text-orange-500 my-2" fill="none" stroke="currentColor" strokeWidth="2.5">
     <path d="M0,6 C10,12 10,0 20,6 C30,12 30,0 40,6 C50,12 50,0 60,6 C70,12 70,0 80,6 C90,12 90,0 100,6 C110,12 110,0 120,6" />
-    <path d="M0,9 C10,15 10,3 20,9 C30,15 30,3 40,9 C50,15 50,3 60,9 C70,15 70,3 80,9 C90,15 90,3 100,9 C110,15 110,3 120,9" stroke="#6366f1" strokeWidth="1.5" />
+    <path d="M0,9 C10,15 10,3 20,9 C30,15 30,3 40,9 C50,15 50,3 60,9 C70,15 70,3 80,9 C90,15 90,3 100,9 C110,15 110,3 120,9" stroke="#f97316" strokeOpacity="0.4" strokeWidth="1.5" />
   </svg>
 );
 
@@ -160,8 +160,8 @@ export default function VerifyTicketPage() {
 
           {/* Right vertical bar */}
           <div className="hidden md:flex print:flex flex-col w-6 print:w-4 h-48 shrink-0 absolute right-0 top-0">
-            <div className="bg-slate-900 h-3/4 w-full"></div>
-            <div className="bg-orange-500 h-1/4 w-full"></div>
+            <div className="bg-orange-600 h-3/4 w-full"></div>
+            <div className="bg-orange-400 h-1/4 w-full"></div>
           </div>
         </div>
 
@@ -181,9 +181,6 @@ export default function VerifyTicketPage() {
             <p><span className="font-bold text-gray-900">PURCHASED BY:</span> {ticket.user?.firstName} {ticket.user?.lastName}</p>
             <p><span className="font-bold text-gray-900">TICKET TYPE:</span> {ticket.sectionName || 'Boleto General'}</p>
             <p><span className="font-bold text-gray-900">ORDER ID:</span> {ticket.orderId}</p>
-            <p className="text-xs text-gray-500 uppercase mt-2 pt-2 border-t border-gray-200">
-              <strong className="text-gray-900">DETAILS:</strong> NOTA: MESA ASIGNADA, ASIENTO POR ORDEN DE LLEGADA O SEGÚN DISPONIBILIDAD.
-            </p>
           </div>
         </div>
 
@@ -192,8 +189,8 @@ export default function VerifyTicketPage() {
           
           {/* Left Vertical Bar */}
           <div className="hidden md:flex print:flex flex-col w-4 print:w-3 h-full min-h-[160px] print:min-h-[120px] shrink-0 absolute left-0 top-8 print:top-4">
-            <div className="bg-orange-500 h-1/6 w-full"></div>
-            <div className="bg-slate-900 h-5/6 w-full"></div>
+            <div className="bg-orange-400 h-1/6 w-full"></div>
+            <div className="bg-orange-600 h-5/6 w-full"></div>
           </div>
 
           {/* Terms */}
@@ -211,13 +208,9 @@ export default function VerifyTicketPage() {
             <div className="space-y-2">
               <div className="flex flex-col gap-0.5 text-orange-500 font-mono font-bold tracking-widest text-[8px] mb-3">
                 <span>≈≈≈≈≈≈≈</span>
-                <span className="text-slate-900">≈≈≈≈≈≈≈</span>
+                <span className="text-orange-600">≈≈≈≈≈≈≈</span>
                 <span>≈≈≈≈≈≈≈</span>
               </div>
-              <p className="text-[11px] text-gray-500 font-medium">Find us on<br/>social media</p>
-              <p className="text-[11px] font-bold text-gray-600 pt-1">f <span className="font-normal text-gray-500">lpticket</span></p>
-              <p className="text-[11px] font-bold text-gray-600">X <span className="font-normal text-gray-500">@lpticket</span></p>
-              <p className="text-[11px] font-bold text-gray-600">ig <span className="font-normal text-gray-500">lptickets</span></p>
             </div>
 
             <div className="text-right md:text-left print:text-left flex flex-col items-end md:items-start print:items-start border-l border-gray-200 pl-4 md:pl-6 print:pl-4 space-y-4 print:space-y-2">

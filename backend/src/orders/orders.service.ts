@@ -451,9 +451,16 @@ export class OrdersService {
     });
   }
 
-  async getUserTickets(userId: string) {
+  async getUserTickets(userId: string, sessionId?: string) {
+    const where: any = { userId };
+    if (sessionId) {
+      const order = await this.orderRepo.findOne({ where: { stripeSessionId: sessionId } });
+      if (order) {
+        where.orderId = order.id;
+      }
+    }
     return this.ticketRepo.find({
-      where: { userId },
+      where,
       relations: ['event'],
       order: { createdAt: 'DESC' },
     });
