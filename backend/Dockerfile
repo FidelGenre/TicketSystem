@@ -1,21 +1,19 @@
-FROM node:18-alpine AS builder
+FROM node:18-slim AS builder
 
-# Instalamos dependencias del sistema necesarias para módulos nativos (sodium-native, bcrypt, etc.)
-RUN apk add --no-cache python3 make g++
+# Instalamos dependencias del sistema para módulos nativos (bcrypt, sodium-native, etc.)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 make g++ \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 COPY package*.json ./
-# Usamos npm ci para una instalación limpia y determinista
 RUN npm install
 
 COPY . .
 RUN npm run build
 
-FROM node:18-alpine
-
-# Instalamos las herramientas mínimas en el runner por si algún módulo las requiere en tiempo de ejecución
-RUN apk add --no-cache python3 make g++
+FROM node:18-slim
 
 WORKDIR /app
 
