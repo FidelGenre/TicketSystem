@@ -73,9 +73,22 @@ export default function HomePage() {
   };
 
   const displayCategories = categories;
-  const filteredEvents = activeCategory
-    ? allEvents.filter((e) => e.category === activeCategory)
-    : allEvents;
+  
+  const filteredEvents = useMemo(() => {
+    let result = activeCategory
+      ? allEvents.filter((e) => e.category === activeCategory)
+      : allEvents;
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(e => 
+        e.title.toLowerCase().includes(q) || 
+        (e.venueName && e.venueName.toLowerCase().includes(q))
+      );
+    }
+
+    return result;
+  }, [allEvents, activeCategory, searchQuery]);
 
   const [sortOpen, setSortOpen] = useState(false);
   const [sortBy, setSortBy] = useState('fecha');
@@ -113,7 +126,7 @@ export default function HomePage() {
             </div>
           </div>
           <div className="flex justify-center gap-1.5 py-4 bg-white max-w-[1400px] mx-auto flex-wrap px-4">
-            {[...Array(20)].map((_, i) => (
+            {[...Array(8)].map((_, i) => (
               <div key={i} className="h-1 w-6 sm:w-8 bg-gray-100 animate-pulse" />
             ))}
           </div>
@@ -144,19 +157,13 @@ export default function HomePage() {
           </div>
           {/* Dashes indicator (mdticket style) */}
           <div className="flex justify-center gap-1.5 py-4 bg-white max-w-[1400px] mx-auto flex-wrap px-4">
-            {bannerEvents.length > 1 ? (
-              bannerEvents.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setCurrentBannerIdx(i)}
-                  className={`h-1 w-6 sm:w-8 transition-colors ${i === currentBannerIdx % bannerEvents.length ? 'bg-primary-500' : 'bg-[#e5d4c8] hover:bg-primary-300'}`}
-                />
-              ))
-            ) : (
-              [...Array(20)].map((_, i) => (
-                <div key={i} className={`h-1 w-6 sm:w-8 ${i === 0 ? 'bg-primary-500' : 'bg-[#e5d4c8]'}`} />
-              ))
-            )}
+            {bannerEvents.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrentBannerIdx(i)}
+                className={`h-1 w-6 sm:w-8 transition-colors ${i === currentBannerIdx % bannerEvents.length ? 'bg-primary-500' : 'bg-[#e5d4c8] hover:bg-primary-300'}`}
+              />
+            ))}
           </div>
         </section>
       ) : null}
