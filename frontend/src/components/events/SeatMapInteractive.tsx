@@ -565,7 +565,7 @@ export default function SeatMapInteractive({
               >
                 {isDecor && (
                   <div className="flex flex-col items-center justify-center p-2 text-center">
-                    <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest break-words leading-tight">
+                    <span className="text-[11px] font-black text-white uppercase tracking-widest break-words leading-tight">
                       {section.name}
                     </span>
                   </div>

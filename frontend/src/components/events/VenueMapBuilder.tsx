@@ -1439,7 +1439,7 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
               >
                 {isDecor && (
                   <div className="flex flex-col items-center justify-center p-2 text-center pointer-events-none">
-                    <span className="text-[11px] font-black text-slate-600 uppercase tracking-widest break-words leading-tight">
+                    <span className="text-[11px] font-black text-white uppercase tracking-widest break-words leading-tight">
                       {sec.name}
                     </span>
                   </div>
