@@ -441,6 +441,9 @@ export class EventsService {
     let maxPrice = -Infinity;
 
     for (const s of finalSections) {
+      // Skip non-purchasable sections
+      if (s.sectionType === 'stage' || s.sectionType === 'decor') continue;
+
       let config: any = {};
       try {
         if (s.seatsConfig) config = JSON.parse(s.seatsConfig);
