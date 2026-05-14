@@ -539,13 +539,15 @@ export default function SeatMapInteractive({
                   background: isStage ? 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)' : (isStanding ? (
                     (() => {
                       const sold = (section.seats || []).filter(s => s.status === SeatStatus.SOLD || s.status === SeatStatus.LOCKED).length;
-                      const total = section.capacity || section.seats?.length || 1;
-                      // Only show gray if actually full, otherwise always use section color
+                      const total = Number(section.capacity) || (section.seats?.length) || 0;
+                      
+                      // If it's a standing section, we prioritize showing the color
+                      // unless it's explicitly sold out (sold >= total and total > 0)
                       if (total > 0 && sold >= total) return '#9ca3af';
-                      return section.color || '#8b5cf6'; // Default to a nice purple if none
+                      return section.color || '#8b5cf6';
                     })()
                   ) : 'transparent'),
-                  opacity: isStanding ? 0.9 : 1,
+                  opacity: isStanding ? (isDimmed ? 0.6 : 1) : 1,
                   borderRadius: isStage ? '0 0 40px 40px' : (isStanding ? 8 : (isTable && tableShape === 'round') ? '50%' : 4),
                   zIndex: isFocused ? 30 : (isStage ? 5 : 10),
                   boxShadow: isStage ? '0 0 20px rgba(59, 130, 246, 0.4)' : (isStanding ? '0 4px 10px rgba(0,0,0,0.08)' : 'none'),

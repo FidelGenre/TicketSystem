@@ -218,7 +218,7 @@ export default function EventDetailPage() {
           {/* Seat Map */}
           {seatMap.length > 0 && (
             <div className="border border-gray-200 rounded-lg bg-white shadow-sm overflow-hidden">
-              <div className="font-bold text-lg text-gray-900 p-6 border-b border-gray-100 bg-gray-50/50">
+              <div className="font-bold text-base sm:text-lg text-gray-900 py-3 px-6 border-b border-gray-100 bg-gray-50/50">
                 <span>{lang === 'es' ? 'Selecciona tus asientos' : 'Select your seats'}</span>
               </div>
               <div className="p-6">
