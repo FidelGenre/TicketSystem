@@ -125,7 +125,7 @@ export default function VerifyTicketPage() {
         </button>
       </div>
       {/* Actual Physical-Style Digital Ticket */}
-      <div className="w-full max-w-[850px] bg-white shadow-2xl md:p-12 p-6 relative overflow-hidden print:shadow-none print:border-none print:p-0 print:scale-[0.85] print:origin-top-left mx-auto font-sans print:break-inside-avoid">
+      <div className="w-full max-w-[850px] bg-white shadow-2xl md:p-12 p-6 relative overflow-hidden print:shadow-none print:border-none print:p-0 mx-auto font-sans print:break-inside-avoid print:w-[800px] print:max-w-[800px]">
         
         {/* TOP SECTION */}
         <div className="flex flex-col md:flex-row print:flex-row items-start gap-8 print:gap-4 relative">

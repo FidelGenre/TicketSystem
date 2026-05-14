@@ -210,6 +210,11 @@ function DashboardPageBody() {
                       </p>
                     )}
                     <p className="font-mono text-xs text-primary-600">{t('clientCode')}: {ticket.ticketCode}</p>
+                    {ticket.createdAt && (
+                      <p className="text-[10px] text-gray-400 font-medium pt-1">
+                        🕒 {lang === 'es' ? 'Adquirido el' : 'Purchased on'}: {format(new Date(ticket.createdAt), "dd MMM yyyy — hh:mm a", { locale: dateFnsLocale })}
+                      </p>
+                    )}
                   </div>
                   {ticket.qrData && (
                     <div className="flex justify-center pt-1">
