@@ -555,7 +555,6 @@ export default function SeatMapInteractive({
                     })()
                   ) : 'transparent'),
                   opacity: isStanding ? 0.9 : 1,
-                  border: isStage ? '2.5px solid #3b82f6' : 'none',
                   borderRadius: isStage ? '0 0 40px 40px' : (isStanding ? 8 : (isTable && tableShape === 'round') ? '50%' : 4),
                   zIndex: isFocused ? 30 : (isStage ? 5 : 10),
                   boxShadow: isStage ? '0 0 20px rgba(59, 130, 246, 0.4)' : (isStanding ? '0 4px 10px rgba(0,0,0,0.08)' : 'none'),
