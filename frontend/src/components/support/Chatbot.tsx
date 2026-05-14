@@ -8,9 +8,9 @@ import {
   HiXMark, 
   HiPaperAirplane,
   HiOutlineSparkles,
-  HiOutlineUser,
-  HiOutlineSupport
+  HiOutlineUser
 } from 'react-icons/hi2';
+import { HiOutlineSupport } from 'react-icons/hi';
 
 interface Message {
   role: 'user' | 'assistant';
