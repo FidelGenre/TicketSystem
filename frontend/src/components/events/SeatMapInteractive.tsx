@@ -747,19 +747,29 @@ export default function SeatMapInteractive({
                             const isSeatWheelchair = seatOverride.isWheelchair || false;
 
                             return (
-                              <div key={seat.id} className="absolute w-[16%] h-[16%]" style={{
+                              <div key={seat.id} className="absolute w-[22%] h-[22%]" style={{
                                 left: `${x}%`,
                                 top: `${y}%`,
                                 transform: `translate(-50%, -50%) translate(${finalXOffset}px, ${finalYOffset}px)`,
-                                zIndex: 20
+                                zIndex: 40
                               }}>
+                                {/* Larger invisible hitbox */}
+                                <div 
+                                  className="absolute inset-[-4px] cursor-pointer z-0" 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (isSeatUnavailable(seat, seatOverride)) return;
+                                    onToggleSeats([seat]);
+                                  }}
+                                />
                                 <button
-                                  className="w-full h-full rounded-full border-[1.5px] shadow-sm hover:scale-125 transition-transform box-border flex items-center justify-center text-white"
+                                  className="relative w-full h-full rounded-full border-[2px] shadow-sm hover:scale-125 transition-transform box-border flex items-center justify-center text-white z-10"
                                   style={{
                                     backgroundColor: getSeatBg(seat, seatOverride, section.color, isSeatWheelchair, selected),
                                     borderColor: getSeatBorder(seat, seatOverride, section.color, isSeatWheelchair, selected),
                                     boxShadow: getSeatShadow(seat, seatOverride, section.color, selected),
                                     cursor: isSeatUnavailable(seat, seatOverride) && !selected ? 'not-allowed' : 'pointer',
+                                    pointerEvents: 'auto'
                                   }}
                                   onClick={(e) => {
                                     e.stopPropagation();
