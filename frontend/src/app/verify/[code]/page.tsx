@@ -101,6 +101,7 @@ export default function VerifyTicketPage() {
   const isCancelled = ticket.status === 'cancelled';
   const isActive = ticket.status === 'active';
 
+  return (
     <div className="min-h-screen py-10 px-4 bg-slate-50 flex flex-col items-center justify-center print:bg-white print:py-0 print:px-0 print:min-h-0 print:block">
       <style>{`
         @media print {
