@@ -530,7 +530,7 @@ export default function SeatMapInteractive({
             return (
               <div 
                 key={section.id} 
-                className={`absolute flex flex-col items-center justify-center transition-opacity duration-300 ${isDimmed ? 'opacity-30 pointer-events-none' : 'opacity-100'} ${focusedSection === null ? 'cursor-pointer hover:ring-2 hover:ring-offset-2 hover:ring-primary-500' : ''}`}
+                className={`absolute flex flex-col items-center justify-center transition-opacity duration-300 ${isDimmed ? (isStanding ? 'opacity-60 pointer-events-none' : 'opacity-20 pointer-events-none') : 'opacity-100'} ${focusedSection === null ? 'cursor-pointer hover:ring-2 hover:ring-offset-2 hover:ring-primary-500' : ''}`}
                 style={{
                   left: section.mapX || 0,
                   top: section.mapY || 0,
@@ -540,18 +540,15 @@ export default function SeatMapInteractive({
                     (() => {
                       const sold = (section.seats || []).filter(s => s.status === SeatStatus.SOLD || s.status === SeatStatus.LOCKED).length;
                       const total = Number(section.capacity) || (section.seats?.length) || 0;
-                      
-                      // Only show gray if truly at capacity, otherwise use vibrant section color
                       if (total > 0 && sold >= total) return '#9ca3af';
                       return section.color || '#8b5cf6';
                     })()
                   ) : (isDecor ? section.color || '#f8fafc' : undefined)),
                   background: isStage ? 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)' : undefined,
-                  opacity: isStanding ? (isFocused ? 1 : (isDimmed ? 0.8 : 1)) : 1,
                   borderRadius: isStage ? '0 0 40px 40px' : (isStanding ? 8 : (isTable && tableShape === 'round') ? '50%' : 4),
                   zIndex: isFocused ? 30 : (isStage ? 5 : 10),
-                  boxShadow: isStage ? '0 0 20px rgba(59, 130, 246, 0.4)' : (isStanding ? '0 4px 10px rgba(0,0,0,0.08)' : 'none'),
-                  border: isDecor ? '1px solid #cbd5e1' : (isStage ? '2.5px solid #3b82f6' : 'none'),
+                  boxShadow: isStage ? '0 0 20px rgba(59, 130, 246, 0.4)' : (isStanding ? `0 4px 15px ${section.color || '#8b5cf6'}44` : 'none'),
+                  border: isDecor ? '1px solid #cbd5e1' : (isStage ? '2.5px solid #3b82f6' : (isStanding ? `2px solid ${section.color || '#8b5cf6'}` : 'none')),
                 }}
                 onClick={() => !isStage && !isDecor && handleSectionClick(section as VenueSection)}
               >
