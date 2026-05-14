@@ -44,9 +44,11 @@ export default function SeatMapInteractive({
   const dragStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const sections = filterSectionId
-    ? seatMap.filter((s) => s.id === filterSectionId)
-    : seatMap;
+  const sections = useCallback(() => {
+    return filterSectionId
+      ? seatMap.filter((s) => s.id === filterSectionId)
+      : seatMap;
+  }, [seatMap, filterSectionId])();
 
   const isSeatSelected = (id: string) => selectedSeats.some((s) => s.id === id);
 
@@ -584,18 +586,15 @@ export default function SeatMapInteractive({
                 )}
 
                 {isTable ? (() => {
-                  const overrides = (() => {
-                    try {
-                      return section.seatsConfig ? JSON.parse(section.seatsConfig) : {};
-                    } catch (e) {
-                      return {};
-                    }
-                  })();
+                  let overrides = {};
+                  try {
+                    overrides = section.seatsConfig ? JSON.parse(section.seatsConfig) : {};
+                  } catch (e) {}
 
                   const allTableSeats = section.seats || [];
                   const isTableFullyUnavailable = allTableSeats.length > 0 && allTableSeats.every(s => {
                     const k = `seat-${s.seatNumber}`;
-                    return isSeatUnavailable(s, overrides[k]);
+                    return isSeatUnavailable(s, overrides[k as keyof typeof overrides]);
                   });
                   const tableCenterBg = isTableFullyUnavailable ? '#e5e7eb' : '#fff';
                   const tableCenterBorder = isTableFullyUnavailable ? '#9ca3af' : section.color;
@@ -633,7 +632,7 @@ export default function SeatMapInteractive({
                           {section.seats?.map((seat, i) => {
                             const seatNumber = seat.seatNumber;
                             const seatKey = `seat-${seatNumber}`;
-                            const seatOverride = overrides[seatKey] || {};
+                            const seatOverride: any = (overrides as any)[seatKey] || {};
                             if (seatOverride.disabled) return null; // Completely hide disabled seats
 
                             const angle = (i * 360) / section.seats!.length;
@@ -816,15 +815,12 @@ export default function SeatMapInteractive({
                   </div>
                 ) : (
                   // Curved Seated Block
-                  <div className="absolute inset-0 pointer-events-none">
+                   <div className="absolute inset-0 pointer-events-none">
                     {(() => {
-                      const overrides = (() => {
-                        try {
-                          return section.seatsConfig ? JSON.parse(section.seatsConfig) : {};
-                        } catch (e) {
-                          return {};
-                        }
-                      })();
+                      let overrides = {};
+                      try {
+                        overrides = section.seatsConfig ? JSON.parse(section.seatsConfig) : {};
+                      } catch (e) {}
 
                       return section.seats?.map((seat) => {
                         const rowLabel = seat.rowLabel;
@@ -901,15 +897,7 @@ export default function SeatMapInteractive({
                   </div>
                 )}
 
-                 {/* Tooltip */}
-                 {section.seats?.map(seat => hoveredSeat === seat.id && (
-                   <div key={`tt-${seat.id}`} className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full mb-2 z-50 bg-black text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg whitespace-nowrap pointer-events-none border border-white/10">
-                     <span style={{ color: section.color }}>{section.name}</span><br />
-                     Fila {seat.rowLabel}, Asiento {seat.seatNumber} — ${getSeatPrice(seat, section).toFixed(2)}
-                   </div>
-                 ))}
-
-                 {hoveredTable === section.id && (
+                  {hoveredTable === section.id && (
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-gray-900/95 text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-2xl whitespace-nowrap pointer-events-none border border-white/20 backdrop-blur-sm scale-110">
                       ✨ {lang === 'es' ? 'Seleccionar Mesa Completa' : 'Select Whole Table'}
                     </div>
@@ -917,6 +905,40 @@ export default function SeatMapInteractive({
               </div>
             );
           })}
+
+          {/* Global Seat Tooltip (Single Render instead of map-in-map) */}
+          {(() => {
+            if (!hoveredSeat) return null;
+            let foundSeat: Seat | null = null;
+            let foundSection: VenueSection | null = null;
+            for (const sec of sections) {
+              const s = sec.seats?.find(st => st.id === hoveredSeat);
+              if (s) { foundSeat = s; foundSection = sec; break; }
+            }
+            if (!foundSeat || !foundSection) return null;
+
+            return (
+              <div 
+                className="absolute z-[100] bg-black/90 text-white text-[11px] font-bold px-3 py-2 rounded-xl shadow-2xl whitespace-nowrap pointer-events-none border border-white/10 backdrop-blur-md animate-in fade-in zoom-in-95 duration-100"
+                style={{
+                  left: (foundSection.mapX || 0) + (foundSection.mapWidth || 0) / 2,
+                  top: (foundSection.mapY || 0) - 10,
+                  transform: 'translate(-50%, -100%)'
+                }}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: foundSection.color }} />
+                  <span className="opacity-70 uppercase tracking-widest text-[9px]">{foundSection.name}</span>
+                </div>
+                <div className="text-sm">
+                  {lang === 'es' ? 'Fila' : 'Row'} {foundSeat.rowLabel}, {lang === 'es' ? 'Asiento' : 'Seat'} {foundSeat.seatNumber}
+                </div>
+                <div className="text-primary-400 mt-1 font-black text-xs">
+                  ${getSeatPrice(foundSeat, foundSection).toFixed(2)}
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Sticky Bottom Toolbar (Seats.io Style) */}
