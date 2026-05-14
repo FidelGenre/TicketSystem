@@ -1676,20 +1676,22 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
                 )}
 
                 {/* Section Label overlay */}
-                <div className="relative z-10 flex flex-col items-center justify-center pointer-events-none">
-                  <span style={{ 
-                    fontWeight: 800, 
-                    fontSize: 12, 
-                    textAlign: 'center', 
-                    color: isStanding ? '#fff' : '#1e293b', 
-                    backgroundColor: isStanding ? 'transparent' : 'rgba(255,255,255,0.9)', 
-                    padding: '2px 8px', 
-                    borderRadius: '12px',
-                    boxShadow: isStanding ? 'none' : '0 2px 5px rgba(0,0,0,0.1)',
-                  }}>
-                    {sec.name}
-                  </span>
-                </div>
+                {!isStage && !isDecor && (
+                  <div className="relative z-10 flex flex-col items-center justify-center pointer-events-none">
+                    <span style={{ 
+                      fontWeight: 800, 
+                      fontSize: 12, 
+                      textAlign: 'center', 
+                      color: isStanding ? '#fff' : '#1e293b', 
+                      backgroundColor: isStanding ? 'transparent' : 'rgba(255,255,255,0.9)', 
+                      padding: '2px 8px', 
+                      borderRadius: '12px',
+                      boxShadow: isStanding ? 'none' : '0 2px 5px rgba(0,0,0,0.1)',
+                    }}>
+                      {sec.name}
+                    </span>
+                  </div>
+                )}
 
                 {/* Resize Handle */}
                 {isSelected && (
