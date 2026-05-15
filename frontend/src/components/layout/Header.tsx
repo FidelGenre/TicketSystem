@@ -362,7 +362,7 @@ export default function Header() {
                   setCartDropdown(false);
                   router.push(`/events/${cartItems[0].eventSlug}/purchase`);
                 }}
-                className="w-full py-3 bg-blue-700 hover:bg-blue-800 text-white font-black text-xs rounded-xl shadow-lg shadow-blue-600/10 transition-transform active:scale-[0.98] uppercase tracking-widest mt-2"
+                className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-black text-xs rounded-xl shadow-lg shadow-orange-500/10 transition-transform active:scale-[0.98] uppercase tracking-widest mt-2"
               >
                 {lang === 'es' ? 'Continuar Compra' : 'Checkout'}
               </button>

@@ -166,7 +166,7 @@ export default function Chatbot() {
               <button
                 type="submit"
                 disabled={!input.trim() || isLoading}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-blue-600 text-white rounded-xl flex items-center justify-center hover:bg-blue-700 disabled:opacity-50 disabled:grayscale transition-all"
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-orange-500 text-white rounded-xl flex items-center justify-center hover:bg-orange-600 disabled:opacity-50 disabled:grayscale transition-all"
               >
                 <HiPaperAirplane className="w-4 h-4" />
               </button>
