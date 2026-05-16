@@ -328,19 +328,28 @@ export default function Header() {
               </button>
             </div>
 
-            {/* SCAN Button Orange */}
-            {isAuthenticated && (
+            {/* 2. SCAN Button (if Auth) or Login Button (if Guest) */}
+            {isAuthenticated ? (
               <Link
                 href="/verify"
                 onClick={() => setMobileMenuOpen(false)}
-                className="h-9 px-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg flex items-center gap-2 transition-all shadow-md active:scale-95"
+                className="h-9 px-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg flex items-center gap-2 transition-all shadow-md active:scale-95 shrink-0"
               >
                 <HiOutlineQrcode className="w-4 h-4" />
                 <span className="text-[11px] font-black uppercase tracking-wider">SCAN</span>
               </Link>
+            ) : (
+              <Link 
+                href="/login" 
+                onClick={() => setMobileMenuOpen(false)}
+                className="h-9 px-3 border border-blue-600 text-blue-600 hover:bg-blue-50 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all text-center flex items-center justify-center shrink-0"
+              >
+                {t('login')}
+              </Link>
             )}
 
-            <button className="p-1 text-blue-600" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            {/* Menu Toggle */}
+            <button className="p-1 text-blue-600 ml-1" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
               {mobileMenuOpen ? <HiOutlineX className="w-8 h-8" /> : <HiOutlineMenu className="w-8 h-8" />}
             </button>
           </div>
