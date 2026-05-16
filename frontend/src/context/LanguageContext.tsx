@@ -7,7 +7,7 @@ export type Lang = 'es' | 'en';
 const translations = {
   es: {
     // Navbar
-    whoWeAre: 'Quiéne Somos',
+    whoWeAre: 'Quiénes Somos',
     contact: 'Contacto',
     support: 'Soporte',
     login: 'INICIAR SESIÓN',
