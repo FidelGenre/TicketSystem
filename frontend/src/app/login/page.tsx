@@ -79,7 +79,12 @@ function LoginContent() {
           <p className="text-gray-500 text-sm mt-1">{t('loginSubtitle')}</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-3xl shadow-[0_10px_40px_rgba(0,0,0,0.03)] border border-gray-100 p-6 sm:p-8 space-y-5">
+        <form 
+          onSubmit={handleSubmit} 
+          method="POST"
+          action="#"
+          className="bg-white rounded-3xl shadow-[0_10px_40px_rgba(0,0,0,0.03)] border border-gray-100 p-6 sm:p-8 space-y-5"
+        >
           {error && (
             <div className="p-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm text-center font-medium">{error}</div>
           )}
