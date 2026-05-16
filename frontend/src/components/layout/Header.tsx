@@ -399,6 +399,13 @@ export default function Header() {
                   </Link>
                 )}
 
+                {user?.role === 'admin' && (
+                  <Link href="/admin" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-3 text-red-600 font-bold text-[15px] hover:bg-red-50 rounded-lg transition-colors border-t border-gray-50 mt-1">
+                    <HiOutlineCog className="w-5 h-5 opacity-60" />
+                    {t('adminPanel') || 'Admin Panel'}
+                  </Link>
+                )}
+
                 <button 
                   onClick={() => { logout(); setMobileMenuOpen(false); }} 
                   className="flex items-center gap-3 w-full px-3 py-3 text-red-600 font-bold text-[15px] hover:bg-red-50 rounded-lg transition-colors"
