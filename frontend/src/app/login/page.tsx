@@ -92,7 +92,7 @@ function LoginContent() {
                 id="email"
                 name="email"
                 type="email" 
-                autocomplete="email"
+                autoComplete="email"
                 value={email} 
                 onChange={(e) => setEmail(e.target.value)} 
                 className="input !pl-11" 
@@ -113,7 +113,7 @@ function LoginContent() {
                 id="password"
                 name="password"
                 type={showPassword ? 'text' : 'password'} 
-                autocomplete="current-password"
+                autoComplete="current-password"
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
                 className="input !pl-11 !pr-11" 
