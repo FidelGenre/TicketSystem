@@ -14,6 +14,11 @@ import {
 import Link from 'next/link';
 import VenueMapBuilder from '@/components/events/VenueMapBuilder';
 
+const buildLocalEventDate = (date: string, time: string) => {
+  const safeTime = time || '00:00';
+  return new Date(`${date}T${safeTime}:00`).toISOString();
+};
+
 export default function CreateEventPage() {
   const router = useRouter();
   const { t, lang } = useLang();
@@ -28,6 +33,7 @@ export default function CreateEventPage() {
     venueName: '',
     venueAddress: '',
     eventDate: '',
+    eventTime: '',
     doorsOpen: '',
   });
   const [step, setStep] = useState<1 | 2>(1);
@@ -70,13 +76,14 @@ export default function CreateEventPage() {
       // Clean up empty optional fields
       const payload: any = { ...form, hasSeatMap: true };
       if (form.eventDate) {
-        payload.eventDate = new Date(`${form.eventDate}T00:00:00`).toISOString();
+        payload.eventDate = buildLocalEventDate(form.eventDate, form.eventTime);
       }
       if (form.doorsOpen) {
         payload.doorsOpen = new Date(`${form.eventDate}T${form.doorsOpen}:00`).toISOString();
       } else {
         delete payload.doorsOpen;
       }
+      delete payload.eventTime;
       if (!payload.description) delete payload.description;
       if (!payload.venueAddress) delete payload.venueAddress;
 
@@ -170,7 +177,7 @@ export default function CreateEventPage() {
                 </div>
 
                 {/* Category + Venue */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">{t('orgCategory')} *</label>
                     <select value={form.category} onChange={(e) => updateForm('category', e.target.value)} className="input py-3">
@@ -218,6 +225,16 @@ export default function CreateEventPage() {
                           e.currentTarget.blur();
                         }
                       }}
+                      className="input py-3"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">{lang === 'es' ? 'Hora del evento *' : 'Event Time *'}</label>
+                    <input
+                      type="time"
+                      value={form.eventTime}
+                      onChange={(e) => updateForm('eventTime', e.target.value)}
                       className="input py-3"
                       required
                     />

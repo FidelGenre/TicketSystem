@@ -43,6 +43,30 @@ interface Attendee {
   user?: { firstName: string; lastName: string; email: string };
 }
 
+const formatDateInput = (value?: string) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value.substring(0, 10);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const formatTimeInput = (value?: string) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
+};
+
+const buildLocalEventDate = (date: string, time: string) => {
+  const safeTime = time || '00:00';
+  return new Date(`${date}T${safeTime}:00`).toISOString();
+};
+
 export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuthStore();
@@ -67,6 +91,7 @@ export default function EventDetailPage() {
     description: '',
     venueName: '',
     eventDate: '',
+    eventTime: '',
     category: '',
     hasSeatMap: false,
     bannerPosition: 'center',
@@ -88,7 +113,8 @@ export default function EventDetailPage() {
         title: ev.title || '',
         description: ev.description || '',
         venueName: ev.venueName || '',
-        eventDate: ev.eventDate ? ev.eventDate.substring(0, 10) : '',
+        eventDate: formatDateInput(ev.eventDate),
+        eventTime: formatTimeInput(ev.eventDate),
         category: ev.category || '',
         hasSeatMap: ev.hasSeatMap || false,
         bannerPosition: ev.bannerPosition || 'center',
@@ -194,7 +220,7 @@ export default function EventDetailPage() {
         title: editForm.title,
         description: editForm.description,
         venueName: editForm.venueName,
-        eventDate: new Date(`${editForm.eventDate}T00:00:00`).toISOString(),
+        eventDate: buildLocalEventDate(editForm.eventDate, editForm.eventTime),
         category: editForm.category,
         hasSeatMap: true,
         bannerPosition: editForm.bannerPosition,
@@ -847,7 +873,7 @@ export default function EventDetailPage() {
             </div>
 
             {/* Row: Category & Date */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">{lang === 'es' ? 'Categoría' : 'Category'}</label>
                 <select
@@ -875,6 +901,17 @@ export default function EventDetailPage() {
                       e.currentTarget.blur();
                     }
                   }}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-1 focus:ring-primary-500 text-sm focus:border-primary-500 focus:outline-none"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">{lang === 'es' ? 'Hora del Evento' : 'Event Time'}</label>
+                <input
+                  type="time"
+                  value={editForm.eventTime}
+                  onChange={(e) => setEditForm({ ...editForm, eventTime: e.target.value })}
                   className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-1 focus:ring-primary-500 text-sm focus:border-primary-500 focus:outline-none"
                   required
                 />
