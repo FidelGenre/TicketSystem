@@ -1,5 +1,8 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Event, EventStatus } from '../database/entities';
 import OpenAI from 'openai';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -15,7 +18,11 @@ export class AiSupportService implements OnModuleInit {
   private systemPrompt: string;
   private readonly logger = new Logger(AiSupportService.name);
 
-  constructor(private configService: ConfigService) {}
+  constructor(
+    private configService: ConfigService,
+    @InjectRepository(Event)
+    private readonly eventRepo: Repository<Event>,
+  ) {}
 
   /**
    * onModuleInit
@@ -56,9 +63,69 @@ export class AiSupportService implements OnModuleInit {
   }
 
   /**
+   * getUpcomingEventsPromptContext
+   * Dynamically queries the PostgreSQL database for all future published events.
+   * Formats the response with event dates, category, locations, starting prices,
+   * and clean purchase markdown links so the AI can direct users to buy tickets.
+   */
+  private async getUpcomingEventsPromptContext(): Promise<string> {
+    try {
+      const { MoreThanOrEqual } = require('typeorm');
+      const events = await this.eventRepo.find({
+        where: {
+          status: EventStatus.PUBLISHED,
+          eventDate: MoreThanOrEqual(new Date()),
+        },
+        order: { eventDate: 'ASC' },
+      });
+
+      if (events.length === 0) {
+        return '\n\nActualmente no hay eventos próximos publicados en el sistema.';
+      }
+
+      const appUrl = (this.configService.get<string>('APP_URL') || 'https://lpticket.com').replace(/\/$/, '');
+
+      let context = '\n\n==================================================\n';
+      context += 'DATOS EN TIEMPO REAL - EVENTOS PRÓXIMOS EN LPTICKET:\n';
+      context += 'Usa la siguiente lista exacta para recomendar y responder al usuario. Cuando el usuario pregunte por un evento o por los eventos de un mes específico (ej. "eventos de mayo", "concierto", etc.), descríbele los detalles e INCLUYE OBLIGATORIAMENTE el enlace Markdown exacto para comprar entradas:\n\n';
+
+      events.forEach(event => {
+        const dateObj = new Date(event.eventDate);
+        const dateStr = dateObj.toLocaleDateString('es-ES', { 
+          weekday: 'long', 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric', 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
+        
+        // Month helper for the AI to filter easily
+        const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+        const monthName = months[dateObj.getMonth()];
+
+        const eventUrl = `${appUrl}/events/${event.slug}`;
+        
+        context += `- **Nombre**: "${event.title}"\n`;
+        context += `  * Categoría: ${event.category || 'General'}\n`;
+        context += `  * Fecha y Hora: ${dateStr} (Mes: ${monthName})\n`;
+        context += `  * Lugar/Recinto: ${event.venueName || 'Por confirmar'}\n`;
+        context += `  * Precio mínimo: $${event.minPrice || 0} ${event.currency || 'USD'}\n`;
+        context += `  * Enlace directo para comprar: [Comprar entradas para ${event.title}](${eventUrl})\n\n`;
+      });
+      context += '==================================================\n';
+
+      return context;
+    } catch (error) {
+      this.logger.error('Error fetching upcoming events for chatbot context:', error);
+      return '';
+    }
+  }
+
+  /**
    * generateResponse
    * Interacts with OpenAI's Chat Completion API.
-   * Uses gpt-4o-mini for a balance between speed, cost, and high-quality responses.
+   * Uses gpt-4o-mini with real-time PostgreSQL events context for up-to-date recommendations.
    * 
    * @param messages Conversation history including the latest user query
    */
@@ -71,44 +138,33 @@ export class AiSupportService implements OnModuleInit {
     }
 
     try {
-      // Use the newly published OpenAI managed Prompt version 1
-      const response = await (this.openai as any).responses.create({
-        prompt: {
-          id: 'pmpt_6a09f0196fb08193924d13ec1625b77f03192ec2a5d502da',
-          version: '1'
-        },
-        input: messages
+      // Reload system instructions from text file to support hot-updates
+      this.loadSystemPrompt();
+
+      // Retrieve dynamic real-time event catalog
+      const eventsContext = await this.getUpcomingEventsPromptContext();
+      const fullSystemPrompt = `${this.systemPrompt || 'You are a helpful support assistant for LPTicket.com.'}${eventsContext}`;
+
+      const response = await this.openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: fullSystemPrompt },
+          ...messages
+        ],
+        temperature: 0.7,
+        max_tokens: 600,
       });
 
       return {
-        content: response.output_text,
+        content: response.choices[0].message.content,
         error: false
       };
     } catch (err) {
-      this.logger.warn('Error calling OpenAI Responses API, falling back to Chat Completions:', err);
-      try {
-        // Fallback to local instruction prompt in case of API endpoint issues or version mismatches
-        const fallbackResponse = await this.openai.chat.completions.create({
-          model: 'gpt-4o-mini',
-          messages: [
-            { role: 'system', content: this.systemPrompt || 'You are a helpful support assistant for LPTicket.com.' },
-            ...messages
-          ],
-          temperature: 0.7,
-          max_tokens: 500,
-        });
-
-        return {
-          content: fallbackResponse.choices[0].message.content,
-          error: false
-        };
-      } catch (fallbackErr) {
-        this.logger.error('Fallback OpenAI Chat Completions failed:', fallbackErr);
-        return {
-          content: 'Lo siento, hubo un error al procesar tu solicitud. Por favor intenta de nuevo más tarde.',
-          error: true
-        };
-      }
+      this.logger.error('OpenAI Chat Completions failed:', err);
+      return {
+        content: 'Lo siento, hubo un error al procesar tu solicitud. Por favor intenta de nuevo más tarde.',
+        error: true
+      };
     }
   }
 }
