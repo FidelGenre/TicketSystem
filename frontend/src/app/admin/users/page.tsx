@@ -21,6 +21,7 @@ import {
   HiOutlineCalendar,
   HiOutlineTicket,
   HiOutlinePencil,
+  HiOutlineUserAdd,
 } from 'react-icons/hi';
 
 export default function AdminUsersPage() {
@@ -43,6 +44,18 @@ export default function AdminUsersPage() {
   const [editPhone, setEditPhone] = useState('');
   const [editAddress, setEditAddress] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
+
+  // User Profile Creation states
+  const [isCreating, setIsCreating] = useState(false);
+  const [createFirstName, setCreateFirstName] = useState('');
+  const [createLastName, setCreateLastName] = useState('');
+  const [createUsername, setCreateUsername] = useState('');
+  const [createEmail, setCreateEmail] = useState('');
+  const [createPassword, setCreatePassword] = useState('');
+  const [createRole, setCreateRole] = useState('client');
+  const [createPhone, setCreatePhone] = useState('');
+  const [createAddress, setCreateAddress] = useState('');
+  const [creatingLoading, setCreatingLoading] = useState(false);
 
   const handleSelectUser = async (u: User) => {
     setSelectedUser(u);
@@ -92,6 +105,47 @@ export default function AdminUsersPage() {
       toast.error(err.response?.data?.message || (lang === 'es' ? 'Error al actualizar' : 'Failed to update'));
     } finally {
       setSavingEdit(false);
+    }
+  };
+
+  const handleCreateUser = async () => {
+    if (!createFirstName.trim() || !createLastName.trim() || !createUsername.trim() || !createEmail.trim()) {
+      toast.error(lang === 'es' ? 'Nombre, Apellido, Nombre de Usuario y Correo son requeridos.' : 'First Name, Last Name, Username and Email are required.');
+      return;
+    }
+
+    setCreatingLoading(true);
+    try {
+      const payload = {
+        firstName: createFirstName,
+        lastName: createLastName,
+        username: createUsername,
+        email: createEmail,
+        password: createPassword || undefined,
+        role: createRole,
+        phone: createPhone,
+        address: createAddress,
+      };
+
+      await api.post('/admin/users', payload);
+      toast.success(lang === 'es' ? 'Usuario creado exitosamente.' : 'User created successfully.');
+      
+      // Clean states
+      setIsCreating(false);
+      setCreateFirstName('');
+      setCreateLastName('');
+      setCreateUsername('');
+      setCreateEmail('');
+      setCreatePassword('');
+      setCreateRole('client');
+      setCreatePhone('');
+      setCreateAddress('');
+
+      await loadUsers();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || (lang === 'es' ? 'Error al crear usuario' : 'Failed to create user'));
+    } finally {
+      setCreatingLoading(false);
     }
   };
 
@@ -159,30 +213,41 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col lg:flex-row gap-3">
-        <div className="flex flex-wrap gap-1.5">
-          {roleFilters.map((f) => (
-            <button
-              key={f.key}
-              onClick={() => { setFilter(f.key); setPage(1); }}
-              className={`flex-1 sm:flex-none justify-center px-4 py-2.5 sm:py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap active:scale-95 ${
-                filter === f.key ? 'bg-gray-900 text-white font-bold shadow-sm' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
+      <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
+        <div className="flex flex-col lg:flex-row gap-3 flex-1">
+          <div className="flex flex-wrap gap-1.5">
+            {roleFilters.map((f) => (
+              <button
+                key={f.key}
+                onClick={() => { setFilter(f.key); setPage(1); }}
+                className={`flex-1 sm:flex-none justify-center px-4 py-2.5 sm:py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap active:scale-95 ${
+                  filter === f.key ? 'bg-gray-900 text-white font-bold shadow-sm' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+          <div className="relative flex-1 max-w-xs">
+            <HiOutlineSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder={lang === 'es' ? 'Buscar usuarios...' : 'Search users...'}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 bg-white"
+            />
+          </div>
         </div>
-        <div className="relative flex-1 max-w-xs">
-          <HiOutlineSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder={lang === 'es' ? 'Buscar usuarios...' : 'Search users...'}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400"
-          />
-        </div>
+
+        {/* Create User Button */}
+        <button
+          onClick={() => setIsCreating(true)}
+          className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 cursor-pointer self-start lg:self-auto shrink-0"
+        >
+          <HiOutlineUserAdd className="w-4 h-4" />
+          {lang === 'es' ? 'Crear Usuario' : 'Create User'}
+        </button>
       </div>
 
       {/* Users Table / Cards */}
@@ -560,6 +625,197 @@ export default function AdminUsersPage() {
                   </button>
                 </>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Create User Centered Modal */}
+      {isCreating && (
+        <div className="fixed inset-0 z-50 overflow-hidden flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-gray-950/40 backdrop-blur-md transition-opacity animate-fade-in"
+            onClick={() => setIsCreating(false)}
+          />
+          
+          {/* Centered Modal Panel */}
+          <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl flex flex-col z-10 max-h-[90vh] overflow-hidden animate-[scaleIn_0.2s_ease-out]">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-gray-50/50">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-lg shrink-0">
+                  ➕
+                </div>
+                <div>
+                  <h2 className="font-bold text-base text-gray-900 leading-tight">
+                    {lang === 'es' ? 'Crear Nuevo Usuario' : 'Create New User'}
+                  </h2>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {lang === 'es' ? 'Registra una cuenta de forma manual' : 'Manually register a user account'}
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsCreating(false)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                <HiOutlineX className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+              {/* Form Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1.5">
+                    {lang === 'es' ? 'Nombre *' : 'First Name *'}
+                  </label>
+                  <input 
+                    type="text" 
+                    value={createFirstName} 
+                    onChange={e => setCreateFirstName(e.target.value)} 
+                    placeholder={lang === 'es' ? 'Ej. Juan' : 'e.g. John'}
+                    className="w-full bg-gray-50 border border-gray-200 focus:border-blue-500 focus:bg-white rounded-xl px-3.5 py-2.5 text-xs outline-none transition-all font-medium text-gray-800"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1.5">
+                    {lang === 'es' ? 'Apellido *' : 'Last Name *'}
+                  </label>
+                  <input 
+                    type="text" 
+                    value={createLastName} 
+                    onChange={e => setCreateLastName(e.target.value)} 
+                    placeholder={lang === 'es' ? 'Ej. Pérez' : 'e.g. Doe'}
+                    className="w-full bg-gray-50 border border-gray-200 focus:border-blue-500 focus:bg-white rounded-xl px-3.5 py-2.5 text-xs outline-none transition-all font-medium text-gray-800"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1.5">
+                    {lang === 'es' ? 'Nombre de Usuario *' : 'Username *'}
+                  </label>
+                  <input 
+                    type="text" 
+                    value={createUsername} 
+                    onChange={e => setCreateUsername(e.target.value)} 
+                    placeholder={lang === 'es' ? 'Ej. juanperez' : 'e.g. johndoe'}
+                    className="w-full bg-gray-50 border border-gray-200 focus:border-blue-500 focus:bg-white rounded-xl px-3.5 py-2.5 text-xs outline-none transition-all font-medium text-gray-800"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1.5">
+                    {lang === 'es' ? 'Correo Electrónico *' : 'Email Address *'}
+                  </label>
+                  <input 
+                    type="email" 
+                    value={createEmail} 
+                    onChange={e => setCreateEmail(e.target.value)} 
+                    placeholder="juan@lpticket.com"
+                    className="w-full bg-gray-50 border border-gray-200 focus:border-blue-500 focus:bg-white rounded-xl px-3.5 py-2.5 text-xs outline-none transition-all font-medium text-gray-800"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1.5">
+                    {lang === 'es' ? 'Rol *' : 'Role *'}
+                  </label>
+                  <select 
+                    value={createRole} 
+                    onChange={e => setCreateRole(e.target.value)} 
+                    className="w-full bg-gray-50 border border-gray-200 focus:border-blue-500 focus:bg-white rounded-xl px-3.5 py-2.5 text-xs outline-none transition-all font-bold text-gray-800"
+                  >
+                    <option value="client">{lang === 'es' ? 'Cliente / Comprador' : 'Client / Buyer'}</option>
+                    <option value="admin">Administrador</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1.5 flex items-center justify-between">
+                    <span>{lang === 'es' ? 'Contraseña (Opcional)' : 'Password (Optional)'}</span>
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        const randomPass = Math.random().toString(36).slice(-8) + 'LP!';
+                        setCreatePassword(randomPass);
+                        navigator.clipboard.writeText(randomPass);
+                        toast.success(lang === 'es' ? 'Clave generada y copiada al portapapeles' : 'Password generated and copied to clipboard');
+                      }}
+                      className="text-[10px] text-blue-600 hover:text-blue-700 font-bold lowercase normal-case cursor-pointer"
+                    >
+                      ⚡ {lang === 'es' ? 'Generar clave' : 'Generate pass'}
+                    </button>
+                  </label>
+                  <input 
+                    type="text" 
+                    value={createPassword} 
+                    onChange={e => setCreatePassword(e.target.value)} 
+                    placeholder={lang === 'es' ? 'Por defecto: LPticket2026!' : 'Default: LPticket2026!'}
+                    className="w-full bg-gray-50 border border-gray-200 focus:border-blue-500 focus:bg-white rounded-xl px-3.5 py-2.5 text-xs outline-none transition-all font-medium text-gray-800"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1.5">
+                    {lang === 'es' ? 'Teléfono' : 'Phone'}
+                  </label>
+                  <input 
+                    type="text" 
+                    value={createPhone} 
+                    onChange={e => setCreatePhone(e.target.value)} 
+                    placeholder="+54 9 11 1234-5678"
+                    className="w-full bg-gray-50 border border-gray-200 focus:border-blue-500 focus:bg-white rounded-xl px-3.5 py-2.5 text-xs outline-none transition-all font-medium text-gray-800"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1.5">
+                    {lang === 'es' ? 'Dirección' : 'Address'}
+                  </label>
+                  <input 
+                    type="text" 
+                    value={createAddress} 
+                    onChange={e => setCreateAddress(e.target.value)} 
+                    placeholder="Av. Santa Fe 1234, CABA"
+                    className="w-full bg-gray-50 border border-gray-200 focus:border-blue-500 focus:bg-white rounded-xl px-3.5 py-2.5 text-xs outline-none transition-all font-medium text-gray-800"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setIsCreating(false)}
+                disabled={creatingLoading}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-all cursor-pointer disabled:opacity-50"
+              >
+                {lang === 'es' ? 'Cancelar' : 'Cancel'}
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateUser}
+                disabled={creatingLoading}
+                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 active:scale-95 transition-all shadow-md shadow-blue-500/15 cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {creatingLoading ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    {lang === 'es' ? 'Creando...' : 'Creating...'}
+                  </>
+                ) : (
+                  <>
+                    <span>✨</span>
+                    {lang === 'es' ? 'Crear Usuario' : 'Create User'}
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

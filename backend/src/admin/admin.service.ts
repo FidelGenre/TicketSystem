@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
 import { User, UserRole, Event, EventStatus, Order, Ticket, VenueSection, Seat } from '../database/entities';
 
 @Injectable()
@@ -60,6 +61,50 @@ export class AdminService {
     });
 
     return { users, total, page, totalPages: Math.ceil(total / limit) };
+  }
+
+  async createUser(dto: {
+    firstName: string;
+    lastName: string;
+    username: string;
+    email: string;
+    password?: string;
+    role?: UserRole;
+    phone?: string;
+    address?: string;
+  }) {
+    // 1. Validation
+    const existingEmail = await this.userRepo.findOne({ where: { email: dto.email } });
+    if (existingEmail) {
+      throw new ConflictException('El correo electrónico ya se encuentra registrado');
+    }
+
+    const existingUsername = await this.userRepo.findOne({ where: { username: dto.username } });
+    if (existingUsername) {
+      throw new ConflictException('El nombre de usuario ya se encuentra en uso');
+    }
+
+    // 2. Default Password if not specified
+    const plainPassword = dto.password || 'LPticket2026!';
+    const passwordHash = await bcrypt.hash(plainPassword, 12);
+
+    // 3. Create User entity
+    const newUser = this.userRepo.create({
+      firstName: dto.firstName,
+      lastName: dto.lastName,
+      username: dto.username,
+      email: dto.email,
+      passwordHash,
+      role: dto.role || UserRole.CLIENT,
+      phone: dto.phone || '',
+      address: dto.address || '',
+      isActive: true,
+    });
+
+    // 4. Save
+    const saved = await this.userRepo.save(newUser);
+    const { passwordHash: _, ...userData } = saved;
+    return userData;
   }
 
   async updateUserRole(userId: string, role: UserRole) {

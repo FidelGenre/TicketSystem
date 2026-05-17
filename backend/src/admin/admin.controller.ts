@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Patch, Delete, Param, Query, UseGuards, Body,
+  Controller, Get, Post, Patch, Delete, Param, Query, UseGuards, Body,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AdminService } from './admin.service';
@@ -23,6 +23,20 @@ export class AdminController {
   @Get('users')
   getUsers(@Query('page') page?: number, @Query('limit') limit?: number, @Query('role') role?: string) {
     return this.adminService.getUsers(page || 1, limit || 20, role);
+  }
+
+  @Post('users')
+  createUser(@Body() body: {
+    firstName: string;
+    lastName: string;
+    username: string;
+    email: string;
+    password?: string;
+    role?: UserRole;
+    phone?: string;
+    address?: string;
+  }) {
+    return this.adminService.createUser(body);
   }
 
   @Patch('users/:id/role')
