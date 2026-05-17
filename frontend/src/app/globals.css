@@ -1238,3 +1238,21 @@ html {
     max-width: 11rem;
   }
 }
+
+.home-hero-frame,
+.home-hero-frame > a,
+.home-hero-frame img,
+.home-hero-overlay {
+  border-radius: inherit;
+}
+
+.home-hero-frame {
+  clip-path: inset(0 round 0 0 1.35rem 1.35rem);
+  transform: translateZ(0);
+}
+
+@media (max-width: 639px) {
+  .home-hero-frame {
+    clip-path: inset(0 round 0 0 1rem 1rem);
+  }
+}
