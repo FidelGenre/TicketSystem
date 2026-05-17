@@ -134,7 +134,7 @@ export default function HomePage() {
         <section className="home-hero-shell">
           <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8">
             <div className="home-hero-frame group">
-              <Link href={usingDemo ? '#' : `/events/${bannerEvent.slug}`} className="absolute inset-0 block overflow-hidden bg-blue-950">
+              <Link href={usingDemo ? '#' : `/events/${bannerEvent.slug}`} className="absolute inset-0 z-[5] block overflow-hidden bg-blue-950" aria-label={bannerEvent.title}>
                 <AnimatePresence initial={false}>
                   <motion.img
                     key={bannerEvent.id}
