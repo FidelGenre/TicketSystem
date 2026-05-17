@@ -105,13 +105,7 @@ export default function EventCard({ event }: EventCardProps) {
       </div>
       </Link>
 
-      <ShareEventButton
-        eventTitle={event.title}
-        eventPath={`/events/${event.slug}`}
-        label={lang === 'es' ? 'Comparte con tus amigos' : 'Share with friends'}
-        compact
-        className="absolute bottom-3 right-3 z-20"
-      />
+
     </div>
   );
 }
