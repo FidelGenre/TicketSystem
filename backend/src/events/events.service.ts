@@ -491,7 +491,7 @@ export class EventsService {
       const hasSeats = await this.seatRepo.count({ where: { sectionId: s.id } });
       if (hasSeats === 0) {
         const p = Number(s.price);
-        if (p < minPrice) minPrice = p;
+        if (p > 0 && p < minPrice) minPrice = p;
         if (p > maxPrice) maxPrice = p;
       } else {
         const seats = await this.seatRepo.find({ where: { sectionId: s.id } });
@@ -500,7 +500,7 @@ export class EventsService {
           const seatPrice = (config[key] && config[key].price !== undefined && config[key].price !== null) 
             ? Number(config[key].price) : Number(s.price);
             
-          if (seatPrice < minPrice) minPrice = seatPrice;
+          if (seatPrice > 0 && seatPrice < minPrice) minPrice = seatPrice;
           if (seatPrice > maxPrice) maxPrice = seatPrice;
         }
       }

@@ -21,7 +21,7 @@ import { useUIStore } from '@/stores/ui';
 
 export default function OrganizerLayout({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated, isLoading, mode, setMode } = useAuthStore();
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const { sidebarOpen, setSidebarOpen } = useUIStore();
   const router = useRouter();
   const pathname = usePathname();
@@ -61,7 +61,7 @@ export default function OrganizerLayout({ children }: { children: React.ReactNod
         <div className="p-5 border-b border-gray-100">
           <Link href="/" className="flex items-center gap-2 text-sm text-gray-500 hover:text-primary-500 transition-colors mb-3">
             <HiOutlineArrowLeft className="w-4 h-4" />
-            <span>{t('orgBackToDashboard')}</span>
+            <span>{lang === 'es' ? 'Volver al sitio' : 'Back to site'}</span>
           </Link>
           <h2 className="font-bold text-lg text-gray-900">{t('orgPanel')}</h2>
           <p className="text-xs text-gray-500 mt-0.5">{user.firstName} {user.lastName}</p>

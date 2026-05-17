@@ -125,7 +125,7 @@ export class AdminService {
     return userData;
   }
 
-  async updateUserProfile(userId: string, updateData: { firstName?: string; lastName?: string; email?: string; phone?: string; address?: string }) {
+  async updateUserProfile(userId: string, updateData: { firstName?: string; lastName?: string; email?: string; phone?: string; address?: string; password?: string }) {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('Usuario no encontrado');
     
@@ -134,6 +134,9 @@ export class AdminService {
     if (updateData.email !== undefined) user.email = updateData.email;
     if (updateData.phone !== undefined) user.phone = updateData.phone;
     if (updateData.address !== undefined) user.address = updateData.address;
+    if (updateData.password !== undefined && updateData.password.trim() !== '') {
+      user.passwordHash = await bcrypt.hash(updateData.password, 12);
+    }
     
     await this.userRepo.save(user);
     const { passwordHash, ...userData } = user;
@@ -335,5 +338,53 @@ export class AdminService {
     });
 
     return { orders, total, page, totalPages: Math.ceil(total / limit) };
+  }
+
+  async getEventFeeConfig(eventId: string) {
+    const event = await this.eventRepo.findOne({ where: { id: eventId } });
+    if (!event) throw new NotFoundException('Evento no encontrado');
+
+    const sections = await this.sectionRepo.find({
+      where: { eventId },
+      order: { name: 'ASC' },
+    });
+
+    return { event, sections };
+  }
+
+  async updateEventFees(eventId: string, dto: {
+    serviceFeePercent?: number | null;
+    serviceFeeFixedPerTicket?: number | null;
+    processingFeePercent?: number | null;
+    processingFeeFixedPerTicket?: number | null;
+  }) {
+    const event = await this.eventRepo.findOne({ where: { id: eventId } });
+    if (!event) throw new NotFoundException('Evento no encontrado');
+
+    if (dto.serviceFeePercent !== undefined) event.serviceFeePercent = dto.serviceFeePercent;
+    if (dto.serviceFeeFixedPerTicket !== undefined) event.serviceFeeFixedPerTicket = dto.serviceFeeFixedPerTicket;
+    if (dto.processingFeePercent !== undefined) event.processingFeePercent = dto.processingFeePercent;
+    if (dto.processingFeeFixedPerTicket !== undefined) event.processingFeeFixedPerTicket = dto.processingFeeFixedPerTicket;
+
+    await this.eventRepo.save(event);
+    return { success: true, event };
+  }
+
+  async updateSectionFees(sectionId: string, dto: {
+    serviceFeePercent?: number | null;
+    serviceFeeFixedPerTicket?: number | null;
+    processingFeePercent?: number | null;
+    processingFeeFixedPerTicket?: number | null;
+  }) {
+    const section = await this.sectionRepo.findOne({ where: { id: sectionId } });
+    if (!section) throw new NotFoundException('Sección no encontrada');
+
+    if (dto.serviceFeePercent !== undefined) section.serviceFeePercent = dto.serviceFeePercent;
+    if (dto.serviceFeeFixedPerTicket !== undefined) section.serviceFeeFixedPerTicket = dto.serviceFeeFixedPerTicket;
+    if (dto.processingFeePercent !== undefined) section.processingFeePercent = dto.processingFeePercent;
+    if (dto.processingFeeFixedPerTicket !== undefined) section.processingFeeFixedPerTicket = dto.processingFeeFixedPerTicket;
+
+    await this.sectionRepo.save(section);
+    return { success: true, section };
   }
 }

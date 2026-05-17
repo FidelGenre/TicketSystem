@@ -105,6 +105,7 @@ export class OrdersService {
       rowLabel: string;
       seatNumber: number;
       price: number;
+      section?: any;
     }[] = [];
 
     if (seatIds && seatIds.length > 0) {
@@ -167,6 +168,7 @@ export class OrdersService {
           rowLabel: seat.rowLabel,
           seatNumber: seat.seatNumber,
           price,
+          section: seat.section,
         });
       }
     } else if (sectionId && quantity) {
@@ -200,6 +202,7 @@ export class OrdersService {
           rowLabel: 'GA',
           seatNumber: i + 1,
           price,
+          section,
         });
       }
     }
@@ -210,15 +213,37 @@ export class OrdersService {
     let total = 0;
 
     if (baseTotal > 0) {
-      lpFee = Math.round(baseTotal * LPTICKET_FEE_RATE * 100) / 100;
-      const subtotalWithLp = baseTotal + lpFee;
-      
-      // Calculate final total so Stripe takes its fees and the organizer receives (baseTotal + lpFee) exactly.
-      // Math: Total - (Total * 0.029 + 0.30) = Subtotal  =>  Total = (Subtotal + 0.30) / (1 - 0.029)
-      const exactTotal = (subtotalWithLp + STRIPE_FIXED) / (1 - STRIPE_PERCENTAGE);
-      total = Math.round(exactTotal * 100) / 100;
-      processingFee = Math.round((total - subtotalWithLp) * 100) / 100;
+      let totalServiceFee = 0;
+      let totalProcessingFee = 0;
+
+      for (const item of seatsInfo) {
+        const sec = item.section;
+        const sFeePercent = sec?.serviceFeePercent !== null && sec?.serviceFeePercent !== undefined 
+          ? Number(sec.serviceFeePercent) 
+          : (event?.serviceFeePercent !== null && event?.serviceFeePercent !== undefined ? Number(event.serviceFeePercent) : 0.12);
+
+        const sFeeFixed = sec?.serviceFeeFixedPerTicket !== null && sec?.serviceFeeFixedPerTicket !== undefined 
+          ? Number(sec.serviceFeeFixedPerTicket) 
+          : (event?.serviceFeeFixedPerTicket !== null && event?.serviceFeeFixedPerTicket !== undefined ? Number(event.serviceFeeFixedPerTicket) : 0);
+
+        const pFeePercent = sec?.processingFeePercent !== null && sec?.processingFeePercent !== undefined 
+          ? Number(sec.processingFeePercent) 
+          : (event?.processingFeePercent !== null && event?.processingFeePercent !== undefined ? Number(event.processingFeePercent) : 0.029);
+
+        const pFeeFixed = sec?.processingFeeFixedPerTicket !== null && sec?.processingFeeFixedPerTicket !== undefined 
+          ? Number(sec.processingFeeFixedPerTicket) 
+          : (event?.processingFeeFixedPerTicket !== null && event?.processingFeeFixedPerTicket !== undefined ? Number(event.processingFeeFixedPerTicket) : 0.30);
+
+        totalServiceFee += item.price * sFeePercent + sFeeFixed;
+        totalProcessingFee += item.price * pFeePercent + pFeeFixed;
+      }
+
+      lpFee = Math.round(totalServiceFee * 100) / 100;
+      processingFee = Math.round(totalProcessingFee * 100) / 100;
+      total = Math.round((baseTotal + lpFee + processingFee) * 100) / 100;
     }
+
+    const cleanSeatsInfo = seatsInfo.map(({ section, ...rest }) => rest);
 
     const currency = (event.currency || 'USD').toLowerCase();
 
@@ -243,7 +268,7 @@ export class OrdersService {
       lineItems.push({
         price_data: {
           currency,
-          product_data: { name: 'LPTicket Fee (12%)' },
+          product_data: { name: 'Cargo por servicio' },
           unit_amount: Math.round(lpFee * 100),
         },
         quantity: 1,
@@ -254,7 +279,7 @@ export class OrdersService {
       lineItems.push({
         price_data: {
           currency,
-          product_data: { name: 'Processing Fee (Stripe)' },
+          product_data: { name: 'Tarifa de procesamiento' },
           unit_amount: Math.round(processingFee * 100),
         },
         quantity: 1,
@@ -270,8 +295,8 @@ export class OrdersService {
       processingFee,
       total,
       status: OrderStatus.PENDING,
-      ticketCount: seatsInfo.length,
-      seatsData: JSON.stringify(seatsInfo),
+      ticketCount: cleanSeatsInfo.length,
+      seatsData: JSON.stringify(cleanSeatsInfo),
     });
     const savedOrder = await this.orderRepo.save(order);
 
@@ -305,7 +330,7 @@ export class OrdersService {
         lpFee,
         processingFee,
         total,
-        seatsInfo,
+        seatsInfo: cleanSeatsInfo,
       },
     };
   }
@@ -320,6 +345,9 @@ export class OrdersService {
     sectionId?: string,
     quantity?: number,
   ) {
+    const event = await this.eventRepo.findOne({ where: { id: eventId } });
+    if (!event) throw new NotFoundException('Event not found');
+
     let baseTotal = 0;
     const seatsInfo: any[] = [];
 
@@ -362,6 +390,7 @@ export class OrdersService {
           rowLabel: seat.rowLabel,
           seatNumber: seat.seatNumber,
           price,
+          section: seat.section,
         });
       }
     } else if (sectionId && quantity) {
@@ -377,6 +406,7 @@ export class OrdersService {
           rowLabel: 'GA',
           seatNumber: i + 1,
           price,
+          section,
         });
       }
     }
@@ -386,19 +416,44 @@ export class OrdersService {
     let total = 0;
 
     if (baseTotal > 0) {
-      lpFee = Math.round(baseTotal * LPTICKET_FEE_RATE * 100) / 100;
-      const subtotalWithLp = baseTotal + lpFee;
-      const exactTotal = (subtotalWithLp + STRIPE_FIXED) / (1 - STRIPE_PERCENTAGE);
-      total = Math.round(exactTotal * 100) / 100;
-      processingFee = Math.round((total - subtotalWithLp) * 100) / 100;
+      let totalServiceFee = 0;
+      let totalProcessingFee = 0;
+
+      for (const item of seatsInfo) {
+        const sec = item.section;
+        const sFeePercent = sec?.serviceFeePercent !== null && sec?.serviceFeePercent !== undefined 
+          ? Number(sec.serviceFeePercent) 
+          : (event?.serviceFeePercent !== null && event?.serviceFeePercent !== undefined ? Number(event.serviceFeePercent) : 0.12);
+
+        const sFeeFixed = sec?.serviceFeeFixedPerTicket !== null && sec?.serviceFeeFixedPerTicket !== undefined 
+          ? Number(sec.serviceFeeFixedPerTicket) 
+          : (event?.serviceFeeFixedPerTicket !== null && event?.serviceFeeFixedPerTicket !== undefined ? Number(event.serviceFeeFixedPerTicket) : 0);
+
+        const pFeePercent = sec?.processingFeePercent !== null && sec?.processingFeePercent !== undefined 
+          ? Number(sec.processingFeePercent) 
+          : (event?.processingFeePercent !== null && event?.processingFeePercent !== undefined ? Number(event.processingFeePercent) : 0.029);
+
+        const pFeeFixed = sec?.processingFeeFixedPerTicket !== null && sec?.processingFeeFixedPerTicket !== undefined 
+          ? Number(sec.processingFeeFixedPerTicket) 
+          : (event?.processingFeeFixedPerTicket !== null && event?.processingFeeFixedPerTicket !== undefined ? Number(event.processingFeeFixedPerTicket) : 0.30);
+
+        totalServiceFee += item.price * sFeePercent + sFeeFixed;
+        totalProcessingFee += item.price * pFeePercent + pFeeFixed;
+      }
+
+      lpFee = Math.round(totalServiceFee * 100) / 100;
+      processingFee = Math.round(totalProcessingFee * 100) / 100;
+      total = Math.round((baseTotal + lpFee + processingFee) * 100) / 100;
     }
+
+    const cleanSeatsInfo = seatsInfo.map(({ section, ...rest }) => rest);
 
     return {
       baseTotal,
       lpFee,
       processingFee,
       total,
-      seatsInfo,
+      seatsInfo: cleanSeatsInfo,
     };
   }
 

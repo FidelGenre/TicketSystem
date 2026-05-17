@@ -176,7 +176,7 @@ export default function CreateEventPage() {
                   />
                 </div>
 
-                {/* Category + Venue */}
+                {/* Category + Venue + Address */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">{t('orgCategory')} *</label>
@@ -198,18 +198,16 @@ export default function CreateEventPage() {
                       required
                     />
                   </div>
-                </div>
-
-                {/* Address */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">{t('orgVenueAddress')}</label>
-                  <input
-                    type="text"
-                    value={form.venueAddress}
-                    onChange={(e) => updateForm('venueAddress', e.target.value)}
-                    className="input py-3"
-                    placeholder={lang === 'es' ? 'Dirección completa del lugar' : 'Full venue address'}
-                  />
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">{t('orgVenueAddress')}</label>
+                    <input
+                      type="text"
+                      value={form.venueAddress}
+                      onChange={(e) => updateForm('venueAddress', e.target.value)}
+                      className="input py-3"
+                      placeholder={lang === 'es' ? 'Ej: Miami, FL, Estados Unidos' : 'Ex: Miami, FL, United States'}
+                    />
+                  </div>
                 </div>
 
                 {/* Dates */}

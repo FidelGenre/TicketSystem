@@ -44,7 +44,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: '/admin', label: t('adminDashboard'), icon: HiOutlineChartBar },
     { href: '/admin/events', label: t('adminEvents'), icon: HiOutlineCalendar },
     { href: '/admin/users', label: t('adminUsers'), icon: HiOutlineUsers },
-    { href: '/admin/categories', label: 'Categorías', icon: HiOutlineTag },
+    { href: '/admin/categories', label: t('adminCategories'), icon: HiOutlineTag },
   ];
 
   const isActive = (href: string) => {

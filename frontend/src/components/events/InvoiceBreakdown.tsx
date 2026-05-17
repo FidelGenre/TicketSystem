@@ -60,17 +60,17 @@ export default function InvoiceBreakdown({ invoice, eventTitle }: InvoiceBreakdo
         {/* Calculations */}
         <div className="space-y-2.5">
           <div className="flex justify-between text-xs">
-            <span className="text-gray-400 font-medium">Ticket</span>
+            <span className="text-gray-400 font-medium">Subtotal</span>
             <span className="text-gray-700 font-bold">{fmt(invoice.baseTotal, cur)}</span>
           </div>
           
           <div className="flex justify-between text-xs">
-            <span className="text-gray-400 font-medium">LPTicket Fee (12%)</span>
+            <span className="text-gray-400 font-medium">Cargo por servicio</span>
             <span className="text-gray-700 font-bold">{fmt(invoice.lpFee, cur)}</span>
           </div>
 
           <div className="flex justify-between text-xs">
-            <span className="text-gray-400 font-medium">Processing Fee (Stripe)</span>
+            <span className="text-gray-400 font-medium">Tarifa de procesamiento</span>
             <span className="text-gray-700 font-bold">{fmt(invoice.processingFee, cur)}</span>
           </div>
         </div>

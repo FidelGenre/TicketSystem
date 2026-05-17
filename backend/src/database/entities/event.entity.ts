@@ -107,6 +107,19 @@ export class Event {
   @Column({ nullable: true, length: 10 })
   currency: string;
 
+  // --- Configurable Fee Parameters ---
+  @Column({ type: 'decimal', precision: 5, scale: 4, nullable: true })
+  serviceFeePercent: number | null;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  serviceFeeFixedPerTicket: number | null;
+
+  @Column({ type: 'decimal', precision: 5, scale: 4, nullable: true })
+  processingFeePercent: number | null;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  processingFeeFixedPerTicket: number | null;
+
   // --- Map Viewport Settings (Frontend Camera Defaults) ---
   @Column({ type: 'float', nullable: true })
   defaultViewX: number;

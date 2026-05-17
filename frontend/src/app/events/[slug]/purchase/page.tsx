@@ -399,6 +399,7 @@ export default function PurchasePage() {
               <span className="flex items-center gap-1.5">
                 <HiOutlineLocationMarker className="w-4 h-4" />
                 {event.venueName}
+                {event.venueAddress && <span className="text-gray-500 font-normal">— {event.venueAddress}</span>}
               </span>
               <span className="flex items-center gap-1.5">
                 <HiOutlineCalendar className="w-4 h-4" />
@@ -698,16 +699,20 @@ export default function PurchasePage() {
                 {/* Detailed invoice breakdown (available once Step 3 is completed) */}
                 {invoice && (
                   <>
-                    <div className="border-t border-gray-100 mt-2 pt-2">
+                    <div className="border-t border-gray-100 mt-2 pt-2 space-y-1">
                       <div className="flex justify-between text-xs text-gray-500">
                         <span>Subtotal</span>
                         <span>${Number(invoice.baseTotal).toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between text-xs text-gray-500">
-                        <span>{lang === 'es' ? 'Servicio + impuestos' : 'Fees + Taxes'}</span>
-                        <span>${(invoice.total - invoice.baseTotal).toFixed(2)}</span>
+                        <span>{lang === 'es' ? 'Cargo por servicio' : 'Service Fee'}</span>
+                        <span>${Number(invoice.lpFee).toFixed(2)}</span>
                       </div>
-                      <div className="flex justify-between font-bold text-sm mt-1">
+                      <div className="flex justify-between text-xs text-gray-500">
+                        <span>{lang === 'es' ? 'Tarifa de procesamiento' : 'Processing Fee'}</span>
+                        <span>${Number(invoice.processingFee).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between font-bold text-sm mt-1 pt-1 border-t border-dashed border-gray-100">
                         <span>Total</span>
                         <span className="text-primary-600">${Number(invoice.total).toFixed(2)} {event.currency || 'USD'}</span>
                       </div>

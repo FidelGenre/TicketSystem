@@ -90,6 +90,7 @@ export default function EventDetailPage() {
     title: '',
     description: '',
     venueName: '',
+    venueAddress: '',
     eventDate: '',
     eventTime: '',
     category: '',
@@ -113,6 +114,7 @@ export default function EventDetailPage() {
         title: ev.title || '',
         description: ev.description || '',
         venueName: ev.venueName || '',
+        venueAddress: ev.venueAddress || '',
         eventDate: formatDateInput(ev.eventDate),
         eventTime: formatTimeInput(ev.eventDate),
         category: ev.category || '',
@@ -220,6 +222,7 @@ export default function EventDetailPage() {
         title: editForm.title,
         description: editForm.description,
         venueName: editForm.venueName,
+        venueAddress: editForm.venueAddress,
         eventDate: buildLocalEventDate(editForm.eventDate, editForm.eventTime),
         category: editForm.category,
         hasSeatMap: true,
@@ -918,16 +921,28 @@ export default function EventDetailPage() {
               </div>
             </div>
 
-            {/* Venue Name */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">{lang === 'es' ? 'Lugar / Venue' : 'Venue Name'}</label>
-              <input
-                type="text"
-                value={editForm.venueName}
-                onChange={(e) => setEditForm({ ...editForm, venueName: e.target.value })}
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-1 focus:ring-primary-500 text-sm focus:border-primary-500 focus:outline-none"
-                required
-              />
+            {/* Venue Name & Address */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">{lang === 'es' ? 'Lugar / Venue' : 'Venue Name'}</label>
+                <input
+                  type="text"
+                  value={editForm.venueName}
+                  onChange={(e) => setEditForm({ ...editForm, venueName: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-1 focus:ring-primary-500 text-sm focus:border-primary-500 focus:outline-none"
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">{lang === 'es' ? 'Ciudad / Dirección' : 'City / Address'}</label>
+                <input
+                  type="text"
+                  value={editForm.venueAddress}
+                  onChange={(e) => setEditForm({ ...editForm, venueAddress: e.target.value })}
+                  placeholder={lang === 'es' ? 'Ej: Miami, FL, Estados Unidos' : 'Ex: Miami, FL, United States'}
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-1 focus:ring-primary-500 text-sm focus:border-primary-500 focus:outline-none"
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-100">

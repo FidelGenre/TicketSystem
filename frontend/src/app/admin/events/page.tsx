@@ -17,6 +17,7 @@ import {
   HiOutlinePencilAlt,
   HiOutlineStar,
   HiStar,
+  HiOutlineCog,
 } from 'react-icons/hi';
 import Link from 'next/link';
 
@@ -31,6 +32,80 @@ export default function AdminEventsPage() {
   const [page, setPage] = useState(1);
   const [selectedEventForChanges, setSelectedEventForChanges] = useState<Event | null>(null);
   const [processingField, setProcessingField] = useState<string | null>(null);
+
+  // Fee configuration state
+  const [selectedEventForFees, setSelectedEventForFees] = useState<Event | null>(null);
+  const [eventFeeConfig, setEventFeeConfig] = useState<any>(null);
+  const [feeLoading, setFeeLoading] = useState(false);
+  const [feeSaving, setFeeSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<'global' | 'sections'>('global');
+
+  const handleOpenFeesModal = async (ev: Event) => {
+    setSelectedEventForFees(ev);
+    setFeeLoading(true);
+    setActiveTab('global');
+    try {
+      const { data } = await api.get(`/admin/events/${ev.id}/fees`);
+      // Ensure numeric fields are strings or empty for clean controlled inputs
+      const eventData = {
+        ...data.event,
+        serviceFeePercent: data.event.serviceFeePercent ?? '',
+        serviceFeeFixedPerTicket: data.event.serviceFeeFixedPerTicket ?? '',
+        processingFeePercent: data.event.processingFeePercent ?? '',
+        processingFeeFixedPerTicket: data.event.processingFeeFixedPerTicket ?? '',
+      };
+      const sectionsData = data.sections.map((sec: any) => ({
+        ...sec,
+        serviceFeePercent: sec.serviceFeePercent ?? '',
+        serviceFeeFixedPerTicket: sec.serviceFeeFixedPerTicket ?? '',
+        processingFeePercent: sec.processingFeePercent ?? '',
+        processingFeeFixedPerTicket: sec.processingFeeFixedPerTicket ?? '',
+      }));
+      setEventFeeConfig({ event: eventData, sections: sectionsData });
+    } catch (err: any) {
+      toast.error(lang === 'es' ? 'Error al cargar configuración de fees' : 'Error loading fees configuration');
+    } finally {
+      setFeeLoading(false);
+    }
+  };
+
+  const handleSaveEventFees = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedEventForFees || !eventFeeConfig) return;
+    setFeeSaving(true);
+    try {
+      const { event } = eventFeeConfig;
+      await api.patch(`/admin/events/${event.id}/fees`, {
+        serviceFeePercent: event.serviceFeePercent !== '' ? Number(event.serviceFeePercent) : null,
+        serviceFeeFixedPerTicket: event.serviceFeeFixedPerTicket !== '' ? Number(event.serviceFeeFixedPerTicket) : null,
+        processingFeePercent: event.processingFeePercent !== '' ? Number(event.processingFeePercent) : null,
+        processingFeeFixedPerTicket: event.processingFeeFixedPerTicket !== '' ? Number(event.processingFeeFixedPerTicket) : null,
+      });
+      toast.success(lang === 'es' ? 'Fees del evento guardados con éxito' : 'Event fees saved successfully');
+      await loadEvents();
+    } catch (err: any) {
+      toast.error(lang === 'es' ? 'Error al guardar fees' : 'Error saving fees');
+    } finally {
+      setFeeSaving(false);
+    }
+  };
+
+  const handleSaveSectionFees = async (sectionId: string, sectionData: any) => {
+    setFeeSaving(true);
+    try {
+      await api.patch(`/admin/sections/${sectionId}/fees`, {
+        serviceFeePercent: sectionData.serviceFeePercent !== '' && sectionData.serviceFeePercent !== null ? Number(sectionData.serviceFeePercent) : null,
+        serviceFeeFixedPerTicket: sectionData.serviceFeeFixedPerTicket !== '' && sectionData.serviceFeeFixedPerTicket !== null ? Number(sectionData.serviceFeeFixedPerTicket) : null,
+        processingFeePercent: sectionData.processingFeePercent !== '' && sectionData.processingFeePercent !== null ? Number(sectionData.processingFeePercent) : null,
+        processingFeeFixedPerTicket: sectionData.processingFeeFixedPerTicket !== '' && sectionData.processingFeeFixedPerTicket !== null ? Number(sectionData.processingFeeFixedPerTicket) : null,
+      });
+      toast.success(lang === 'es' ? 'Fees de sección guardados con éxito' : 'Section fees saved successfully');
+    } catch (err: any) {
+      toast.error(lang === 'es' ? 'Error al guardar fees de sección' : 'Error saving section fees');
+    } finally {
+      setFeeSaving(false);
+    }
+  };
 
   const hasPendingChanges = (ev: Event) => {
     return !!(
@@ -295,6 +370,14 @@ export default function AdminEventsPage() {
                               {lang === 'es' ? 'Ver cambios' : 'Review changes'}
                             </button>
                           )}
+                          <button
+                            onClick={() => handleOpenFeesModal(ev)}
+                            className="px-3 py-1.5 rounded-lg bg-purple-50 text-purple-700 text-xs font-bold hover:bg-purple-100 transition-colors flex items-center gap-1 shrink-0 shadow-sm border border-purple-200"
+                            title={lang === 'es' ? 'Configurar Fees' : 'Configure Fees'}
+                          >
+                            <HiOutlineCog className="w-4 h-4 text-purple-600" />
+                            {lang === 'es' ? 'Fees' : 'Fees'}
+                          </button>
                           <Link
                             href={`/organizer/events/${ev.id}`}
                             className="p-1.5 rounded-lg transition-colors text-blue-500 hover:bg-blue-50"
@@ -390,12 +473,18 @@ export default function AdminEventsPage() {
                     )}
 
                     <div className="flex gap-2 w-full mt-1">
+                      <button
+                        onClick={() => handleOpenFeesModal(ev)}
+                        className="flex-1 bg-purple-50 text-purple-600 border border-purple-100 text-[10px] font-bold py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+                      >
+                        <HiOutlineCog className="w-4 h-4" />
+                        {lang === 'es' ? 'CONFIGURAR FEES' : 'CONFIG FEES'}
+                      </button>
                       <Link
                         href={`/organizer/events/${ev.id}`}
-                        className="flex-1 bg-blue-50 text-blue-600 border border-blue-100 text-[10px] font-bold py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+                        className="p-2 bg-blue-50 text-blue-600 border border-blue-100 rounded-lg flex items-center justify-center active:scale-95 transition-all"
                       >
-                        <HiOutlinePencilAlt className="w-4 h-4" />
-                        {lang === 'es' ? 'EDITAR' : 'EDIT'}
+                        <HiOutlinePencilAlt className="w-4.5 h-4.5" />
                       </Link>
                       <button
                         onClick={() => handleDelete(ev.id, ev.title)}
@@ -799,6 +888,311 @@ export default function AdminEventsPage() {
               to { transform: translateX(0); }
             }
           `}</style>
+        </div>
+      )}
+
+      {/* Fee Configuration Modal */}
+      {selectedEventForFees && (
+        <div className="fixed inset-0 z-50 overflow-hidden flex justify-end">
+          <div 
+            className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity"
+            onClick={() => setSelectedEventForFees(null)}
+          />
+          
+          <div className="relative w-full max-w-2xl bg-white h-full shadow-2xl flex flex-col z-10 animate-[slideOver_0.3s_ease-out] border-l border-gray-150">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 shrink-0 bg-purple-50/50">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center">
+                  <HiOutlineCog className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="font-extrabold text-lg text-gray-900 leading-tight">
+                    {lang === 'es' ? 'Configuración de Fees' : 'Fee Configuration'}
+                  </h2>
+                  <p className="text-xs text-gray-500 mt-0.5 font-medium">{selectedEventForFees.title}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedEventForFees(null)}
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all"
+              >
+                <HiOutlineXCircle className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex border-b border-gray-100 px-6 bg-gray-50/30 shrink-0">
+              <button
+                type="button"
+                onClick={() => setActiveTab('global')}
+                className={`py-3.5 px-5 text-xs font-bold border-b-2 transition-all ${
+                  activeTab === 'global'
+                    ? 'border-purple-600 text-purple-600 bg-purple-50/50'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {lang === 'es' ? 'Configuración Global del Evento' : 'Global Event Configuration'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('sections')}
+                className={`py-3.5 px-5 text-xs font-bold border-b-2 transition-all ${
+                  activeTab === 'sections'
+                    ? 'border-purple-600 text-purple-600 bg-purple-50/50'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {lang === 'es' ? 'Por Tipo de Ticket (Secciones)' : 'Per Ticket Type (Sections)'}
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {feeLoading ? (
+                <div className="space-y-4">
+                  {[...Array(4)].map((_, i) => <div key={i} className="h-16 skeleton rounded-2xl" />)}
+                </div>
+              ) : eventFeeConfig ? (
+                activeTab === 'global' ? (
+                  <form onSubmit={handleSaveEventFees} className="space-y-6 animate-fade-in">
+                    <div className="bg-purple-50/30 border border-purple-100 rounded-2xl p-4 text-xs text-purple-800 leading-relaxed">
+                      {lang === 'es'
+                        ? 'Configura los porcentajes y cargos fijos globales para este evento. Si dejas un campo vacío, se aplicarán los valores por defecto del sistema (12% LPTicket, 2.9% + $0.30 Stripe).'
+                        : 'Configure global percentages and fixed fees for this event. If left empty, system defaults will apply (12% LPTicket, 2.9% + $0.30 Stripe).'}
+                    </div>
+
+                    <div className="space-y-5">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        {/* Service Fee Percent */}
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-gray-700 block">
+                            {lang === 'es' ? 'Porcentaje Cargo por Servicio' : 'Service Fee Percentage'}
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              step="0.0001"
+                              placeholder="0.12 (12%)"
+                              value={eventFeeConfig.event.serviceFeePercent}
+                              onChange={(e) => setEventFeeConfig({
+                                ...eventFeeConfig,
+                                event: { ...eventFeeConfig.event, serviceFeePercent: e.target.value }
+                              })}
+                              className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-bold">ej: 0.12</span>
+                          </div>
+                          <p className="text-[10px] text-gray-400">{lang === 'es' ? 'Decimal (0.12 = 12%)' : 'Decimal (0.12 = 12%)'}</p>
+                        </div>
+
+                        {/* Service Fee Fixed */}
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-gray-700 block">
+                            {lang === 'es' ? 'Cargo Fijo por Servicio (por ticket)' : 'Fixed Service Fee (per ticket)'}
+                          </label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-bold">$</span>
+                            <input
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              value={eventFeeConfig.event.serviceFeeFixedPerTicket}
+                              onChange={(e) => setEventFeeConfig({
+                                ...eventFeeConfig,
+                                event: { ...eventFeeConfig.event, serviceFeeFixedPerTicket: e.target.value }
+                              })}
+                              className="w-full pl-8 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                            />
+                          </div>
+                          <p className="text-[10px] text-gray-400">{lang === 'es' ? 'En la moneda del evento' : 'In event currency'}</p>
+                        </div>
+                      </div>
+
+                      <div className="h-px bg-gray-100 my-4" />
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        {/* Processing Fee Percent */}
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-gray-700 block">
+                            {lang === 'es' ? 'Porcentaje Tarifa Procesamiento' : 'Processing Fee Percentage'}
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              step="0.0001"
+                              placeholder="0.029 (2.9%)"
+                              value={eventFeeConfig.event.processingFeePercent}
+                              onChange={(e) => setEventFeeConfig({
+                                ...eventFeeConfig,
+                                event: { ...eventFeeConfig.event, processingFeePercent: e.target.value }
+                              })}
+                              className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-bold">ej: 0.029</span>
+                          </div>
+                          <p className="text-[10px] text-gray-400">{lang === 'es' ? 'Decimal (0.029 = 2.9%)' : 'Decimal (0.029 = 2.9%)'}</p>
+                        </div>
+
+                        {/* Processing Fee Fixed */}
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-gray-700 block">
+                            {lang === 'es' ? 'Tarifa Fija Procesamiento (por ticket)' : 'Fixed Processing Fee (per ticket)'}
+                          </label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-bold">$</span>
+                            <input
+                              type="number"
+                              step="0.01"
+                              placeholder="0.30"
+                              value={eventFeeConfig.event.processingFeeFixedPerTicket}
+                              onChange={(e) => setEventFeeConfig({
+                                ...eventFeeConfig,
+                                event: { ...eventFeeConfig.event, processingFeeFixedPerTicket: e.target.value }
+                              })}
+                              className="w-full pl-8 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                            />
+                          </div>
+                          <p className="text-[10px] text-gray-400">{lang === 'es' ? 'En la moneda del evento' : 'In event currency'}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-6 border-t border-gray-100 flex justify-end gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedEventForFees(null)}
+                        className="px-5 py-2.5 text-xs font-bold border border-gray-200 rounded-xl hover:bg-gray-50 transition-all"
+                      >
+                        {lang === 'es' ? 'Cancelar' : 'Cancel'}
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={feeSaving}
+                        className="px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl shadow-lg shadow-purple-200 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
+                      >
+                        {feeSaving && <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                        {lang === 'es' ? 'Guardar Fees Globales' : 'Save Global Fees'}
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="space-y-6 animate-fade-in">
+                    <div className="bg-purple-50/30 border border-purple-100 rounded-2xl p-4 text-xs text-purple-800 leading-relaxed">
+                      {lang === 'es'
+                        ? 'Configura fees personalizados para secciones específicas. Estos valores sobreescriben la configuración global del evento para los tickets de esa sección.'
+                        : 'Configure custom fees for specific sections. These values override the global event configuration for tickets in that section.'}
+                    </div>
+
+                    <div className="space-y-6">
+                      {eventFeeConfig.sections.map((sec: any, index: number) => (
+                        <div key={sec.id} className="border border-gray-200 rounded-2xl p-5 bg-white space-y-4 shadow-sm">
+                          <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                            <div>
+                              <h4 className="font-extrabold text-sm text-gray-900">{sec.name}</h4>
+                              <p className="text-xs text-gray-400 mt-0.5">Precio base: ${Number(sec.price).toFixed(2)}</p>
+                            </div>
+                            <span className="px-2.5 py-1 bg-gray-100 text-gray-600 rounded-lg text-[10px] font-bold uppercase tracking-wider">
+                              {sec.sectionType}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {/* Service Fee Percent */}
+                            <div className="space-y-1">
+                              <label className="text-[11px] font-bold text-gray-600 block">
+                                {lang === 'es' ? 'Porcentaje Cargo Servicio' : 'Service Fee %'}
+                              </label>
+                              <input
+                                type="number"
+                                step="0.0001"
+                                placeholder={eventFeeConfig.event.serviceFeePercent !== '' ? `${eventFeeConfig.event.serviceFeePercent} (Global)` : '0.12 (Defecto)'}
+                                value={sec.serviceFeePercent}
+                                onChange={(e) => {
+                                  const updated = [...eventFeeConfig.sections];
+                                  updated[index].serviceFeePercent = e.target.value;
+                                  setEventFeeConfig({ ...eventFeeConfig, sections: updated });
+                                }}
+                                className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                              />
+                            </div>
+
+                            {/* Service Fee Fixed */}
+                            <div className="space-y-1">
+                              <label className="text-[11px] font-bold text-gray-600 block">
+                                {lang === 'es' ? 'Cargo Fijo Servicio' : 'Fixed Service Fee'}
+                              </label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                placeholder={eventFeeConfig.event.serviceFeeFixedPerTicket !== '' ? `$${eventFeeConfig.event.serviceFeeFixedPerTicket} (Global)` : '$0.00 (Defecto)'}
+                                value={sec.serviceFeeFixedPerTicket}
+                                onChange={(e) => {
+                                  const updated = [...eventFeeConfig.sections];
+                                  updated[index].serviceFeeFixedPerTicket = e.target.value;
+                                  setEventFeeConfig({ ...eventFeeConfig, sections: updated });
+                                }}
+                                className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                              />
+                            </div>
+
+                            {/* Processing Fee Percent */}
+                            <div className="space-y-1">
+                              <label className="text-[11px] font-bold text-gray-600 block">
+                                {lang === 'es' ? 'Porcentaje Procesamiento' : 'Processing Fee %'}
+                              </label>
+                              <input
+                                type="number"
+                                step="0.0001"
+                                placeholder={eventFeeConfig.event.processingFeePercent !== '' ? `${eventFeeConfig.event.processingFeePercent} (Global)` : '0.029 (Defecto)'}
+                                value={sec.processingFeePercent}
+                                onChange={(e) => {
+                                  const updated = [...eventFeeConfig.sections];
+                                  updated[index].processingFeePercent = e.target.value;
+                                  setEventFeeConfig({ ...eventFeeConfig, sections: updated });
+                                }}
+                                className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                              />
+                            </div>
+
+                            {/* Processing Fee Fixed */}
+                            <div className="space-y-1">
+                              <label className="text-[11px] font-bold text-gray-600 block">
+                                {lang === 'es' ? 'Tarifa Fija Procesamiento' : 'Fixed Processing Fee'}
+                              </label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                placeholder={eventFeeConfig.event.processingFeeFixedPerTicket !== '' ? `$${eventFeeConfig.event.processingFeeFixedPerTicket} (Global)` : '$0.30 (Defecto)'}
+                                value={sec.processingFeeFixedPerTicket}
+                                onChange={(e) => {
+                                  const updated = [...eventFeeConfig.sections];
+                                  updated[index].processingFeeFixedPerTicket = e.target.value;
+                                  setEventFeeConfig({ ...eventFeeConfig, sections: updated });
+                                }}
+                                className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex justify-end pt-2 border-t border-dashed border-gray-100">
+                            <button
+                              type="button"
+                              disabled={feeSaving}
+                              onClick={() => handleSaveSectionFees(sec.id, sec)}
+                              className="px-4 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs font-bold rounded-xl transition-all active:scale-95 disabled:opacity-50"
+                            >
+                              {lang === 'es' ? `Guardar Fees de ${sec.name}` : `Save ${sec.name} Fees`}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              ) : null}
+            </div>
+          </div>
         </div>
       )}
     </div>

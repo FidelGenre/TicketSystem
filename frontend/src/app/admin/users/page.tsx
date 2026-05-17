@@ -43,6 +43,7 @@ export default function AdminUsersPage() {
   const [editEmail, setEditEmail] = useState('');
   const [editPhone, setEditPhone] = useState('');
   const [editAddress, setEditAddress] = useState('');
+  const [editPassword, setEditPassword] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
 
   // User Profile Creation states
@@ -57,14 +58,15 @@ export default function AdminUsersPage() {
   const [createAddress, setCreateAddress] = useState('');
   const [creatingLoading, setCreatingLoading] = useState(false);
 
-  const handleSelectUser = async (u: User) => {
+  const handleSelectUser = async (u: User, startEditing: boolean = false) => {
     setSelectedUser(u);
-    setIsEditing(false);
+    setIsEditing(startEditing);
     setEditFirstName(u.firstName || '');
     setEditLastName(u.lastName || '');
     setEditEmail(u.email || '');
     setEditPhone(u.phone || '');
     setEditAddress(u.address || '');
+    setEditPassword('');
 
     setLoadingTickets(true);
     setSelectedUserTickets([]);
@@ -87,13 +89,16 @@ export default function AdminUsersPage() {
 
     setSavingEdit(true);
     try {
-      const payload = {
+      const payload: any = {
         firstName: editFirstName,
         lastName: editLastName,
         email: editEmail,
         phone: editPhone,
         address: editAddress,
       };
+      if (editPassword.trim()) {
+        payload.password = editPassword;
+      }
       
       const { data } = await api.patch(`/admin/users/${selectedUser.id}`, payload);
       
@@ -312,6 +317,13 @@ export default function AdminUsersPage() {
                               <option value="admin">Admin</option>
                             </select>
                             <button
+                              onClick={(e) => { e.stopPropagation(); handleSelectUser(u, true); }}
+                              className="p-2 rounded-lg text-blue-500 hover:text-blue-700 hover:bg-blue-50 transition-colors"
+                              title={lang === 'es' ? 'Editar usuario' : 'Edit user'}
+                            >
+                              <HiOutlinePencil className="w-5 h-5" />
+                            </button>
+                            <button
                               onClick={() => handleToggleActive(u.id)}
                               className={`p-2 rounded-lg transition-colors ${u.isActive ? 'text-red-400 hover:text-red-600 hover:bg-red-50' : 'text-green-400 hover:text-green-600 hover:bg-green-50'}`}
                             >
@@ -363,7 +375,7 @@ export default function AdminUsersPage() {
                       <HiOutlineMail className="w-3.5 h-3.5 shrink-0" />
                       <span className="truncate">{u.email}</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 pt-1">
                       <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${u.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                         {u.isActive ? t('adminActive') : t('adminInactive')}
                       </span>
@@ -383,6 +395,13 @@ export default function AdminUsersPage() {
                       <option value="admin">Admin</option>
                     </select>
                     <div className="flex gap-1">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleSelectUser(u, true); }}
+                        className="p-2.5 rounded-xl border border-blue-100 text-blue-500 bg-blue-50"
+                        title={lang === 'es' ? 'Editar usuario' : 'Edit user'}
+                      >
+                        <HiOutlinePencil className="w-5 h-5" />
+                      </button>
                       <button
                         onClick={() => handleToggleActive(u.id)}
                         className={`p-2.5 rounded-xl border ${u.isActive ? 'border-red-100 text-red-500 bg-red-50' : 'border-green-100 text-green-500 bg-green-50'}`}
@@ -498,14 +517,26 @@ export default function AdminUsersPage() {
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1.5">{lang === 'es' ? 'Dirección' : 'Address'}</label>
-                    <input 
-                      type="text" 
-                      value={editAddress} 
-                      onChange={e => setEditAddress(e.target.value)} 
-                      className="w-full bg-gray-50 border border-gray-200 focus:border-primary-500 focus:bg-white rounded-xl px-3 py-2 text-xs outline-none transition-all font-medium text-gray-800"
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1.5">{lang === 'es' ? 'Dirección' : 'Address'}</label>
+                      <input 
+                        type="text" 
+                        value={editAddress} 
+                        onChange={e => setEditAddress(e.target.value)} 
+                        className="w-full bg-gray-50 border border-gray-200 focus:border-primary-500 focus:bg-white rounded-xl px-3 py-2 text-xs outline-none transition-all font-medium text-gray-800"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1.5">{lang === 'es' ? 'Nueva Contraseña (Opcional)' : 'New Password (Optional)'}</label>
+                      <input 
+                        type="password" 
+                        value={editPassword} 
+                        onChange={e => setEditPassword(e.target.value)} 
+                        placeholder={lang === 'es' ? 'Dejar en blanco para no cambiar' : 'Leave blank to keep current'}
+                        className="w-full bg-gray-50 border border-gray-200 focus:border-primary-500 focus:bg-white rounded-xl px-3 py-2 text-xs outline-none transition-all font-medium text-gray-800 placeholder:text-gray-400"
+                      />
+                    </div>
                   </div>
                 </div>
               ) : (

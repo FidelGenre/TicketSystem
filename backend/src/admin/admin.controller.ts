@@ -52,7 +52,7 @@ export class AdminController {
   @Patch('users/:id')
   updateUserProfile(
     @Param('id') id: string,
-    @Body() updateData: { firstName?: string; lastName?: string; email?: string; phone?: string; address?: string }
+    @Body() updateData: { firstName?: string; lastName?: string; email?: string; phone?: string; address?: string; password?: string }
   ) {
     return this.adminService.updateUserProfile(id, updateData);
   }
@@ -102,5 +102,21 @@ export class AdminController {
   @Get('orders')
   getAllOrders(@Query('page') page?: number, @Query('limit') limit?: number) {
     return this.adminService.getAllOrders(page || 1, limit || 20);
+  }
+
+  // Fees Configuration
+  @Get('events/:id/fees')
+  getEventFees(@Param('id') id: string) {
+    return this.adminService.getEventFeeConfig(id);
+  }
+
+  @Patch('events/:id/fees')
+  updateEventFees(@Param('id') id: string, @Body() body: any) {
+    return this.adminService.updateEventFees(id, body);
+  }
+
+  @Patch('sections/:id/fees')
+  updateSectionFees(@Param('id') id: string, @Body() body: any) {
+    return this.adminService.updateSectionFees(id, body);
   }
 }

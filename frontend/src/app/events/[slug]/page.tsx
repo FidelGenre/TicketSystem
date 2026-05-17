@@ -8,7 +8,7 @@ import type { Event } from '@/types';
 import { VenueSection, Seat, SeatStatus } from '@/types';
 import { useCategories } from '@/context/CategoryContext';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { es, enUS } from 'date-fns/locale';
 import { HiOutlineCalendar, HiOutlineLocationMarker, HiOutlineClock } from 'react-icons/hi';
 import SeatMapInteractive from '@/components/events/SeatMapInteractive';
 import ShareEventButton from '@/components/events/ShareEventButton';
@@ -19,7 +19,7 @@ import { getImageUrl } from '@/lib/api';
 export default function EventDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
-  const { lang } = useLang();
+  const { lang, t } = useLang();
   const { isAuthenticated } = useAuthStore();
   const { getCategoryInfo } = useCategories();
   const [event, setEvent] = useState<Event | null>(null);
@@ -193,6 +193,7 @@ export default function EventDetailPage() {
     labelEs: 'Otro', labelEn: 'Other', icon: '🎫', color: '#6366f1'
   };
   const eventDate = new Date(event.eventDate);
+  const dateLocale = lang === 'en' ? enUS : es;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -216,7 +217,7 @@ export default function EventDetailPage() {
         {/* Event Info */}
         <div className="lg:col-span-2 space-y-6">
           <div>
-            <span className="category-pill text-xs mb-3 inline-block">{categoryInfo.icon} {categoryInfo.labelEs}</span>
+            <span className="category-pill text-xs mb-3 inline-block">{categoryInfo.icon} {lang === 'en' ? categoryInfo.labelEn : categoryInfo.labelEs}</span>
             <h1 className="font-bold text-2xl sm:text-3xl text-gray-900">{event.title}</h1>
             <ShareEventButton
               eventTitle={event.title}
@@ -231,22 +232,25 @@ export default function EventDetailPage() {
             <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
               <HiOutlineCalendar className="w-5 h-5 text-blue-600 shrink-0" />
               <div>
-                <div className="text-xs text-gray-500">Fecha</div>
-                <div className="text-sm font-semibold text-gray-900">{format(eventDate, "dd 'de' MMMM, yyyy", { locale: es })}</div>
+                <div className="text-xs text-gray-500">{t('dateLabel')}</div>
+                <div className="text-sm font-semibold text-gray-900">{format(eventDate, lang === 'en' ? "MMMM dd, yyyy" : "dd 'de' MMMM, yyyy", { locale: dateLocale })}</div>
               </div>
             </div>
             <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
               <HiOutlineClock className="w-5 h-5 text-blue-600 shrink-0" />
               <div>
-                <div className="text-xs text-gray-500">Hora</div>
+                <div className="text-xs text-gray-500">{t('timeLabel')}</div>
                 <div className="text-sm font-semibold text-gray-900">{format(eventDate, 'hh:mm a')}</div>
               </div>
             </div>
             <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
               <HiOutlineLocationMarker className="w-5 h-5 text-blue-600 shrink-0" />
-              <div>
-                <div className="text-xs text-gray-500">Lugar</div>
+              <div className="min-w-0 flex-1">
+                <div className="text-xs text-gray-500">{t('venueLabel')}</div>
                 <div className="text-sm font-semibold text-gray-900 truncate">{event.venueName}</div>
+                {event.venueAddress && (
+                  <div className="text-xs text-gray-500 truncate mt-0.5">{event.venueAddress}</div>
+                )}
               </div>
             </div>
           </div>
@@ -254,7 +258,7 @@ export default function EventDetailPage() {
           {/* Description */}
           {event.description && (
             <div className="border border-gray-200 rounded-lg p-6">
-              <h2 className="font-bold text-lg text-gray-900 mb-3">Acerca del evento</h2>
+              <h2 className="font-bold text-lg text-gray-900 mb-3">{t('aboutEvent')}</h2>
               <div className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">{event.description}</div>
             </div>
           )}
@@ -284,7 +288,7 @@ export default function EventDetailPage() {
         <div className="lg:col-span-1">
           <div className="sticky top-20">
             <div className="border border-gray-200 rounded-lg p-6 space-y-4 bg-white shadow-sm">
-              <h3 className="font-bold text-lg text-gray-900">Resumen de compra</h3>
+              <h3 className="font-bold text-lg text-gray-900">{t('purchaseSummary')}</h3>
 
               {seatMap.length > 0 && (
                 <details className="group border border-gray-200 rounded-lg bg-gray-50 overflow-hidden">
@@ -312,7 +316,7 @@ export default function EventDetailPage() {
                 <>
                   <hr className="border-gray-200" />
                   <div className="space-y-1">
-                    <div className="text-xs text-gray-500 mb-1">Asientos seleccionados:</div>
+                    <div className="text-xs text-gray-500 mb-1">{t('selectedSeats')}</div>
                     {(() => {
                       // Group standing tickets by section
                       const standingGroups: Record<string, any[]> = {};
@@ -355,16 +359,16 @@ export default function EventDetailPage() {
                   <hr className="border-gray-200" />
                   <div className="space-y-1">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Subtotal</span>
+                      <span className="text-gray-500">{t('subtotal')}</span>
                       <span className="text-gray-800">${getTotalPrice().toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Cargo por servicio (10%)</span>
+                      <span className="text-gray-500">{t('serviceFee')}</span>
                       <span className="text-gray-800">${(getTotalPrice() * 0.10).toFixed(2)}</span>
                     </div>
                     <hr className="border-gray-200" />
                     <div className="flex justify-between font-bold text-base">
-                      <span className="text-gray-900">Total</span>
+                      <span className="text-gray-900">{t('total')}</span>
                       <span className="text-primary-600">${(getTotalPrice() * 1.10).toFixed(2)} {event.currency || 'USD'}</span>
                     </div>
                   </div>
@@ -372,9 +376,9 @@ export default function EventDetailPage() {
               )}
 
               <button onClick={handleBuyTickets} className="btn-primary w-full py-3 font-bold uppercase tracking-wide text-sm">
-                COMPRAR TICKETS
+                {t('buyTickets')}
               </button>
-              <p className="text-[10px] text-gray-400 text-center">Pagos seguros procesados por Stripe</p>
+              <p className="text-[10px] text-gray-400 text-center">{t('securePayments')}</p>
             </div>
           </div>
         </div>
