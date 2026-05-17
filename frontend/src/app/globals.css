@@ -1284,3 +1284,12 @@ html {
     letter-spacing: 0.08em !important;
   }
 }
+
+/* Clean hero banner: show only artwork on desktop and mobile */
+.home-hero-content {
+  display: none !important;
+}
+
+.home-hero-overlay {
+  background: linear-gradient(180deg, rgba(5, 24, 44, 0.02) 0%, rgba(5, 24, 44, 0.12) 100%) !important;
+}
