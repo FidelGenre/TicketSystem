@@ -886,3 +886,70 @@ html {
   background: #f97316 !important;
   box-shadow: 0 0 0 3px rgba(249,115,22,.14), 0 0 9px rgba(249,115,22,.45) !important;
 }
+
+
+/* Premium user menu button */
+.premium-user-button {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  width: 6.875rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  color: #155e96;
+  background: transparent;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  line-height: 1;
+  transition: color .22s ease, border-color .22s ease, box-shadow .22s ease;
+}
+
+.premium-user-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255,255,255,.94), rgba(239,246,255,.72));
+  opacity: 0;
+  transition: opacity .22s ease;
+}
+
+.premium-user-button::after {
+  content: '';
+  position: absolute;
+  top: .42rem;
+  right: .48rem;
+  width: .34rem;
+  height: .34rem;
+  border-radius: 999px;
+  background: #f97316;
+  box-shadow: 0 0 0 3px rgba(249,115,22,.14), 0 0 9px rgba(249,115,22,.45);
+  opacity: 0;
+  transform: scale(.75);
+  transition: opacity .22s ease, transform .22s ease;
+}
+
+.premium-user-button:hover,
+.premium-user-button:focus-visible,
+.premium-user-button.active {
+  color: #0a375a;
+  border-color: rgba(15,74,120,.14);
+  box-shadow: 0 8px 18px rgba(15,74,120,.07);
+}
+
+.premium-user-button:hover::before,
+.premium-user-button:focus-visible::before,
+.premium-user-button.active::before {
+  opacity: 1;
+}
+
+.premium-user-button.active::after {
+  opacity: 1;
+  transform: scale(1);
+}

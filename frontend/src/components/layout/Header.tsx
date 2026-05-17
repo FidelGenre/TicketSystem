@@ -230,7 +230,7 @@ export default function Header() {
             {/* 4. User Profile (Only if Auth) */}
             {isAuthenticated && user && (
               <div ref={profileRef} className="flex items-center">
-                <button onClick={() => setProfileDropdown(!profileDropdown)} className="flex items-center justify-center gap-2 h-8 w-[110px] hover:bg-gray-50 rounded-lg text-blue-600 font-bold text-[13px] transition-all">
+                <button onClick={() => setProfileDropdown(!profileDropdown)} className={`premium-user-button ${profileDropdown ? 'active' : ''}`}>
                   <HiOutlineUser className="w-4 h-4 shrink-0" />
                   <span className="truncate max-w-[65px]">{user.firstName}</span>
                 </button>
