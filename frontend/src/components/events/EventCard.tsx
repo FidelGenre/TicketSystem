@@ -29,7 +29,6 @@ export default function EventCard({ event }: EventCardProps) {
   const eventLocale = lang === 'es' ? 'es' : 'en-US';
   const eventDay = eventDate.toLocaleDateString(eventLocale, { day: '2-digit', month: '2-digit' });
   const eventTime = eventDate.toLocaleTimeString(eventLocale, { hour: '2-digit', minute: '2-digit', hour12: true });
-  const dateLocale = lang === 'es' ? es : enUS;
 
   return (
     <Link href={`/events/${event.slug}`} className="event-signature-card group block">
