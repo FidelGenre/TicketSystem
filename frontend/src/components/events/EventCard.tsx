@@ -5,8 +5,6 @@ import Link from 'next/link';
 import { Event } from '@/types';
 import { useCategories } from '@/context/CategoryContext';
 import { useLang } from '@/context/LanguageContext';
-import { format } from 'date-fns';
-import { enUS, es } from 'date-fns/locale';
 import { HiOutlineCalendar, HiOutlineLocationMarker, HiOutlineTag } from 'react-icons/hi';
 import { getImageUrl } from '@/lib/api';
 
@@ -28,7 +26,9 @@ export default function EventCard({ event }: EventCardProps) {
 
   const catLabel = lang === 'en' ? categoryInfo.labelEn : categoryInfo.labelEs;
   const eventDate = new Date(event.eventDate);
-  const dateLocale = lang === 'es' ? es : enUS;
+  const eventLocale = lang === 'es' ? 'es' : 'en-US';
+  const eventDay = eventDate.toLocaleDateString(eventLocale, { day: '2-digit', month: '2-digit' });
+  const eventTime = eventDate.toLocaleTimeString(eventLocale, { hour: '2-digit', minute: '2-digit', hour12: true });
   const dateLocale = lang === 'es' ? es : enUS;
 
   return (
