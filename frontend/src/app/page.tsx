@@ -156,14 +156,14 @@ export default function HomePage() {
 
               <div className="relative z-10 flex h-full items-end">
                 <div className="home-hero-content">
-                  <div className="mb-4 inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/12 px-3 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-white/90 backdrop-blur-md">
+                  <div className="mb-4 hidden items-center gap-2 rounded-lg border border-white/20 bg-white/12 px-3 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-white/90 backdrop-blur-md sm:inline-flex">
                     <span className="h-1.5 w-1.5 rounded-full bg-primary-400 shadow-[0_0_14px_rgba(249,115,22,0.9)]" />
                     {lang === 'es' ? 'Evento destacado' : 'Featured event'}
                   </div>
-                  <h1 className="max-w-4xl text-4xl font-black leading-[0.98] tracking-normal text-white sm:text-6xl lg:text-7xl">
+                  <h1 className="hidden max-w-4xl text-4xl font-black leading-[0.98] tracking-normal text-white sm:block sm:text-6xl lg:text-7xl">
                     {bannerEvent.title}
                   </h1>
-                  <div className="mt-5 flex flex-wrap items-center gap-3 text-sm font-semibold text-white/90">
+                  <div className="mt-5 hidden flex-wrap items-center gap-3 text-sm font-semibold text-white/90 sm:flex">
                     <span className="inline-flex items-center gap-2 rounded-lg bg-white/12 px-3 py-2 backdrop-blur-md">
                       <HiOutlineCalendar className="h-4 w-4" />
                       {format(new Date(bannerEvent.eventDate), lang === 'es' ? 'd MMM yyyy' : 'MMM d, yyyy', { locale: dateLocale })}
