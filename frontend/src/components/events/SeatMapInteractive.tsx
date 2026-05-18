@@ -84,21 +84,21 @@ export default function SeatMapInteractive({
 
   // --- Seat Styling Logic ---
   const getSeatBg = (seat: Seat, seatOverride: any, sectionColor: string, isWC: boolean, selected: boolean) => {
-    if (selected) return isWC ? '#1a73e8' : sectionColor;
-    if (isSeatUnavailable(seat, seatOverride)) return '#d1d5db'; // gray-300
-    return isWC ? '#1a73e8' : '#fff';
+    if (selected) return '#f97316'; // Vivid orange for selected/cart state!
+    if (isSeatUnavailable(seat, seatOverride)) return '#cbd5e1'; // Solid slate-200/gray for locked/sold
+    return isWC ? '#1a73e8' : sectionColor; // Solid vibrant section color for available!
   };
   
   const getSeatBorder = (seat: Seat, seatOverride: any, sectionColor: string, isWC: boolean, selected: boolean) => {
-    if (selected) return '#fff';
-    if (isSeatUnavailable(seat, seatOverride)) return '#9ca3af'; // gray-400
-    return isWC ? '#1a73e8' : sectionColor;
+    if (selected) return '#ffffff';
+    if (isSeatUnavailable(seat, seatOverride)) return '#94a3b8'; // Solid slate-400 for locked/sold
+    return '#ffffff'; // White border, exactly like the designer!
   };
   
   const getSeatShadow = (seat: Seat, seatOverride: any, sectionColor: string, selected: boolean) => {
-    if (selected) return `0 0 0 2px ${sectionColor}`;
+    if (selected) return `0 0 0 2.5px #f97316, 0 4px 10px rgba(249,115,22,0.4)`;
     if (isSeatUnavailable(seat, seatOverride)) return 'none';
-    return '0 1px 2px rgba(0,0,0,0.1)';
+    return '0 1.5px 3px rgba(0,0,0,0.15)';
   };
 
   /**
@@ -574,11 +574,9 @@ export default function SeatMapInteractive({
                       {tableShape === 'round' ? (
                         <>
                           <div 
-                            className="absolute rounded-full border shadow-sm flex items-center justify-center z-10 font-bold transition-colors" 
+                            className="absolute rounded-full bg-[#f8fafc] border border-slate-300 shadow-sm flex items-center justify-center z-10 transition-all hover:bg-slate-50" 
                             style={{
                               width: '60%', height: '60%',
-                              backgroundColor: tableCenterBg,
-                              borderColor: tableCenterBorder,
                               cursor: isTableFullyUnavailable ? 'not-allowed' : 'pointer',
                             }}
                             onClick={(e) => {
@@ -594,7 +592,9 @@ export default function SeatMapInteractive({
                               }
                             }}
                           >
-                            <span className="text-[10px] font-bold" style={{ color: tableLabelColor }}>{isTableFullyUnavailable ? (lang === 'es' ? 'NO DISP.' : 'N/A') : 'MESA'}</span>
+                            <span className="text-[9px] font-extrabold tracking-wider text-slate-500 uppercase">
+                              {isTableFullyUnavailable ? (lang === 'es' ? 'LLENA' : 'FULL') : (lang === 'es' ? 'MESA' : 'TABLE')}
+                            </span>
                           </div>
                           {section.seats?.map((seat, i) => {
                             const seatNumber = seat.seatNumber;
@@ -651,11 +651,9 @@ export default function SeatMapInteractive({
                       ) : (
                         <>
                           <div 
-                            className="absolute rounded border shadow-sm flex items-center justify-center z-10 transition-colors" 
+                            className="absolute rounded bg-[#f8fafc] border border-slate-300 shadow-sm flex items-center justify-center z-10 transition-all hover:bg-slate-50" 
                             style={{
                               width: '70%', height: '45%',
-                              backgroundColor: tableCenterBg,
-                              borderColor: tableCenterBorder,
                               cursor: isTableFullyUnavailable ? 'not-allowed' : 'pointer',
                             }}
                             onClick={(e) => {
@@ -671,7 +669,9 @@ export default function SeatMapInteractive({
                               }
                             }}
                           >
-                            <span className="text-[10px] font-bold" style={{ color: tableLabelColor }}>{isTableFullyUnavailable ? (lang === 'es' ? 'NO DISP.' : 'N/A') : 'MESA'}</span>
+                            <span className="text-[9px] font-extrabold tracking-wider text-slate-500 uppercase">
+                              {isTableFullyUnavailable ? (lang === 'es' ? 'LLENA' : 'FULL') : (lang === 'es' ? 'MESA' : 'TABLE')}
+                            </span>
                           </div>
                           {section.seats?.map((seat, i) => {
                             const seatNumber = seat.seatNumber;
@@ -679,24 +679,39 @@ export default function SeatMapInteractive({
                             const seatOverride: any = (overrides as any)[seatKey] || {};
                             if (seatOverride.disabled) return null;
 
-                            const totalSeats = section.seats!.length;
-                            const sideCount = Math.ceil(totalSeats / 2);
-                            const isTop = i < sideCount;
-                            const idx = isTop ? i : i - sideCount;
-                            const xPos = sideCount > 1 ? (idx / (sideCount - 1)) * 80 + 10 : 50;
-                            const yPos = isTop ? 15 : 85;
+                            const seatsCount = section.seats!.length;
+                            const perimeter = 2 * (1 + 0.55);
+                            const step = perimeter / seatsCount;
+                            const pos = i * step;
+                            let xPos = 50;
+                            let yPos = 50;
+                            if (pos < 1) { // Top
+                              xPos = 15 + pos * 70;
+                              yPos = 12;
+                            } else if (pos < 1.55) { // Right
+                              xPos = 88;
+                              yPos = 15 + (pos - 1) / 0.55 * 70;
+                            } else if (pos < 2.55) { // Bottom
+                              xPos = 85 - (pos - 1.55) * 70;
+                              yPos = 88;
+                            } else { // Left
+                              xPos = 12;
+                              yPos = 85 - (pos - 2.55) / 0.55 * 70;
+                            }
 
                             const selected = isSeatSelected(seat.id);
+                            const finalXOffset = seatOverride.xOffset || 0;
+                            const finalYOffset = seatOverride.yOffset || 0;
                             const isSeatWheelchair = seatOverride.isWheelchair || false;
 
                             return (
-                              <div key={seat.id} className="absolute w-[18%] h-[22%]" style={{
+                              <div key={seat.id} className="absolute w-[18%] h-[18%]" style={{
                                 left: `${xPos}%`, top: `${yPos}%`,
-                                transform: 'translate(-50%, -50%)',
+                                transform: `translate(-50%, -50%) translate(${finalXOffset}px, ${finalYOffset}px)`,
                                 zIndex: 20
                               }}>
                                 <button
-                                  className="w-full h-full rounded border-[1.5px] shadow-sm hover:scale-125 transition-transform box-border flex items-center justify-center text-white"
+                                  className="w-full h-full rounded-full border-[1.5px] shadow-sm hover:scale-125 transition-transform box-border flex items-center justify-center text-white"
                                   style={{
                                     backgroundColor: getSeatBg(seat, seatOverride, section.color, isSeatWheelchair, selected),
                                     borderColor: getSeatBorder(seat, seatOverride, section.color, isSeatWheelchair, selected),
