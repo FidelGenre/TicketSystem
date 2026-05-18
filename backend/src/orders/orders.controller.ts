@@ -123,7 +123,8 @@ export class OrdersController {
       res.header('Content-Disposition', `attachment; filename=ticket-${code}.pkpass`);
       res.send(buffer);
     } catch (err: any) {
-      res.status(503).send({ message: 'Apple Wallet no está configurado aún. Contacta al soporte.' });
+      console.error('[OrdersController] Apple Wallet generation error:', err);
+      res.status(503).send({ message: `Error: ${err.message || err}` });
     }
   }
 
