@@ -612,8 +612,16 @@ export class EventsService {
    * Limits each user to 10 concurrent reservations.
    */
   async lockSeats(seatIds: string[], userId: string) {
+    if (seatIds.length === 0) return { message: 'No seats provided' };
     const { MoreThan, Not, In, IsNull } = require('typeorm');
     const now = new Date();
+
+    const firstSeat = await this.seatRepo.findOne({
+      where: { id: seatIds[0] },
+      relations: ['section', 'section.event'],
+    });
+    if (!firstSeat) throw new NotFoundException('Asiento no encontrado');
+    const maxLimit = firstSeat.section?.event?.maxTicketsPerTransaction || 10;
 
     // Enforce platform limits to prevent inventory abuse
     const currentlyLockedCount = await this.seatRepo.count({
@@ -625,9 +633,9 @@ export class EventsService {
       },
     });
 
-    if (currentlyLockedCount + seatIds.length > 10) {
+    if (currentlyLockedCount + seatIds.length > maxLimit) {
       throw new BadRequestException(
-        `Límite de reserva excedido (Máx 10). Ya posees ${currentlyLockedCount} reservados.`
+        `Límite de reserva excedido (Máx ${maxLimit}). Ya posees ${currentlyLockedCount} reservados.`
       );
     }
 

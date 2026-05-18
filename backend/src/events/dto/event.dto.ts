@@ -41,6 +41,11 @@ export class CreateEventDto {
   @IsOptional()
   @IsString()
   bannerPosition?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  maxTicketsPerTransaction?: number;
 }
 
 export class UpdateEventDto {
@@ -91,6 +96,11 @@ export class UpdateEventDto {
   @IsOptional()
   @IsString()
   bannerPosition?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  maxTicketsPerTransaction?: number;
 }
 
 export class EventQueryDto {

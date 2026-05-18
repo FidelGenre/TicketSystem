@@ -141,8 +141,11 @@ export default function EventDetailPage() {
         if (exists) {
           next = next.filter(s => s.id !== seat.id);
         } else {
-          if (next.length >= 10) {
-            setAlertMessage(lang === 'es' ? 'No puedes seleccionar más de 10 asientos por transacción.' : 'You cannot select more than 10 seats per transaction.');
+          const limit = event?.maxTicketsPerTransaction || 10;
+          if (next.length >= limit) {
+            setAlertMessage(lang === 'es' 
+              ? `No puedes seleccionar más de ${limit} asientos por transacción.` 
+              : `You cannot select more than ${limit} seats per transaction.`);
             break;
           }
           const seatWithTime = { ...seat, addedAt: Date.now() };

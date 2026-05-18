@@ -96,6 +96,14 @@ export class OrdersService {
     const event = await this.eventRepo.findOne({ where: { id: eventId } });
     if (!event) throw new NotFoundException('Event not found');
 
+    const maxLimit = event.maxTicketsPerTransaction || 10;
+    if (seatIds && seatIds.length > maxLimit) {
+      throw new BadRequestException(`No puedes seleccionar más de ${maxLimit} asientos por transacción.`);
+    }
+    if (quantity && quantity > maxLimit) {
+      throw new BadRequestException(`No puedes comprar más de ${maxLimit} entradas por transacción.`);
+    }
+
     let baseTotal = 0;
     let lineItems: any[] = [];
     const seatsInfo: {
@@ -347,6 +355,14 @@ export class OrdersService {
   ) {
     const event = await this.eventRepo.findOne({ where: { id: eventId } });
     if (!event) throw new NotFoundException('Event not found');
+
+    const maxLimit = event.maxTicketsPerTransaction || 10;
+    if (seatIds && seatIds.length > maxLimit) {
+      throw new BadRequestException(`No puedes seleccionar más de ${maxLimit} asientos por transacción.`);
+    }
+    if (quantity && quantity > maxLimit) {
+      throw new BadRequestException(`No puedes comprar más de ${maxLimit} entradas por transacción.`);
+    }
 
     let baseTotal = 0;
     const seatsInfo: any[] = [];

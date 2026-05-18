@@ -35,6 +35,7 @@ export default function CreateEventPage() {
     eventDate: '',
     eventTime: '',
     doorsOpen: '',
+    maxTicketsPerTransaction: '10',
   });
   const [step, setStep] = useState<1 | 2>(1);
   const [createdEventId, setCreatedEventId] = useState<string | null>(null);
@@ -75,6 +76,7 @@ export default function CreateEventPage() {
     try {
       // Clean up empty optional fields
       const payload: any = { ...form, hasSeatMap: true };
+      payload.maxTicketsPerTransaction = form.maxTicketsPerTransaction ? parseInt(form.maxTicketsPerTransaction, 10) : 10;
       if (form.eventDate) {
         payload.eventDate = buildLocalEventDate(form.eventDate, form.eventTime);
       }
@@ -252,6 +254,31 @@ export default function CreateEventPage() {
                     />
                   </div>
                 </div>
+
+                {/* Ticket limits */}
+                <div className="pt-6 border-t border-gray-100">
+                  <h3 className="font-bold text-base text-gray-900 mb-4">{lang === 'es' ? 'Límites de Venta' : 'Sale Limits'}</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        {lang === 'es' ? 'Máx. entradas por persona/transacción *' : 'Max tickets per person/transaction *'}
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="100"
+                        value={form.maxTicketsPerTransaction}
+                        onChange={(e) => updateForm('maxTicketsPerTransaction', e.target.value)}
+                        className="input py-3"
+                        required
+                      />
+                      <p className="text-xs text-gray-400 mt-1 font-medium">
+                        {lang === 'es' ? 'Establece el número máximo de entradas que un cliente puede comprar a la vez.' : 'Set the maximum number of tickets a customer can purchase at once.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>

@@ -96,6 +96,7 @@ export default function EventDetailPage() {
     category: '',
     hasSeatMap: false,
     bannerPosition: 'center',
+    maxTicketsPerTransaction: 10,
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
@@ -127,6 +128,7 @@ export default function EventDetailPage() {
         category: ev.category || '',
         hasSeatMap: ev.hasSeatMap || false,
         bannerPosition: ev.bannerPosition || 'center',
+        maxTicketsPerTransaction: ev.maxTicketsPerTransaction || 10,
       });
 
       // Load sections and seats
@@ -234,6 +236,7 @@ export default function EventDetailPage() {
         category: editForm.category,
         hasSeatMap: true,
         bannerPosition: editForm.bannerPosition,
+        maxTicketsPerTransaction: editForm.maxTicketsPerTransaction ? Number(editForm.maxTicketsPerTransaction) : 10,
       });
 
       // 2. Upload cover image if selected
@@ -944,6 +947,29 @@ export default function EventDetailPage() {
                   placeholder={lang === 'es' ? 'Ej: Miami, FL, Estados Unidos' : 'Ex: Miami, FL, United States'}
                   className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-1 focus:ring-primary-500 text-sm focus:border-primary-500 focus:outline-none"
                 />
+              </div>
+            </div>
+
+            {/* Ticket limits */}
+            <div className="pt-4 border-t border-gray-100 space-y-1.5">
+              <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                {lang === 'es' ? 'Límite de Venta (Máx. entradas por transacción)' : 'Sale Limits (Max tickets per transaction)'}
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={editForm.maxTicketsPerTransaction}
+                    onChange={(e) => setEditForm({ ...editForm, maxTicketsPerTransaction: Number(e.target.value) })}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-1 focus:ring-primary-500 text-sm focus:border-primary-500 focus:outline-none"
+                    required
+                  />
+                  <p className="text-[10px] text-gray-400 font-medium">
+                    {lang === 'es' ? 'Establece el número máximo de entradas que un cliente puede comprar a la vez.' : 'Set the maximum number of tickets a customer can purchase at once.'}
+                  </p>
+                </div>
               </div>
             </div>
 

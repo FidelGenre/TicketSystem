@@ -248,8 +248,11 @@ export default function PurchasePage() {
         if (exists) {
           next = next.filter(s => s.id !== seat.id);
         } else {
-          if (next.length >= 10) {
-            alert(lang === 'es' ? 'No puedes reservar más de 10 asientos por transacción.' : 'You cannot reserve more than 10 seats per transaction.');
+          const limit = event?.maxTicketsPerTransaction || 10;
+          if (next.length >= limit) {
+            alert(lang === 'es' 
+              ? `No puedes reservar más de ${limit} asientos por transacción.` 
+              : `You cannot reserve more than ${limit} seats per transaction.`);
             break;
           }
           next.push(seat);
@@ -257,7 +260,7 @@ export default function PurchasePage() {
       }
       return next;
     });
-  }, [lang]);
+  }, [lang, event?.maxTicketsPerTransaction]);
 
   /**
    * Locks the selected seats on the server to prevent other users from buying them.
@@ -496,8 +499,8 @@ export default function PurchasePage() {
                     </span>
                     <button
                       type="button"
-                      onClick={() => setStandingQuantity((q) => Math.min(10, q + 1))}
-                      disabled={standingQuantity >= 10}
+                      onClick={() => setStandingQuantity((q) => Math.min(event?.maxTicketsPerTransaction || 10, q + 1))}
+                      disabled={standingQuantity >= (event?.maxTicketsPerTransaction || 10)}
                       className="w-12 h-12 rounded-xl flex items-center justify-center border-2 border-gray-200 hover:border-blue-500 text-gray-600 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed font-extrabold text-xl transition-all active:scale-90"
                     >
                       ＋
@@ -506,8 +509,8 @@ export default function PurchasePage() {
 
                   <p className="text-xs text-gray-500 font-semibold bg-blue-50 border border-blue-100 text-blue-700 px-4 py-1.5 rounded-full shadow-sm">
                     {lang === 'es' 
-                      ? 'Puedes seleccionar un máximo de 10 entradas por transacción' 
-                      : 'You can select a maximum of 10 tickets per transaction'}
+                      ? `Puedes seleccionar un máximo de ${event?.maxTicketsPerTransaction || 10} entradas por transacción` 
+                      : `You can select a maximum of ${event?.maxTicketsPerTransaction || 10} tickets per transaction`}
                   </p>
                 </div>
               ) : (

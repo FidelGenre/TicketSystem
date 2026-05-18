@@ -65,6 +65,7 @@ export interface Event {
   serviceFeeFixedPerTicket?: number;
   processingFeePercent?: number;
   processingFeeFixedPerTicket?: number;
+  maxTicketsPerTransaction?: number;
   createdAt: string;
   updatedAt?: string;
   pendingTitle?: string;
