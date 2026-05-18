@@ -51,9 +51,10 @@ export class WalletService {
       let keyBuffer: Buffer;
 
       if (hasPemEnv) {
-        wwdrBuffer = Buffer.from(wwdrPem, 'utf8');
-        certBuffer = Buffer.from(certPem, 'utf8');
-        keyBuffer = Buffer.from(keyPem, 'utf8');
+        const cleanPem = (pem: string) => pem.replace(/\\n/g, '\n').trim();
+        wwdrBuffer = Buffer.from(cleanPem(wwdrPem), 'utf8');
+        certBuffer = Buffer.from(cleanPem(certPem), 'utf8');
+        keyBuffer = Buffer.from(cleanPem(keyPem), 'utf8');
       } else {
         wwdrBuffer = readFileSync(wwdrPath!);
         certBuffer = readFileSync(certPath!);
