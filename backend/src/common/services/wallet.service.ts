@@ -244,6 +244,20 @@ export class WalletService {
       const objectId = `${issuerId}.${ticket.ticketCode}`;
       const fullClassId = classId || `${issuerId}.lpticket_eventticket`;
 
+      // Event ticket class definition (auto-creates if it doesn't exist)
+      const ticketClass = {
+        id: fullClassId,
+        issuerName: 'LPTicket',
+        reviewStatus: 'UNDER_REVIEW',
+        eventId: ticket.event?.id || 'lpticket-event',
+        eventName: {
+          defaultValue: { language: 'es', value: ticket.event?.title || 'LPTicket Event' },
+        },
+        logo: {
+          sourceUri: { uri: `${appUrl}/logo.png` },
+        },
+      };
+
       // Event ticket object definition
       const ticketObject = {
         id:    objectId,
@@ -257,12 +271,6 @@ export class WalletService {
           type:          'QR_CODE',
           value:         `${appUrl}/verify/${ticket.ticketCode}`,
           alternateText: ticket.ticketCode,
-        },
-        eventName: {
-          defaultValue: { language: 'es', value: ticket.event?.title || 'LPTicket Event' },
-        },
-        logo: {
-          sourceUri: { uri: `${appUrl}/logo.png` },
         },
         seatInfo: ticket.rowLabel ? {
           seat:    { defaultValue: { language: 'es', value: String(ticket.seatNumber || '') } },
@@ -292,9 +300,10 @@ export class WalletService {
       const claims = {
         iss:     serviceAccount.client_email,
         aud:     'google',
-        origins: [appUrl],
+        origins: [appUrl, 'http://localhost:3000'],
         typ:     'savetowallet',
         payload: {
+          eventTicketClasses: [ticketClass],
           eventTicketObjects: [ticketObject],
         },
       };

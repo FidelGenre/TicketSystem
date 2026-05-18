@@ -160,6 +160,40 @@ export default function EventDetailPage() {
     }, 0);
   }, [selectedSeats, seatMap]);
 
+  const getServiceFee = useCallback(() => {
+    return selectedSeats.reduce((total, seat) => {
+      const section = seatMap.find((s) => s.id === seat.sectionId);
+      const price = getSeatPrice(seat, section);
+      
+      const sFeePercent = section?.serviceFeePercent !== null && section?.serviceFeePercent !== undefined 
+        ? Number(section.serviceFeePercent) 
+        : (event?.serviceFeePercent !== null && event?.serviceFeePercent !== undefined ? Number(event.serviceFeePercent) : 0.12);
+
+      const sFeeFixed = section?.serviceFeeFixedPerTicket !== null && section?.serviceFeeFixedPerTicket !== undefined 
+        ? Number(section.serviceFeeFixedPerTicket) 
+        : (event?.serviceFeeFixedPerTicket !== null && event?.serviceFeeFixedPerTicket !== undefined ? Number(event.serviceFeeFixedPerTicket) : 0);
+        
+      return total + (price * sFeePercent + sFeeFixed);
+    }, 0);
+  }, [selectedSeats, seatMap, event]);
+
+  const getProcessingFee = useCallback(() => {
+    return selectedSeats.reduce((total, seat) => {
+      const section = seatMap.find((s) => s.id === seat.sectionId);
+      const price = getSeatPrice(seat, section);
+      
+      const pFeePercent = section?.processingFeePercent !== null && section?.processingFeePercent !== undefined 
+        ? Number(section.processingFeePercent) 
+        : (event?.processingFeePercent !== null && event?.processingFeePercent !== undefined ? Number(event.processingFeePercent) : 0.029);
+
+      const pFeeFixed = section?.processingFeeFixedPerTicket !== null && section?.processingFeeFixedPerTicket !== undefined 
+        ? Number(section.processingFeeFixedPerTicket) 
+        : (event?.processingFeeFixedPerTicket !== null && event?.processingFeeFixedPerTicket !== undefined ? Number(event.processingFeeFixedPerTicket) : 0.30);
+        
+      return total + (price * pFeePercent + pFeeFixed);
+    }, 0);
+  }, [selectedSeats, seatMap, event]);
+
   const handleBuyTickets = () => {
     if (selectedSeats.length === 0) {
       setAlertMessage(lang === 'es' ? 'Por favor selecciona al menos un asiento.' : 'Please select at least one seat.');
@@ -376,12 +410,18 @@ export default function EventDetailPage() {
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">{t('serviceFee')}</span>
-                      <span className="text-gray-800">${(getTotalPrice() * 0.10).toFixed(2)}</span>
+                      <span className="text-gray-800">${getServiceFee().toFixed(2)}</span>
                     </div>
+                    {getProcessingFee() > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">{lang === 'es' ? 'Tarifa de procesamiento' : 'Processing fee'}</span>
+                        <span className="text-gray-800">${getProcessingFee().toFixed(2)}</span>
+                      </div>
+                    )}
                     <hr className="border-gray-200" />
                     <div className="flex justify-between font-bold text-base">
                       <span className="text-gray-900">{t('total')}</span>
-                      <span className="text-primary-600">${(getTotalPrice() * 1.10).toFixed(2)} {event.currency || 'USD'}</span>
+                      <span className="text-primary-600">${(getTotalPrice() + getServiceFee() + getProcessingFee()).toFixed(2)} {event.currency || 'USD'}</span>
                     </div>
                   </div>
                 </>

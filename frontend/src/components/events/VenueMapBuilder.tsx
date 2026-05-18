@@ -1744,6 +1744,7 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
                           const isReserved = sStatus === 'reserved';
                           const isSold = sStatus === 'sold';
                           const isSeatSelected = selectedSeat?.secId === sec.id && selectedSeat?.seatKey === seatKey;
+                          const chairSize = Math.max(10, Math.min(22, Math.min(sec.mapWidth!, sec.mapHeight!) * 0.20));
 
                           return (
                             <div
@@ -1758,8 +1759,8 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
                                 setSelectedId(sec.id!);
                               }}
                               style={{
-                                width: '20%',
-                                height: '20%',
+                                width: chairSize,
+                                height: chairSize,
                                 backgroundColor: isSold ? '#94a3b8' : (isReserved ? '#f97316' : (isSeatWheelchair ? '#1a73e8' : sec.color)),
                                 transform: `rotate(${angle}deg) translate(0, -210%) rotate(-${angle}deg) translate(${finalXOffset}px, ${finalYOffset}px)`,
                                 boxShadow: isSeatSelected ? '0 0 0 3px #3b82f6, 0 4px 10px rgba(59,130,246,0.5)' : '0 1px 3px rgba(0,0,0,0.15)',
@@ -1838,6 +1839,7 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
                           const isReserved = sStatus === 'reserved';
                           const isSold = sStatus === 'sold';
                           const isSeatSelected = selectedSeat?.secId === sec.id && selectedSeat?.seatKey === seatKey;
+                          const chairSize = Math.max(10, Math.min(22, Math.min(sec.mapWidth!, sec.mapHeight!) * 0.18));
 
                           return (
                             <div
@@ -1852,8 +1854,8 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
                                 setSelectedId(sec.id!);
                               }}
                               style={{
-                                width: '18%',
-                                height: '18%',
+                                width: chairSize,
+                                height: chairSize,
                                 backgroundColor: isSold ? '#94a3b8' : (isReserved ? '#f97316' : (isSeatWheelchair ? '#1a73e8' : sec.color)),
                                 left: `${x}%`,
                                 top: `${y}%`,

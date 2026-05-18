@@ -61,6 +61,10 @@ export interface Event {
   defaultViewY?: number;
   defaultViewZoom?: number;
   showStage?: boolean;
+  serviceFeePercent?: number;
+  serviceFeeFixedPerTicket?: number;
+  processingFeePercent?: number;
+  processingFeeFixedPerTicket?: number;
   createdAt: string;
   updatedAt?: string;
   pendingTitle?: string;
@@ -101,6 +105,10 @@ export interface VenueSection {
   isWheelchair?: boolean;
   tableShape?: 'round' | 'rectangular';
   tablePurchaseMode?: 'individual' | 'whole';
+  serviceFeePercent?: number;
+  serviceFeeFixedPerTicket?: number;
+  processingFeePercent?: number;
+  processingFeeFixedPerTicket?: number;
   seatsConfig?: string;
   seats?: Seat[];
 }

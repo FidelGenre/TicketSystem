@@ -627,8 +627,12 @@ export default function SeatMapInteractive({
                             const finalYOffset = seatOverride.yOffset || 0;
                             const isSeatWheelchair = seatOverride.isWheelchair || false;
 
+                            const chairSize = Math.max(8, Math.min(18, Math.min(section.mapWidth!, section.mapHeight!) * 0.18));
+
                             return (
-                              <div key={seat.id} className="absolute w-[18%] h-[18%]" style={{
+                              <div key={seat.id} className="absolute" style={{
+                                width: chairSize,
+                                height: chairSize,
                                 transform: `rotate(${angle}deg) translate(0, -210%) rotate(-${angle}deg) translate(${finalXOffset}px, ${finalYOffset}px)`,
                                 zIndex: 20
                               }}>
@@ -735,9 +739,13 @@ export default function SeatMapInteractive({
                             const finalYOffset = seatOverride.yOffset || 0;
                             const isSeatWheelchair = seatOverride.isWheelchair || false;
 
+                            const chairSize = Math.max(8, Math.min(18, Math.min(section.mapWidth!, section.mapHeight!) * 0.18));
+
                             return (
-                              <div key={seat.id} className="absolute w-[18%] h-[18%]" style={{
+                              <div key={seat.id} className="absolute" style={{
                                 left: `${xPos}%`, top: `${yPos}%`,
+                                width: chairSize,
+                                height: chairSize,
                                 transform: `translate(-50%, -50%) translate(${finalXOffset}px, ${finalYOffset}px)`,
                                 zIndex: 20
                               }}>
