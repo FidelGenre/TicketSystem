@@ -97,7 +97,6 @@ export class WalletService {
           wwdr,
           signerCert,
           signerKey,
-          signerKeyPassphrase: this.configService.get<string>('APPLE_PASS_KEY_PASS') || '',
         },
         {
           formatVersion: 1,
