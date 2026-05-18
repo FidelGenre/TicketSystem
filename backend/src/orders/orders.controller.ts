@@ -113,7 +113,6 @@ export class OrdersController {
     return this.ordersService.validateTicket(code, req.user);
   }
 
-  @UseGuards(AuthGuard('jwt'))
   @Get('ticket/:code/apple-wallet')
   async getAppleWallet(@Param('code') code: string, @Res() res: any) {
     const ticket = await this.ordersService.getTicketByCode(code);

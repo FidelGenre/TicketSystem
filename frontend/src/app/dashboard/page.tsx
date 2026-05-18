@@ -104,8 +104,7 @@ function DashboardPageBody() {
   const handleAppleWallet = async (code: string) => {
     const loadingToast = toast.loading(lang === 'es' ? 'Abriendo Apple Wallet...' : 'Opening Apple Wallet...');
     try {
-      const token = localStorage.getItem('accessToken');
-      const url = `${api.defaults.baseURL}/orders/ticket/${code}/apple-wallet?token=${token || ''}`;
+      const url = `${api.defaults.baseURL}/orders/ticket/${code}/apple-wallet`;
       
       // Direct navigation allows iOS Safari to natively parse and open the pass sheet!
       window.location.href = url;
