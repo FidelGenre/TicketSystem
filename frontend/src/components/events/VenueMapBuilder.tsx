@@ -271,9 +271,16 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
     }
   }, [initialSections]);
 
+  const onChangeRef = useRef(onChange);
   useEffect(() => {
-    if (onChange) onChange(sections);
-  }, [sections, onChange]);
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
+  useEffect(() => {
+    if (onChangeRef.current) {
+      onChangeRef.current(sections);
+    }
+  }, [sections]);
 
   const loadDbTemplates = useCallback(async () => {
     try {

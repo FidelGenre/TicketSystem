@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import api, { getImageUrl } from '@/lib/api';
@@ -100,6 +100,13 @@ export default function EventDetailPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
+  const handleMapSaved = useCallback((newSections: VenueSection[]) => {
+    setSections(newSections);
+  }, []);
+
+  const handleMapChange = useCallback((updatedSections: any[]) => {
+    setSections(updatedSections as VenueSection[]);
+  }, []);
 
   useEffect(() => { loadEvent(); refreshCategories(); }, [id]);
 
@@ -511,13 +518,8 @@ export default function EventDetailPage() {
           initialSections={sections} 
           event={event}
           isAdmin={user?.role === 'admin'}
-          onSaved={(newSections) => {
-            setSections(newSections);
-          }} 
-          onChange={(updatedSections) => {
-            // Keep the parent state in sync so switching tabs doesn't lose data
-            setSections(updatedSections as VenueSection[]);
-          }}
+          onSaved={handleMapSaved} 
+          onChange={handleMapChange}
         />
       )}
 
