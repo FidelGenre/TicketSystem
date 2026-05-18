@@ -51,10 +51,35 @@ export class WalletService {
       let keyBuffer: Buffer;
 
       if (hasPemEnv) {
-        const cleanPem = (pem: string) => pem.replace(/\\n/g, '\n').trim();
-        wwdrBuffer = Buffer.from(cleanPem(wwdrPem), 'utf8');
-        certBuffer = Buffer.from(cleanPem(certPem), 'utf8');
-        keyBuffer = Buffer.from(cleanPem(keyPem), 'utf8');
+        const normalizePem = (pem: string, type: 'CERTIFICATE' | 'PRIVATE KEY') => {
+          let clean = pem
+            .replace(/\\r/g, '')
+            .replace(/\\n/g, '\n')
+            .replace(/\r/g, '')
+            .trim();
+
+          const header = `-----BEGIN ${type}-----`;
+          const footer = `-----END ${type}-----`;
+
+          let body = clean;
+          if (body.includes(header)) body = body.replace(header, '');
+          if (body.includes(footer)) body = body.replace(footer, '');
+          
+          body = body.replace(/\s+/g, '');
+
+          const lines: string[] = [];
+          lines.push(header);
+          for (let i = 0; i < body.length; i += 64) {
+            lines.push(body.substring(i, i + 64));
+          }
+          lines.push(footer);
+
+          return lines.join('\n');
+        };
+
+        wwdrBuffer = Buffer.from(normalizePem(wwdrPem, 'CERTIFICATE'), 'utf8');
+        certBuffer = Buffer.from(normalizePem(certPem, 'CERTIFICATE'), 'utf8');
+        keyBuffer = Buffer.from(normalizePem(keyPem, 'PRIVATE KEY'), 'utf8');
       } else {
         wwdrBuffer = readFileSync(wwdrPath!);
         certBuffer = readFileSync(certPath!);
