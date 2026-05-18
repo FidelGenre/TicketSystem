@@ -198,7 +198,7 @@ export class WalletService {
         },
       );
 
-      return await pass.export();
+      return pass.getAsBuffer();
     } catch (err) {
       console.error('[WalletService] Error generating Apple pass:', err);
       throw err;
