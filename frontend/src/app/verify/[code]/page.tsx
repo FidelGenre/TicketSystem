@@ -131,13 +131,64 @@ export default function VerifyTicketPage() {
     <div className="min-h-screen py-10 px-4 bg-slate-50 flex flex-col items-center justify-center print:bg-white print:py-0 print:px-0 print:min-h-0 print:block">
       <style>{`
         @media print {
-          @page { margin: 0.25cm; size: auto; }
-          html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: white; }
+          @page { margin: 0.12cm; size: auto; }
+
+          html,
+          body {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            background: white !important;
+            width: 100% !important;
+            height: auto !important;
+            overflow: visible !important;
+          }
+
           .ticket-print-sheet {
-            width: 100%;
-            max-width: 760px !important;
-            transform: scale(0.92);
+            width: 100% !important;
+            max-width: 720px !important;
+            transform: scale(0.78);
             transform-origin: top center;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+
+          .ticket-print-sheet > div:first-of-type {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: flex-start !important;
+            gap: 12px !important;
+          }
+
+          .ticket-print-sheet img {
+            width: 118px !important;
+            height: 118px !important;
+          }
+
+          .ticket-print-sheet h1 {
+            font-size: 20px !important;
+            line-height: 1.05 !important;
+          }
+
+          .ticket-print-sheet p,
+          .ticket-print-sheet span {
+            line-height: 1.15 !important;
+          }
+
+          .ticket-print-sheet .border {
+            margin-top: 10px !important;
+            padding: 10px !important;
+          }
+
+          .ticket-print-sheet > div:last-of-type {
+            margin-top: 10px !important;
+            padding-top: 10px !important;
+            display: flex !important;
+            flex-direction: row !important;
+            gap: 12px !important;
+          }
+
+          .ticket-print-sheet > div:last-of-type p {
+            margin: 2px 0 !important;
           }
         }
       `}</style>
