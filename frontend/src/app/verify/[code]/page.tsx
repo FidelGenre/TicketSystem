@@ -182,6 +182,7 @@ export default function VerifyTicketPage() {
         }
 
 
+        @media print {
           /* PRINT RECEIPT FOOTER FINAL POSITION */
           .ticket-card {
             position: relative !important;
@@ -205,6 +206,79 @@ export default function VerifyTicketPage() {
             box-sizing: border-box !important;
           }
           /* END PRINT RECEIPT FOOTER FINAL POSITION */
+        }
+
+        @media screen and (max-width: 640px) {
+          .ticket-card {
+            position: static !important;
+            height: auto !important;
+            min-height: 0 !important;
+            padding-bottom: 0 !important;
+            overflow: hidden !important;
+          }
+
+          .ticket-body {
+            padding-bottom: 1.25rem !important;
+          }
+
+          .ticket-footer {
+            position: static !important;
+            min-height: 0 !important;
+            margin-top: 0 !important;
+          }
+        }
+
+        @media print and (max-width: 640px) {
+          @page {
+            size: letter portrait;
+            margin: 6mm;
+          }
+
+          .ticket-card {
+            position: relative !important;
+            height: calc(11in - 12mm) !important;
+            min-height: calc(11in - 12mm) !important;
+            padding-bottom: 92pt !important;
+            box-sizing: border-box !important;
+          }
+
+          .ticket-header {
+            padding: 12pt 14pt 0 !important;
+          }
+
+          .ticket-body {
+            padding: 10pt 14pt 8pt !important;
+            flex: none !important;
+          }
+
+          .ticket-footer {
+            position: absolute !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            min-height: 84pt !important;
+            padding: 10pt 14pt !important;
+            box-sizing: border-box !important;
+          }
+
+          .brand-logo {
+            width: 135pt !important;
+          }
+
+          .qr-img {
+            width: 88pt !important;
+            height: 88pt !important;
+          }
+
+          .event-title {
+            font-size: 15pt !important;
+          }
+
+          .terms-text {
+            font-size: 5.6pt !important;
+            line-height: 1.28 !important;
+          }
+        }
 
         /* ==================== SCREEN STYLES ==================== */
         @media screen {
