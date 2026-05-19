@@ -133,10 +133,7 @@ export default function TicketScannerPage() {
                 return { width: size, height: size };
               },
               aspectRatio: 1.0, // Standard square aspect ratio for optimal QR resolution
-              experimentalFeatures: {
-                useBarCodeDetectorIfSupported: true, // Utilizes hardware-accelerated native mobile API if available (5x faster)
-              },
-            },
+},
             async (decodedText) => {
               // Successfully decoded code! Stop camera first to prevent duplicate trigger loops
               try {

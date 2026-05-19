@@ -36,6 +36,8 @@ export class MailService {
     const appUrl = this.getAppUrl();
     const eventAddress = [eventInfo?.venueName, eventInfo?.venueAddress].filter(Boolean).join(' — ');
     const ticketDetails = tickets.map(t => {
+      const locationLabel = formatTicketSeatLabel(t);
+      const ticketUrl = `${appUrl}/verify/${t.ticketCode}`;
       const row = t.rowLabel || '';
       const num = t.seatNumber;
       const section = t.sectionName || '';
