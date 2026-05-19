@@ -14,20 +14,98 @@ import {
 import Link from 'next/link';
 import VenueMapBuilder from '@/components/events/VenueMapBuilder';
 
-const TIMEZONES = [
-  { value: 'America/Argentina/Buenos_Aires', label: 'Argentina (ART)' },
-  { value: 'America/Toronto', label: 'Canada - Eastern (ET)' },
-  { value: 'America/Denver', label: 'USA - Mountain (MT)' },
-  { value: 'America/Chicago', label: 'USA - Central (CT)' },
-  { value: 'America/New_York', label: 'USA - Eastern (ET)' },
-  { value: 'America/Los_Angeles', label: 'USA - Pacific (PT)' },
-  { value: 'America/Mexico_City', label: 'Mexico (CT)' },
-  { value: 'America/Bogota', label: 'Colombia (CT)' },
-  { value: 'America/Lima', label: 'Peru (ET)' },
-  { value: 'America/Santiago', label: 'Chile (CLT)' },
-  { value: 'Europe/London', label: 'UK (GMT/BST)' },
-  { value: 'Europe/Madrid', label: 'Spain (CET/CEST)' },
-  { value: 'UTC', label: 'UTC' },
+const TIMEZONE_GROUPS = [
+  {
+    region: 'Americas - North & Central',
+    zones: [
+      { value: 'America/Anchorage', label: 'Anchorage (AKST/AKDT)' },
+      { value: 'America/Los_Angeles', label: 'Los Angeles (PST/PDT)' },
+      { value: 'America/Denver', label: 'Denver (MST/MDT)' },
+      { value: 'America/Chicago', label: 'Chicago (CST/CDT)' },
+      { value: 'America/New_York', label: 'New York (EST/EDT)' },
+      { value: 'America/Toronto', label: 'Toronto (EST/EDT)' },
+      { value: 'America/Mexico_City', label: 'Mexico City (CST/CDT)' },
+    ],
+  },
+  {
+    region: 'Americas - South',
+    zones: [
+      { value: 'America/Bogota', label: 'Bogota (COT)' },
+      { value: 'America/Lima', label: 'Lima (PET)' },
+      { value: 'America/Argentina/Buenos_Aires', label: 'Buenos Aires (ART)' },
+      { value: 'America/Santiago', label: 'Santiago (CLT)' },
+      { value: 'America/Sao_Paulo', label: 'São Paulo (BRT)' },
+    ],
+  },
+  {
+    region: 'Europe',
+    zones: [
+      { value: 'Europe/London', label: 'London (GMT/BST)' },
+      { value: 'Europe/Dublin', label: 'Dublin (GMT/IST)' },
+      { value: 'Europe/Paris', label: 'Paris (CET/CEST)' },
+      { value: 'Europe/Berlin', label: 'Berlin (CET/CEST)' },
+      { value: 'Europe/Madrid', label: 'Madrid (CET/CEST)' },
+      { value: 'Europe/Rome', label: 'Rome (CET/CEST)' },
+      { value: 'Europe/Amsterdam', label: 'Amsterdam (CET/CEST)' },
+      { value: 'Europe/Brussels', label: 'Brussels (CET/CEST)' },
+      { value: 'Europe/Vienna', label: 'Vienna (CET/CEST)' },
+      { value: 'Europe/Prague', label: 'Prague (CET/CEST)' },
+      { value: 'Europe/Warsaw', label: 'Warsaw (CET/CEST)' },
+      { value: 'Europe/Moscow', label: 'Moscow (MSK)' },
+      { value: 'Europe/Athens', label: 'Athens (EET/EEST)' },
+      { value: 'Europe/Istanbul', label: 'Istanbul (EET/EEST)' },
+    ],
+  },
+  {
+    region: 'Africa',
+    zones: [
+      { value: 'Africa/Cairo', label: 'Cairo (EET)' },
+      { value: 'Africa/Lagos', label: 'Lagos (WAT)' },
+      { value: 'Africa/Johannesburg', label: 'Johannesburg (SAST)' },
+      { value: 'Africa/Nairobi', label: 'Nairobi (EAT)' },
+    ],
+  },
+  {
+    region: 'Middle East & Central Asia',
+    zones: [
+      { value: 'Asia/Dubai', label: 'Dubai (GST)' },
+      { value: 'Asia/Tehran', label: 'Tehran (IRST)' },
+      { value: 'Asia/Kolkata', label: 'India (IST)' },
+      { value: 'Asia/Karachi', label: 'Karachi (PKT)' },
+      { value: 'Asia/Almaty', label: 'Almaty (ALMT)' },
+    ],
+  },
+  {
+    region: 'Asia - East & Southeast',
+    zones: [
+      { value: 'Asia/Bangkok', label: 'Bangkok (ICT)' },
+      { value: 'Asia/Ho_Chi_Minh', label: 'Ho Chi Minh (ICT)' },
+      { value: 'Asia/Singapore', label: 'Singapore (SGT)' },
+      { value: 'Asia/Kuala_Lumpur', label: 'Kuala Lumpur (MYT)' },
+      { value: 'Asia/Manila', label: 'Manila (PHT)' },
+      { value: 'Asia/Shanghai', label: 'Shanghai (CST)' },
+      { value: 'Asia/Hong_Kong', label: 'Hong Kong (HKT)' },
+      { value: 'Asia/Tokyo', label: 'Tokyo (JST)' },
+      { value: 'Asia/Seoul', label: 'Seoul (KST)' },
+      { value: 'Asia/Taipei', label: 'Taipei (CST)' },
+    ],
+  },
+  {
+    region: 'Oceania',
+    zones: [
+      { value: 'Australia/Perth', label: 'Perth (AWST)' },
+      { value: 'Australia/Adelaide', label: 'Adelaide (ACST/ACDT)' },
+      { value: 'Australia/Sydney', label: 'Sydney (AEDT/AEST)' },
+      { value: 'Pacific/Auckland', label: 'Auckland (NZDT/NZST)' },
+      { value: 'Pacific/Fiji', label: 'Fiji (FJT)' },
+    ],
+  },
+  {
+    region: 'Otros',
+    zones: [
+      { value: 'UTC', label: 'UTC (Coordinated Universal Time)' },
+    ],
+  },
 ];
 
 const buildLocalEventDate = (date: string, time: string) => {
@@ -264,8 +342,12 @@ export default function CreateEventPage() {
                       className="input py-3"
                       required
                     >
-                      {TIMEZONES.map(tz => (
-                        <option key={tz.value} value={tz.value}>{tz.label}</option>
+                      {TIMEZONE_GROUPS.map(group => (
+                        <optgroup key={group.region} label={group.region}>
+                          {group.zones.map(tz => (
+                            <option key={tz.value} value={tz.value}>{tz.label}</option>
+                          ))}
+                        </optgroup>
                       ))}
                     </select>
                   </div>
