@@ -169,13 +169,23 @@ export class EventsService {
     
     // Approval flow for published events
     if (event.status === EventStatus.PUBLISHED && user?.role !== 'admin') {
-      await this.eventRepo.update(id, {
+      const pendingUpdate: Partial<Event> = {
         pendingTitle: dto.title,
         pendingDescription: dto.description,
         pendingVenueName: dto.venueName,
-        pendingEventDate: dto.eventDate ? new Date(dto.eventDate) : undefined,
         pendingCategory: dto.category,
-      });
+      };
+
+      if (dto.eventDate) {
+        await this.eventRepo.update(id, {
+          ...pendingUpdate,
+          eventDate: new Date(dto.eventDate),
+          pendingEventDate: null,
+          autoReminderSent: false,
+        });
+      } else {
+        await this.eventRepo.update(id, pendingUpdate);
+      }
     } else {
       await this.eventRepo.update(id, dto);
     }
