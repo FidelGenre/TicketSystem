@@ -12,7 +12,8 @@ import {
   HiOutlineXCircle, 
   HiOutlineTicket, 
   HiOutlinePrinter, 
-  HiOutlineArrowLeft 
+  HiOutlineArrowLeft ,
+  HiOutlineShare
 } from 'react-icons/hi';
 
 // Wavy line SVG separator component
@@ -37,6 +38,7 @@ export default function VerifyTicketPage() {
   const [loading, setLoading] = useState(true);
   const [validating, setValidating] = useState(false);
   const [result, setResult] = useState<{ valid: boolean; message: string } | null>(null);
+  const [shareLabel, setShareLabel] = useState('Compartir');
 
   useEffect(() => { 
     loadTicket(); 
@@ -75,6 +77,28 @@ export default function VerifyTicketPage() {
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleShare = async () => {
+    const ticketUrl = window.location.href;
+    const title = ticket?.event?.title ? `${ticket.event.title} - LPTicket` : 'LPTicket';
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title,
+          text: shareLabel === 'Share' ? 'Here is my ticket.' : 'Aqui esta mi entrada.',
+          url: ticketUrl,
+        });
+        return;
+      }
+
+      await navigator.clipboard.writeText(ticketUrl);
+      alert(shareLabel === 'Share' ? 'Ticket link copied.' : 'Enlace de la entrada copiado.');
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      alert(shareLabel === 'Share' ? 'Could not share this ticket.' : 'No se pudo compartir esta entrada.');
+    }
   };
 
   if (loading) {
@@ -117,19 +141,29 @@ export default function VerifyTicketPage() {
         }
       `}</style>
       {/* Action Bar (hidden on print) */}
-      <div className="w-full max-w-3xl flex justify-between items-center mb-6 print:hidden">
+      <div className="w-full max-w-3xl flex justify-between items-center gap-3 mb-6 print:hidden">
         <button 
           onClick={() => router.back()} 
           className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors font-medium"
         >
           <HiOutlineArrowLeft className="w-4 h-4" /> Volver
         </button>
-        <button 
-          onClick={handlePrint} 
-          className="btn-secondary py-2 px-4 text-xs font-semibold rounded-xl flex items-center gap-1.5 border border-gray-300"
-        >
-          <HiOutlinePrinter className="w-4 h-4" /> Imprimir / Descargar PDF
-        </button>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleShare}
+            className="py-2 px-4 text-xs font-bold rounded-xl flex items-center gap-1.5 bg-blue-950 text-white hover:bg-blue-900 transition-colors"
+          >
+            <HiOutlineShare className="w-4 h-4" /> {shareLabel}
+          </button>
+
+          <button 
+            onClick={handlePrint} 
+            className="btn-secondary py-2 px-4 text-xs font-semibold rounded-xl flex items-center gap-1.5 border border-gray-300"
+          >
+            <HiOutlinePrinter className="w-4 h-4" /> Imprimir / Descargar PDF
+          </button>
+        </div>
       </div>
       {/* Actual Physical-Style Digital Ticket */}
       <div className="ticket-print-sheet w-full max-w-[850px] bg-white shadow-2xl md:p-12 p-6 relative overflow-hidden print:shadow-none print:border-none print:p-0 mx-auto font-sans print:break-inside-avoid">
