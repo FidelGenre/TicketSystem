@@ -766,33 +766,6 @@ export default function EventDetailPage() {
                     </div>
                   </div>
 
-                  {/* Days Selector for Manual Reminder */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
-                      {lang === 'es' ? '¿Cuándo se enviará el recordatorio?' : 'When will the reminder be sent?'}
-                    </label>
-                    <select
-                      value={reminderDays}
-                      onChange={(e) => setReminderDays(Number(e.target.value))}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-2xl text-sm font-bold focus:outline-none focus:ring-1 focus:ring-orange-400 bg-white"
-                    >
-                      <optgroup label={lang === 'es' ? 'Horas antes' : 'Hours before'}>
-                        <option value={-1}>{lang === 'es' ? '1 hora antes del evento' : '1 hour before the event'}</option>
-                        <option value={-2}>{lang === 'es' ? '2 horas antes del evento' : '2 hours before the event'}</option>
-                        <option value={-3}>{lang === 'es' ? '3 horas antes del evento' : '3 hours before the event'}</option>
-                        <option value={-6}>{lang === 'es' ? '6 horas antes del evento' : '6 hours before the event'}</option>
-                        <option value={-12}>{lang === 'es' ? '12 horas antes del evento' : '12 hours before the event'}</option>
-                      </optgroup>
-                      <optgroup label={lang === 'es' ? 'Días antes' : 'Days before'}>
-                        <option value={0}>{lang === 'es' ? 'El mismo día del evento (0 días)' : 'Same day of the event (0 days)'}</option>
-                        <option value={1}>{lang === 'es' ? '1 día antes' : '1 day before'}</option>
-                        <option value={3}>{lang === 'es' ? '3 días antes' : '3 days before'}</option>
-                        <option value={7}>{lang === 'es' ? '7 días antes' : '7 days before'}</option>
-                        <option value={14}>{lang === 'es' ? '14 días antes' : '14 days before'}</option>
-                      </optgroup>
-                    </select>
-                  </div>
-
                   {/* Message Custom */}
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block">

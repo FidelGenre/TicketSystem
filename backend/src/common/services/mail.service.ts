@@ -30,10 +30,20 @@ export class MailService {
     userName: string,
     eventTitle: string,
     tickets: any[],
-    eventInfo?: { venueName?: string | null; venueAddress?: string | null },
+    eventInfo?: { venueName?: string | null; venueAddress?: string | null; eventDate?: string },
   ) {
     const appUrl = this.getAppUrl();
     const eventAddress = [eventInfo?.venueName, eventInfo?.venueAddress].filter(Boolean).join(' — ');
+
+    const eventDateFormatted = eventInfo?.eventDate
+      ? (() => {
+          const date = new Date(eventInfo.eventDate);
+          const dayName = date.toLocaleDateString('es', { weekday: 'long' });
+          const dateStr = date.toLocaleDateString('es', { day: 'numeric', month: 'long', year: 'numeric' });
+          const timeStr = date.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', hour12: true });
+          return `${dayName}, ${dateStr} — ${timeStr}`;
+        })()
+      : '';
     const ticketDetails = tickets.map(t => {
       const row = t.rowLabel || '';
       const num = t.seatNumber;
@@ -86,10 +96,11 @@ export class MailService {
         </div>
 
         <h3 style="margin-top: 0; margin-bottom: 8px; color: #0f172a; font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: -0.5px;">${eventTitle}</h3>
-        
+
         <!-- Info labels -->
         <div style="margin-bottom: 15px; font-size: 12px; color: #475569; line-height: 1.6;">
           <p style="margin: 4px 0;"><strong>Comprador:</strong> ${userName}</p>
+          ${eventDateFormatted ? `<p style="margin: 4px 0;"><strong>Fecha y Hora:</strong> ${eventDateFormatted}</p>` : ''}
           ${shouldShowSection ? `<p style="margin: 4px 0;"><strong>Sección:</strong> ${t.sectionName}</p>` : ''}
           <p style="margin: 4px 0;"><strong>Ubicación:</strong> ${details}</p>
           <p style="margin: 4px 0; font-family: monospace;"><strong>Código:</strong> <span style="color: #ff6b1a; font-weight: bold;">${t.ticketCode}</span></p>

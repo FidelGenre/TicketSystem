@@ -555,6 +555,7 @@ export class OrdersService {
             {
               venueName: fullOrder.event.venueName,
               venueAddress: fullOrder.event.venueAddress,
+              eventDate: fullOrder.event.eventDate?.toString(),
             },
           );
         }
@@ -812,6 +813,7 @@ export class OrdersService {
       await this.mailService.sendTicketEmail(email, name, event.title, createdTickets, {
         venueName: event.venueName,
         venueAddress: event.venueAddress,
+        eventDate: event.eventDate?.toString(),
       });
     } catch (e) {
       console.error('Error sending free ticket email:', e);
