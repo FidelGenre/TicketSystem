@@ -578,7 +578,7 @@ export class OrdersService {
   /**
    * Retrieves all tickets for a specific user, optionally filtered by Stripe Session ID.
    */
-  async getUserTickets(userId: string, sessionId?: string) {
+  async getUserTickets(userId: string, sessionId?: string, page: number = 1, limit: number = 12) {
     const where: any = { userId };
     if (sessionId) {
       const order = await this.orderRepo.findOne({ where: { stripeSessionId: sessionId } });
@@ -586,11 +586,23 @@ export class OrdersService {
         where.orderId = order.id;
       }
     }
-    return this.ticketRepo.find({
+    const skip = (page - 1) * limit;
+    const [tickets, total] = await this.ticketRepo.findAndCount({
       where,
       relations: ['event'],
       order: { createdAt: 'DESC' },
+      skip,
+      take: limit,
     });
+    return {
+      data: tickets,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    };
   }
 
   /**

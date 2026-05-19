@@ -36,6 +36,9 @@ function DashboardPageBody() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [activeTab, setActiveTab] = useState<'tickets' | 'orders' | 'profile' | 'payments'>('tickets');
   const [editMode, setEditMode] = useState(false);
+  const [ticketsPage, setTicketsPage] = useState(1);
+  const [ticketsPagination, setTicketsPagination] = useState({ total: 0, pages: 1 });
+  const [loadingMoreTickets, setLoadingMoreTickets] = useState(false);
   const [profileForm, setProfileForm] = useState({ 
     firstName: '', 
     lastName: '', 
@@ -80,23 +83,44 @@ function DashboardPageBody() {
   }, [searchParams]);
 
 
-  const loadData = async () => {
+  const loadData = async (page: number = 1) => {
     try {
-      const [t, o] = await Promise.all([api.get('/orders/my-tickets'), api.get('/orders/my-orders')]);
-      setTickets(t.data);
+      const [t, o] = await Promise.all([
+        api.get('/orders/my-tickets', { params: { page, limit: 12 } }),
+        api.get('/orders/my-orders')
+      ]);
+      if (page === 1) {
+        setTickets(t.data.data);
+      } else {
+        setTickets(prev => [...prev, ...t.data.data]);
+      }
+      setTicketsPagination(t.data.pagination);
+      setTicketsPage(page);
       setOrders(o.data);
     } catch (err) { console.error(err); }
   };
 
+  const loadMoreTickets = async () => {
+    const nextPage = ticketsPage + 1;
+    if (nextPage <= ticketsPagination.pages) {
+      setLoadingMoreTickets(true);
+      try {
+        await loadData(nextPage);
+      } finally {
+        setLoadingMoreTickets(false);
+      }
+    }
+  };
+
   const handleSaveProfile = async () => {
-    try { 
+    try {
       // Si la contraseña está vacía, la omitimos de la actualización
       const dataToUpdate: any = { ...profileForm };
       if (!dataToUpdate.password) {
         delete dataToUpdate.password;
       }
-      await updateProfile(dataToUpdate); 
-      setEditMode(false); 
+      await updateProfile(dataToUpdate);
+      setEditMode(false);
       setProfileForm({ ...profileForm, password: '' });
       toast.success(lang === 'es' ? 'Perfil actualizado' : 'Profile updated');
     }
@@ -186,8 +210,9 @@ function DashboardPageBody() {
       {/* Tickets */}
       {activeTab === 'tickets' && (
         tickets.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {tickets.map((ticket) => {
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {tickets.map((ticket) => {
               const badge = getTicketStatus(ticket.status);
               return (
                 <div key={ticket.id} className="bg-white border border-gray-200 rounded-xl p-5 space-y-3 hover:shadow-md transition-shadow">
@@ -257,6 +282,23 @@ function DashboardPageBody() {
                 </div>
               );
             })}
+            </div>
+
+            {ticketsPagination.pages > ticketsPage && (
+              <div className="flex justify-center pt-4">
+                <button
+                  onClick={loadMoreTickets}
+                  disabled={loadingMoreTickets}
+                  className="px-6 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium text-sm transition-all disabled:opacity-60 flex items-center gap-2"
+                >
+                  {loadingMoreTickets ? (
+                    <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> {lang === 'es' ? 'Cargando...' : 'Loading...'}</>
+                  ) : (
+                    <>{lang === 'es' ? 'Cargar más entradas' : 'Load more tickets'} ({ticketsPage}/{ticketsPagination.pages})</>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-center py-16 bg-white border border-gray-200 rounded-xl">
