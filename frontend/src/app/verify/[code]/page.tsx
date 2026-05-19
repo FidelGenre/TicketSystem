@@ -372,6 +372,114 @@ export default function VerifyTicketPage() {
           }
         }
 
+
+        /* IOS MOBILE PRINT ONLY */
+        @media print {
+          @supports (-webkit-touch-callout: none) {
+            html,
+            body {
+              background: #ffffff !important;
+              overflow: visible !important;
+              width: 100% !important;
+              min-height: 0 !important;
+            }
+
+            .ticket-wrapper {
+              background: #ffffff !important;
+              padding: 0 !important;
+              margin: 0 !important;
+              min-height: 0 !important;
+              overflow: visible !important;
+            }
+
+            .ticket-page {
+              width: 100% !important;
+              max-width: none !important;
+              margin: 0 !important;
+              padding: 0 !important;
+            }
+
+            .ticket-card {
+              position: static !important;
+              display: block !important;
+              height: auto !important;
+              min-height: 0 !important;
+              padding: 0 !important;
+              overflow: hidden !important;
+              background: #ffffff !important;
+              border: 1px solid #cbd5e1 !important;
+              border-radius: 8pt !important;
+              box-shadow: none !important;
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+            }
+
+            .ticket-header {
+              padding: 10pt 12pt 0 !important;
+              background: #ffffff !important;
+            }
+
+            .ticket-body {
+              display: block !important;
+              padding: 9pt 12pt 8pt !important;
+              flex: none !important;
+              background: #ffffff !important;
+            }
+
+            .ticket-footer {
+              position: static !important;
+              left: auto !important;
+              right: auto !important;
+              bottom: auto !important;
+              display: block !important;
+              min-height: 0 !important;
+              margin: 0 !important;
+              padding: 9pt 12pt !important;
+              background: #172554 !important;
+              color: #ffffff !important;
+              box-sizing: border-box !important;
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+            }
+
+            .brand-logo {
+              width: 112pt !important;
+              height: auto !important;
+            }
+
+            .qr-img {
+              width: 76pt !important;
+              height: 76pt !important;
+            }
+
+            .event-title {
+              font-size: 13pt !important;
+              line-height: 1.05 !important;
+              margin-bottom: 4pt !important;
+            }
+
+            .premium-divider {
+              margin-top: 8pt !important;
+              height: 5pt !important;
+            }
+
+            .ticket-body .grid {
+              gap: 7pt !important;
+            }
+
+            .ticket-body .rounded-xl,
+            .ticket-body .rounded-2xl {
+              padding: 8pt !important;
+            }
+
+            .terms-text {
+              font-size: 5.2pt !important;
+              line-height: 1.22 !important;
+            }
+          }
+        }
+        /* END IOS MOBILE PRINT ONLY */
+
         /* ==================== SCREEN STYLES ==================== */
         @media screen {
           .print-only { display: none !important; }
