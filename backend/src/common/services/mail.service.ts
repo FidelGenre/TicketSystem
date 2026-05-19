@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
-import { formatTicketSeatLabel } from '../utils/seat-label';
 
 @Injectable()
 export class MailService {
@@ -77,6 +76,8 @@ export class MailService {
         !/^\d+$/.test(cleanSection); // hide purely numeric section names
 
       const qrCid = `qr-${t.ticketCode}`;
+      const appUrl = this.configService.get('APP_URL') || 'https://www.lpticket.com';
+      const ticketUrl = `${appUrl}/verify/${t.ticketCode}`;
 
       return `
       <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
