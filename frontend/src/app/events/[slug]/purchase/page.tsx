@@ -537,7 +537,7 @@ export default function PurchasePage() {
                         const sec = seatMap.find(s => s.id === seat.sectionId);
                         return (
                           <span key={seat.id} className="seat-chip">
-                            {selectedSection.name} {seat.rowLabel}{seat.seatNumber}
+                            {formatSeatLabel(seat, sec, lang)}
                             <button onClick={() => {
                               if (sec && sec.tablePurchaseMode === 'whole') {
                                 const allSeats = sec.seats || [];
@@ -694,7 +694,7 @@ export default function PurchasePage() {
                       const sec = seatMap.find((s) => s.id === seat.sectionId);
                       return (
                         <div key={seat.id} className="flex justify-between text-xs">
-                          <span className="text-gray-600">{sec?.name} — {seat.rowLabel}{seat.seatNumber}</span>
+                          <span className="text-gray-600">{formatSeatLabel(seat, sec, lang)}</span>
                           <span className="font-medium text-gray-800">${getSeatPrice(seat, sec).toFixed(2)}</span>
                         </div>
                       );
