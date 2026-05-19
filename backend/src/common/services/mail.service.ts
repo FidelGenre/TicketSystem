@@ -101,25 +101,13 @@ export class MailService {
           <span style="display: block; font-size: 10px; color: #94a3b8; margin-top: 8px; font-weight: bold; letter-spacing: 0.5px; text-transform: uppercase;">Presentar este código QR en el acceso</span>
         </div>
 
-        <div style="text-align: center; margin: 18px 0 6px 0;">
-          <a href="${whatsappShareUrl}" target="_blank" style="display: inline-block; background: #16a34a; color: #ffffff; text-decoration: none; border-radius: 14px; padding: 12px 18px; font-size: 12px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 10px;">
-            Compartir por WhatsApp
+                <div style="text-align: center; margin: 18px 0 6px 0;">
+          <a href="${ticketUrl}" target="_blank" style="display: inline-block; background: #ff6b1a; color: #ffffff; text-decoration: none; border-radius: 14px; padding: 12px 18px; font-size: 12px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase;">
+            Compartir
           </a>
-
-          <div style="margin-top: 10px; padding: 10px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;">
-            <p style="color: #64748b; font-size: 10px; margin: 0 0 6px 0; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">
-              Copia este enlace para enviarlo por texto o correo:
-            </p>
-            <a href="${ticketUrl}" target="_blank" style="color: #0f3f66; font-size: 11px; font-weight: 800; word-break: break-all; text-decoration: underline;">
-              ${ticketUrl}
-            </a>
-          </div>
-
-          <p style="color: #64748b; font-size: 10px; margin: 8px 0 0 0;">Este enlace pertenece solo a esta entrada.</p>
         </div>
 
-
-        <!-- Footer terms info -->    <div style="border-top: 1px dashed #cbd5e1; padding-top: 15px; margin-top: 15px; font-size: 9px; color: #94a3b8; text-align: center; line-height: 1.4; text-transform: uppercase; font-weight: bold;">
+<!-- Footer terms info -->    <div style="border-top: 1px dashed #cbd5e1; padding-top: 15px; margin-top: 15px; font-size: 9px; color: #94a3b8; text-align: center; line-height: 1.4; text-transform: uppercase; font-weight: bold;">
           LPTICKET.COM — TUS TICKETS. TUS EVENTOS.
         </div>
       </div>
