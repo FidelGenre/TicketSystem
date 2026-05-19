@@ -25,8 +25,14 @@ export class MailService {
       const section = t.sectionName || '';
 
       const mesaMatch = row.match(/^(mesa|table)\s*(\d+)$/i);
+      const seatMesaMatch = String(num || '').trim().match(/^(mesa|table)\s*(\d+)$/i);
       let details = '';
-      if (mesaMatch) {
+      if (seatMesaMatch) {
+        const tableNum = row;
+        const chairNum = seatMesaMatch[2];
+        const hasTableWord = /^(mesa|table)\b/i.test(String(tableNum));
+        details = `${hasTableWord ? tableNum : `Mesa ${tableNum}`}, Silla ${chairNum}`;
+      } else if (mesaMatch) {
         details = `Mesa ${num}, Silla ${mesaMatch[2]}`;
       } else if (row === 'GA') {
         details = `Entrada General`;

@@ -165,16 +165,36 @@ export class WalletService {
       );
 
       if (ticket.rowLabel || ticket.seatNumber) {
+        let rowVal = ticket.rowLabel || '-';
+        let seatVal = String(ticket.seatNumber || '-');
+        let rowLabelText = 'ROW';
+        let seatLabelText = 'SEAT';
+
+        const seatMesaMatch = String(ticket.seatNumber || '').trim().match(/^(mesa|table)\s*(\d+)$/i);
+        const mesaMatch = String(ticket.rowLabel || '').trim().match(/^(mesa|table)\s*(\d+)$/i);
+
+        if (seatMesaMatch) {
+          rowLabelText = 'MESA';
+          seatLabelText = 'SILLA';
+          rowVal = ticket.rowLabel || '-';
+          seatVal = seatMesaMatch[2];
+        } else if (mesaMatch) {
+          rowLabelText = 'MESA';
+          seatLabelText = 'SILLA';
+          rowVal = mesaMatch[2];
+          seatVal = String(ticket.seatNumber || '-');
+        }
+
         pass.headerFields.push(
           {
             key: 'row',
-            label: 'ROW',
-            value: ticket.rowLabel || '-',
+            label: rowLabelText,
+            value: rowVal,
           },
           {
             key: 'seat',
-            label: 'SEAT',
-            value: String(ticket.seatNumber || '-'),
+            label: seatLabelText,
+            value: seatVal,
           },
         );
       }
@@ -272,11 +292,27 @@ export class WalletService {
           value:         `${appUrl}/verify/${ticket.ticketCode}`,
           alternateText: ticket.ticketCode,
         },
-        seatInfo: ticket.rowLabel ? {
-          seat:    { defaultValue: { language: 'es', value: String(ticket.seatNumber || '') } },
-          row:     { defaultValue: { language: 'es', value: ticket.rowLabel } },
-          section: { defaultValue: { language: 'es', value: ticket.sectionName || '' } },
-        } : undefined,
+        seatInfo: ticket.rowLabel ? (() => {
+          let rowVal = ticket.rowLabel;
+          let seatVal = String(ticket.seatNumber || '');
+
+          const seatMesaMatch = String(ticket.seatNumber || '').trim().match(/^(mesa|table)\s*(\d+)$/i);
+          const mesaMatch = String(ticket.rowLabel || '').trim().match(/^(mesa|table)\s*(\d+)$/i);
+
+          if (seatMesaMatch) {
+            rowVal = ticket.rowLabel;
+            seatVal = seatMesaMatch[2];
+          } else if (mesaMatch) {
+            rowVal = mesaMatch[2];
+            seatVal = String(ticket.seatNumber || '');
+          }
+
+          return {
+            seat:    { defaultValue: { language: 'es', value: seatVal } },
+            row:     { defaultValue: { language: 'es', value: rowVal } },
+            section: { defaultValue: { language: 'es', value: ticket.sectionName || '' } },
+          };
+        })() : undefined,
         textModulesData: [
           { header: 'Sección', body: ticket.sectionName || 'General' },
           { header: 'Código',  body: ticket.ticketCode },

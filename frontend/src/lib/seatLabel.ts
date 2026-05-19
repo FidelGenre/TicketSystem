@@ -32,7 +32,26 @@ export function formatSeatLabel(
 
   const sectionSuffix = shouldShowSection ? ` (${cleanSection})` : '';
 
-  // 1. Check if rowLabel matches mesaX (e.g. mesa2, mesa 2, table 2)
+  // 1. Check if seatNumber matches mesaX (e.g. MESA1, mesa 2, table 2)
+  const seatMesaMatch = String(seatNumber || '').trim().match(/^(mesa|table)\s*(\d+)$/i);
+  if (seatMesaMatch) {
+    const tableWord = lang === 'en' ? 'Table' : 'Mesa';
+    const chairWord = lang === 'en' ? 'Chair' : 'Silla';
+    const chairNum = seatMesaMatch[2];
+    
+    let tableLabel = rowLabel;
+    if (/^\d+$/.test(rowLabel)) {
+      tableLabel = `${tableWord} ${rowLabel}`;
+    } else {
+      const hasTableWord = /^(mesa|table)\b/i.test(rowLabel);
+      if (!hasTableWord) {
+        tableLabel = `${tableWord} ${rowLabel}`;
+      }
+    }
+    return `${tableLabel} - ${chairWord} ${chairNum}${sectionSuffix}`;
+  }
+
+  // 2. Check if rowLabel matches mesaX (e.g. mesa2, mesa 2, table 2)
   const mesaMatch = rowLabel.match(/^(mesa|table)\s*(\d+)$/i);
   if (mesaMatch) {
     const tableWord = lang === 'en' ? 'Table' : 'Mesa';
