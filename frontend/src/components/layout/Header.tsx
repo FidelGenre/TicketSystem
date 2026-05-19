@@ -544,14 +544,14 @@ export default function Header() {
         <button 
           onClick={() => setCartDropdown(!cartDropdown)}
           className={`w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 relative group active:scale-90 pointer-events-auto ${
-            cartDropdown ? 'bg-blue-900 text-white rotate-90' : 'bg-blue-700 text-white hover:bg-blue-800'
+            cartDropdown ? 'bg-[#F97316] text-white rotate-90' : 'bg-[#F97316] text-white hover:bg-[#F97316]'
           }`}
         >
           {cartDropdown ? <HiOutlineX className="w-6 h-6" /> : <HiOutlineShoppingCart className="w-7 h-7" />}
           
           {/* Item Counter Badge */}
           {cartItems.reduce((acc, item) => acc + item.seats.length, 0) > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 min-w-[24px] h-[24px] px-1.5 bg-blue-600 text-white rounded-full text-[11px] font-bold flex items-center justify-center border-2 border-white shadow-lg animate-bounce">
+            <span className="absolute -top-1.5 -right-1.5 min-w-[24px] h-[24px] px-1.5 bg-[#F97316] text-white rounded-full text-[11px] font-bold flex items-center justify-center border-2 border-white shadow-lg animate-bounce">
               {cartItems.reduce((acc, item) => acc + item.seats.length, 0)}
             </span>
           )}

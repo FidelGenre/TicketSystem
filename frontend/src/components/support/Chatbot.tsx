@@ -82,7 +82,7 @@ export default function Chatbot() {
       {/* Floating Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-14 h-14 bg-blue-600 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 hover:bg-blue-700 transition-all pointer-events-auto group relative"
+        className="w-14 h-14 bg-[#F97316] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 hover:bg-[#F97316] transition-all pointer-events-auto group relative"
       >
         {isOpen ? (
           <HiX className="w-7 h-7" />
