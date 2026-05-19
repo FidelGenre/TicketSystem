@@ -48,6 +48,7 @@ export interface Event {
   venueName: string;
   venueAddress?: string;
   eventDate: string;
+  eventTimezone?: string;
   doorsOpen?: string;
   status: EventStatus;
   isFeatured: boolean;

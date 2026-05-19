@@ -18,6 +18,22 @@ import { useLang } from '@/context/LanguageContext';
 
 import { getImageUrl } from '@/lib/api';
 
+const getTimezoneAbbr = (timezone: string): string => {
+  if (!timezone) return '';
+  try {
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat('en', {
+      timeZone: timezone,
+      timeZoneName: 'short',
+    });
+    const parts = formatter.formatToParts(now);
+    const tzPart = parts.find(p => p.type === 'timeZoneName');
+    return tzPart?.value || '';
+  } catch {
+    return '';
+  }
+};
+
 export default function EventDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
@@ -280,7 +296,10 @@ export default function EventDetailPage() {
               <HiOutlineClock className="w-5 h-5 text-blue-600 shrink-0" />
               <div>
                 <div className="text-xs text-gray-500">{t('timeLabel')}</div>
-                <div className="text-sm font-semibold text-gray-900">{format(eventDate, 'hh:mm a')}</div>
+                <div className="text-sm font-semibold text-gray-900">
+                  {format(eventDate, 'hh:mm a')}
+                  {event?.eventTimezone && <span className="text-gray-500 ml-1">({getTimezoneAbbr(event.eventTimezone)})</span>}
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
