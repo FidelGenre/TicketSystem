@@ -42,7 +42,10 @@ export class MailService {
           const dayName = date.toLocaleDateString('es', { weekday: 'long', timeZone: tz });
           const dateStr = date.toLocaleDateString('es', { day: 'numeric', month: 'long', year: 'numeric', timeZone: tz });
           const timeStr = date.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: tz });
-          return `${dayName}, ${dateStr} — ${timeStr}`;
+          const tzName = new Intl.DateTimeFormat('en', { timeZone: tz, timeZoneName: 'short' })
+            .formatToParts(date)
+            .find((p: any) => p.type === 'timeZoneName')?.value || '';
+          return `${dayName}, ${dateStr} — ${timeStr} ${tzName}`;
         })()
       : '';
     const ticketDetails = tickets.map(t => {
