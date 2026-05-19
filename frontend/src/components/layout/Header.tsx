@@ -543,8 +543,8 @@ export default function Header() {
         {/* Main Floating Cart Toggle Button */}
         <button 
           onClick={() => setCartDropdown(!cartDropdown)}
-          className={`w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 relative group active:scale-90 pointer-events-auto ${
-            cartDropdown ? 'bg-[#F97316] text-white rotate-90' : 'bg-[#F97316] text-white hover:bg-[#F97316]'
+          className={`w-14 h-14 floating-action-pill rounded-full flex items-center justify-center transition-all duration-300 relative group active:scale-90 pointer-events-auto ${
+            cartDropdown ? 'rotate-90' : ''
           }`}
         >
           {cartDropdown ? <HiOutlineX className="w-6 h-6" /> : <HiOutlineShoppingCart className="w-7 h-7" />}
