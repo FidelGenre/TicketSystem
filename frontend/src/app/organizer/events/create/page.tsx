@@ -14,6 +14,22 @@ import {
 import Link from 'next/link';
 import VenueMapBuilder from '@/components/events/VenueMapBuilder';
 
+const TIMEZONES = [
+  { value: 'America/Argentina/Buenos_Aires', label: 'Argentina (ART)' },
+  { value: 'America/Toronto', label: 'Canada - Eastern (ET)' },
+  { value: 'America/Denver', label: 'USA - Mountain (MT)' },
+  { value: 'America/Chicago', label: 'USA - Central (CT)' },
+  { value: 'America/New_York', label: 'USA - Eastern (ET)' },
+  { value: 'America/Los_Angeles', label: 'USA - Pacific (PT)' },
+  { value: 'America/Mexico_City', label: 'Mexico (CT)' },
+  { value: 'America/Bogota', label: 'Colombia (CT)' },
+  { value: 'America/Lima', label: 'Peru (ET)' },
+  { value: 'America/Santiago', label: 'Chile (CLT)' },
+  { value: 'Europe/London', label: 'UK (GMT/BST)' },
+  { value: 'Europe/Madrid', label: 'Spain (CET/CEST)' },
+  { value: 'UTC', label: 'UTC' },
+];
+
 const buildLocalEventDate = (date: string, time: string) => {
   const safeTime = time || '00:00';
   return `${date}T${safeTime}:00`;
@@ -34,6 +50,7 @@ export default function CreateEventPage() {
     venueAddress: '',
     eventDate: '',
     eventTime: '',
+    eventTimezone: 'UTC',
     doorsOpen: '',
     maxTicketsPerTransaction: '10',
   });
@@ -238,6 +255,19 @@ export default function CreateEventPage() {
                       className="input py-3"
                       required
                     />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">{lang === 'es' ? 'Zona horaria del evento *' : 'Event Timezone *'}</label>
+                    <select
+                      value={form.eventTimezone}
+                      onChange={(e) => updateForm('eventTimezone', e.target.value)}
+                      className="input py-3"
+                      required
+                    >
+                      {TIMEZONES.map(tz => (
+                        <option key={tz.value} value={tz.value}>{tz.label}</option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">{t('orgDoorsOpen')}</label>

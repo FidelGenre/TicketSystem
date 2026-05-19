@@ -23,6 +23,10 @@ export class CreateEventDto {
   eventDate: string;
 
   @IsOptional()
+  @IsString()
+  eventTimezone?: string;
+
+  @IsOptional()
   @IsDateString()
   doorsOpen?: string;
 
@@ -72,6 +76,10 @@ export class UpdateEventDto {
   @IsOptional()
   @IsDateString()
   eventDate?: string;
+
+  @IsOptional()
+  @IsString()
+  eventTimezone?: string;
 
   @IsOptional()
   @IsDateString()

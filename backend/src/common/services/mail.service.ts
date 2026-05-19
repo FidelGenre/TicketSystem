@@ -30,17 +30,18 @@ export class MailService {
     userName: string,
     eventTitle: string,
     tickets: any[],
-    eventInfo?: { venueName?: string | null; venueAddress?: string | null; eventDate?: string },
+    eventInfo?: { venueName?: string | null; venueAddress?: string | null; eventDate?: string; eventTimezone?: string },
   ) {
     const appUrl = this.getAppUrl();
     const eventAddress = [eventInfo?.venueName, eventInfo?.venueAddress].filter(Boolean).join(' — ');
 
-    const eventDateFormatted = eventInfo?.eventDate
+    const eventDateFormatted = eventInfo?.eventDate && eventInfo?.eventTimezone
       ? (() => {
           const date = new Date(eventInfo.eventDate);
-          const dayName = date.toLocaleDateString('es', { weekday: 'long' });
-          const dateStr = date.toLocaleDateString('es', { day: 'numeric', month: 'long', year: 'numeric' });
-          const timeStr = date.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', hour12: true });
+          const tz = eventInfo.eventTimezone || 'UTC';
+          const dayName = date.toLocaleDateString('es', { weekday: 'long', timeZone: tz });
+          const dateStr = date.toLocaleDateString('es', { day: 'numeric', month: 'long', year: 'numeric', timeZone: tz });
+          const timeStr = date.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: tz });
           return `${dayName}, ${dateStr} — ${timeStr}`;
         })()
       : '';

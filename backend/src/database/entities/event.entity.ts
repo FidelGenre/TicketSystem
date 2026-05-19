@@ -84,6 +84,9 @@ export class Event {
   @Column({ type: 'timestamp' })
   eventDate: Date;
 
+  @Column({ length: 50, default: 'UTC' })
+  eventTimezone: string;
+
   @Column({ type: 'timestamp', nullable: true })
   doorsOpen: Date;
 

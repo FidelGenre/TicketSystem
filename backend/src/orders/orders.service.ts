@@ -556,6 +556,7 @@ export class OrdersService {
               venueName: fullOrder.event.venueName,
               venueAddress: fullOrder.event.venueAddress,
               eventDate: fullOrder.event.eventDate?.toString(),
+              eventTimezone: fullOrder.event.eventTimezone,
             },
           );
         }
@@ -814,6 +815,7 @@ export class OrdersService {
         venueName: event.venueName,
         venueAddress: event.venueAddress,
         eventDate: event.eventDate?.toString(),
+        eventTimezone: event.eventTimezone,
       });
     } catch (e) {
       console.error('Error sending free ticket email:', e);
@@ -876,13 +878,14 @@ export class OrdersService {
       }
     }
 
-    // Format event date for the email with time
-    const eventDateStr = event.eventDate
+    // Format event date for the email with time in the event's timezone
+    const eventDateStr = event.eventDate && event.eventTimezone
       ? (() => {
           const date = new Date(event.eventDate);
-          const dayName = date.toLocaleDateString('es', { weekday: 'long' });
-          const dateStr = date.toLocaleDateString('es', { day: 'numeric', month: 'long', year: 'numeric' });
-          const timeStr = date.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', hour12: true });
+          const tz = event.eventTimezone || 'UTC';
+          const dayName = date.toLocaleDateString('es', { weekday: 'long', timeZone: tz });
+          const dateStr = date.toLocaleDateString('es', { day: 'numeric', month: 'long', year: 'numeric', timeZone: tz });
+          const timeStr = date.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: tz });
           return `${dayName}, ${dateStr} — ${timeStr}`;
         })()
       : '';

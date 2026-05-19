@@ -46,6 +46,22 @@ interface Attendee {
   user?: { firstName: string; lastName: string; email: string };
 }
 
+const TIMEZONES = [
+  { value: 'America/Argentina/Buenos_Aires', label: 'Argentina (ART)' },
+  { value: 'America/Toronto', label: 'Canada - Eastern (ET)' },
+  { value: 'America/Denver', label: 'USA - Mountain (MT)' },
+  { value: 'America/Chicago', label: 'USA - Central (CT)' },
+  { value: 'America/New_York', label: 'USA - Eastern (ET)' },
+  { value: 'America/Los_Angeles', label: 'USA - Pacific (PT)' },
+  { value: 'America/Mexico_City', label: 'Mexico (CT)' },
+  { value: 'America/Bogota', label: 'Colombia (CT)' },
+  { value: 'America/Lima', label: 'Peru (ET)' },
+  { value: 'America/Santiago', label: 'Chile (CLT)' },
+  { value: 'Europe/London', label: 'UK (GMT/BST)' },
+  { value: 'Europe/Madrid', label: 'Spain (CET/CEST)' },
+  { value: 'UTC', label: 'UTC' },
+];
+
 const formatDateInput = (value?: string) => {
   if (!value) return '';
   const date = parseSafeDate(value);
@@ -108,6 +124,7 @@ export default function EventDetailPage() {
     venueAddress: '',
     eventDate: '',
     eventTime: '',
+    eventTimezone: 'UTC',
     category: '',
     hasSeatMap: false,
     bannerPosition: 'center',
@@ -151,6 +168,7 @@ export default function EventDetailPage() {
         venueAddress: ev.venueAddress || '',
         eventDate: formatDateInput(ev.eventDate),
         eventTime: formatTimeInput(ev.eventDate),
+        eventTimezone: ev.eventTimezone || 'UTC',
         category: ev.category || '',
         hasSeatMap: ev.hasSeatMap || false,
         bannerPosition: ev.bannerPosition || 'center',
@@ -1206,6 +1224,20 @@ export default function EventDetailPage() {
                   className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-1 focus:ring-primary-500 text-sm focus:border-primary-500 focus:outline-none"
                   required
                 />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">{lang === 'es' ? 'Zona Horaria' : 'Timezone'}</label>
+                <select
+                  value={editForm.eventTimezone}
+                  onChange={(e) => setEditForm({ ...editForm, eventTimezone: e.target.value })}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-1 focus:ring-primary-500 text-sm focus:border-primary-500 focus:outline-none"
+                  required
+                >
+                  {TIMEZONES.map(tz => (
+                    <option key={tz.value} value={tz.value}>{tz.label}</option>
+                  ))}
+                </select>
               </div>
             </div>
 

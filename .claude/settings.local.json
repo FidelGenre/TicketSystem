@@ -4,7 +4,11 @@
       "PowerShell(\\(Get-Content -LiteralPath \"c:\\\\Program\\\\TicketSystem\\\\frontend\\\\src\\\\app\\\\organizer\\\\events\\\\[id]\\\\page.tsx\" | Measure-Object -Line\\).Lines)",
       "Bash(git add *)",
       "Bash(git commit *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(npm run *)",
+      "Bash(xargs grep -l \"eventDate\")",
+      "Bash(node -e \"const { isDateString } = require\\('class-validator'\\); console.log\\(isDateString\\('2026-06-05T21:00:00'\\)\\);\")",
+      "Bash(git pull *)"
     ]
   }
 }
