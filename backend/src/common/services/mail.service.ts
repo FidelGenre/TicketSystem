@@ -51,9 +51,13 @@ export class MailService {
         details = `Fila ${row}, Asiento ${num}`;
       }
 
-      const cleanSection = section.trim();
-      const shouldShowSection = cleanSection && 
-        !['general', 'general admission', 'ga', 'default', 'default section', 'null', 'undefined', 'sección única', 'seccion unica'].includes(cleanSection.toLowerCase());
+      // For table sections, don't show section separately (it's already in "Ubicación")
+      const isTableSection = sectionType === 'table' || /^(mesa|table)\b/i.test(String(row).trim());
+      const shouldShowSection = !isTableSection && cleanSection &&
+        !['general', 'general admission', 'ga', 'default', 'default section', 'null', 'undefined', 'sección única', 'seccion unica'].includes(cleanSection.toLowerCase()) &&
+        !/^\d+$/.test(cleanSection); // hide purely numeric section names
+
+      const qrCid = `qr-${t.ticketCode}`;
 
       return `
       <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
@@ -73,9 +77,9 @@ export class MailService {
           <p style="margin: 4px 0; font-family: monospace;"><strong>Código:</strong> <span style="color: #ef4444; font-weight: bold;">${t.ticketCode}</span></p>
         </div>
 
-        <!-- Center QR -->
+        <!-- Center QR (CID inline image) -->
         <div style="text-align: center; margin: 20px 0;">
-          <img src="${t.qrData}" alt="QR Code" width="160" height="160" style="border: 1px solid #e2e8f0; padding: 8px; border-radius: 12px; background: #ffffff;" />
+          <img src="cid:${qrCid}" alt="QR Code" width="160" height="160" style="border: 1px solid #e2e8f0; padding: 8px; border-radius: 12px; background: #ffffff;" />
           <span style="display: block; font-size: 10px; color: #94a3b8; margin-top: 8px; font-weight: bold; letter-spacing: 0.5px; text-transform: uppercase;">Presentar este código QR en el acceso</span>
         </div>
 
@@ -105,6 +109,20 @@ export class MailService {
       </div>
     `;
 
+    // Build CID inline attachments from base64 qrData
+    const attachments = tickets
+      .filter(t => t.qrData)
+      .map(t => {
+        const base64 = String(t.qrData).replace(/^data:image\/png;base64,/, '');
+        return {
+          filename: `qr-${t.ticketCode}.png`,
+          content: Buffer.from(base64, 'base64'),
+          cid: `qr-${t.ticketCode}`,
+          contentType: 'image/png',
+          contentDisposition: 'inline' as const,
+        };
+      });
+
     try {
       await this.transporter.sendMail({
         from: `"LPTicket" <${this.configService.get('SMTP_FROM')}>`,
@@ -112,6 +130,7 @@ export class MailService {
         bcc: this.configService.get('ADMIN_EMAIL'),
         subject: `Tus tickets para ${eventTitle} — LPTicket`,
         html,
+        attachments,
       });
     } catch (err) {
       console.error('Error sending email:', err);
