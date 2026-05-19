@@ -69,11 +69,22 @@ export function formatSeatLabel(
   if (isTable) {
     const tableWord = lang === 'en' ? 'Table' : 'Mesa';
     const chairWord = lang === 'en' ? 'Chair' : 'Silla';
-    const tableLabel = cleanSection
-      ? (isTableName(cleanSection) ? cleanSection : `${tableWord} ${cleanSection}`)
-      : tableWord;
-
-    return `${tableLabel} - ${chairWord} ${seatNumber}${sectionSuffix}`.trim();
+    let tableLabel: string;
+    if (cleanSection) {
+      // If section name is purely numeric (e.g. "23"), prefix with "Mesa"
+      if (/^\d+$/.test(cleanSection)) {
+        tableLabel = `${tableWord} ${cleanSection}`;
+      } else if (isTableName(cleanSection)) {
+        // Already has "Mesa"/"Table" word in it, use as-is
+        tableLabel = cleanSection;
+      } else {
+        // Generic name like "New Table" or "VIP Table"
+        tableLabel = cleanSection;
+      }
+    } else {
+      tableLabel = tableWord;
+    }
+    return `${tableLabel} - ${chairWord} ${seatNumber}`;
   }
 
   if (!rowLabel || rowLabel === 'GA') {

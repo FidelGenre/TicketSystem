@@ -5,6 +5,7 @@ import { formatSeatLabel } from '@/lib/seatLabel';
 interface InvoiceItem {
   seatId?: string;
   sectionName: string;
+  sectionType?: string;
   rowLabel: string;
   seatNumber: number;
   price: number;
@@ -51,7 +52,11 @@ export default function InvoiceBreakdown({ invoice, eventTitle }: InvoiceBreakdo
               <div className="flex items-center gap-3">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary-500" />
                 <span className="text-gray-600 font-medium">
-                  {formatSeatLabel(item, item.sectionName, 'es')}
+                  {formatSeatLabel(
+                    { rowLabel: item.rowLabel, seatNumber: item.seatNumber, sectionType: item.sectionType },
+                    { name: item.sectionName, sectionType: item.sectionType },
+                    'es'
+                  )}
                 </span>
               </div>
               <span className="font-bold text-gray-900">{fmt(item.price, cur)}</span>

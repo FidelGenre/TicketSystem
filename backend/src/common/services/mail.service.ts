@@ -23,21 +23,28 @@ export class MailService {
       const row = t.rowLabel || '';
       const num = t.seatNumber;
       const section = t.sectionName || '';
+      const sectionType = t.sectionType || '';
 
       const mesaMatch = row.match(/^(mesa|table)\s*(\d+)$/i);
       const seatMesaMatch = String(num || '').trim().match(/^(mesa|table)\s*(\d+)$/i);
       let details = '';
-      if (seatMesaMatch) {
+
+      // Detect table sections by sectionType
+      if (sectionType === 'table' || /^(mesa|table)\b/i.test(String(row).trim())) {
+        const hasTableWord = /^(mesa|table)\b/i.test(String(section).trim()) || /^\d+$/.test(String(section).trim()) === false && !section;
+        const tableLabel = /^\d+$/.test(String(section).trim())
+          ? `Mesa ${section}`
+          : /^(mesa|table)\b/i.test(String(section).trim())
+            ? section
+            : section || 'Mesa';
+        details = `${tableLabel} - Silla ${num}`;
+      } else if (seatMesaMatch) {
         const tableNum = row;
         const chairNum = seatMesaMatch[2];
         const hasTableWord = /^(mesa|table)\b/i.test(String(tableNum));
-        details = `${hasTableWord ? tableNum : `Mesa ${tableNum}`}, Silla ${chairNum}`;
+        details = `${hasTableWord ? tableNum : `Mesa ${tableNum}`} - Silla ${chairNum}`;
       } else if (mesaMatch) {
-        details = `Mesa ${mesaMatch[2]}, Silla ${num}`;
-      } else if (/^(mesa|table)\b/i.test(String(row).trim())) {
-        const tableNum = section;
-        const hasTableWord = /^(mesa|table)\b/i.test(String(tableNum).trim());
-        details = `${hasTableWord ? tableNum : `Mesa ${tableNum}`}, Silla ${num}`;
+        details = `Mesa ${mesaMatch[2]} - Silla ${num}`;
       } else if (row === 'GA') {
         details = `Entrada General`;
       } else {

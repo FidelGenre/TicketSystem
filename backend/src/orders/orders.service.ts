@@ -110,6 +110,7 @@ export class OrdersService {
       seatId: string;
       sectionId: string;
       sectionName: string;
+      sectionType: string;
       rowLabel: string;
       seatNumber: number;
       price: number;
@@ -173,6 +174,7 @@ export class OrdersService {
           seatId: seat.id,
           sectionId: seat.sectionId,
           sectionName: seat.section.name,
+          sectionType: seat.section.sectionType,
           rowLabel: seat.rowLabel,
           seatNumber: seat.seatNumber,
           price,
@@ -207,6 +209,7 @@ export class OrdersService {
           seatId: '',
           sectionId: section.id,
           sectionName: section.name,
+          sectionType: section.sectionType,
           rowLabel: 'GA',
           seatNumber: i + 1,
           price,
