@@ -117,9 +117,24 @@ const getCurrentTimeInTimezone = (timezone: string): string => {
   }
 };
 
-const buildLocalEventDate = (date: string, time: string) => {
+const buildLocalEventDate = (date: string, time: string, timezone: string = 'UTC') => {
   const safeTime = time || '00:00';
-  return `${date}T${safeTime}:00`;
+  const [hours, minutes] = safeTime.split(':').map(Number);
+
+  // Create date at midnight in the event's timezone
+  const dateStr = `${date}T00:00:00`;
+  const baseDate = new Date(dateStr);
+
+  // Get the offset between UTC and the event's timezone
+  const utcDate = new Date(baseDate.toLocaleString('en-US', { timeZone: timezone }));
+  const tzDate = new Date(baseDate.toLocaleString('en-US', { timeZone: 'UTC' }));
+  const offset = (utcDate.getTime() - tzDate.getTime()) / (1000 * 60); // in minutes
+
+  // Create the date with the time in the event's timezone, then adjust to UTC
+  baseDate.setHours(hours, minutes, 0, 0);
+  const utcTime = new Date(baseDate.getTime() - offset * 60 * 1000);
+
+  return utcTime.toISOString().split('.')[0] + 'Z';
 };
 
 export default function CreateEventPage() {
@@ -182,7 +197,7 @@ export default function CreateEventPage() {
       const payload: any = { ...form, hasSeatMap: true };
       payload.maxTicketsPerTransaction = form.maxTicketsPerTransaction ? parseInt(form.maxTicketsPerTransaction, 10) : 10;
       if (form.eventDate) {
-        payload.eventDate = buildLocalEventDate(form.eventDate, form.eventTime);
+        payload.eventDate = buildLocalEventDate(form.eventDate, form.eventTime, form.eventTimezone);
       }
       if (form.doorsOpen) {
         payload.doorsOpen = `${form.eventDate}T${form.doorsOpen}:00`;
