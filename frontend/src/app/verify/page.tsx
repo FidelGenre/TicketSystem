@@ -259,10 +259,10 @@ export default function TicketScannerPage() {
   return (
     <div className={`${shellClass} flex flex-col items-center justify-center px-4 py-8 md:py-12`}>
       <div className="w-full max-w-6xl grid grid-cols-1 xl:grid-cols-[minmax(0,460px)_minmax(0,1fr)] gap-5">
-        <div className={`w-full rounded-2xl border p-5 md:p-7 space-y-5 overflow-hidden ${panelClass}`}>
+        <div className={`w-full rounded-[18px] border p-5 md:p-7 space-y-5 overflow-hidden ${panelClass}`}>
           <div className="flex items-start justify-between gap-3">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-2xl bg-[#F97316] px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white">
+              <div className="inline-flex items-center gap-2 rounded-[18px] bg-[#F97316] px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white">
                 <HiOutlineQrcode className="h-4 w-4" />
                 {lang === 'es' ? 'Modo evento' : 'Event mode'}
               </div>
@@ -278,14 +278,14 @@ export default function TicketScannerPage() {
               <button
                 type="button"
                 onClick={() => setHighContrast((v) => !v)}
-                className={`rounded-2xl px-3 py-2 text-[10px] font-black uppercase tracking-wide transition ${highContrast ? 'bg-white/10 text-white hover:bg-white/15' : 'bg-[#0A375A] text-white hover:bg-[#082d49]'}`}
+                className={`rounded-[18px] px-3 py-2 text-[10px] font-black uppercase tracking-wide transition ${highContrast ? 'bg-white/10 text-white hover:bg-white/15' : 'bg-[#0A375A] text-white hover:bg-[#082d49]'}`}
               >
                 {highContrast ? (lang === 'es' ? 'Claro' : 'Light') : (lang === 'es' ? 'Oscuro' : 'Dark')}
               </button>
               <button
                 type="button"
                 onClick={() => setSoundEnabled((v) => !v)}
-                className={`rounded-2xl px-3 py-2 text-[10px] font-black uppercase tracking-wide transition ${soundEnabled ? 'bg-[#F97316] text-white' : 'bg-white/10 text-white'}`}
+                className={`rounded-[18px] px-3 py-2 text-[10px] font-black uppercase tracking-wide transition ${soundEnabled ? 'bg-[#F97316] text-white' : 'bg-white/10 text-white'}`}
               >
                 {soundEnabled ? (lang === 'es' ? 'Sonido ON' : 'Sound ON') : (lang === 'es' ? 'Sonido OFF' : 'Sound OFF')}
               </button>
@@ -293,36 +293,36 @@ export default function TicketScannerPage() {
           </div>
 
           {!isAuthenticated && (
-            <div className="rounded-2xl border border-[#F97316]/30 bg-[#F97316]/10 px-4 py-3 text-xs font-bold text-[#F97316]">
+            <div className="rounded-[18px] border border-[#F97316]/30 bg-[#F97316]/10 px-4 py-3 text-xs font-bold text-[#F97316]">
               {lang === 'es' ? 'Debes iniciar sesión como organizador o admin para validar entradas.' : 'You must be signed in as organizer or admin to validate tickets.'}
             </div>
           )}
 
           {!validationResult && !validating && (
-            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black text-white">
+            <div className="relative overflow-hidden rounded-[18px] border border-white/10 bg-black text-white">
               {isScanning ? (
                 <div className="relative w-full overflow-hidden">
                   <div id="reader" className="relative w-full overflow-hidden" />
-                  <div className="pointer-events-none absolute inset-x-8 top-8 bottom-8 rounded-2xl border-2 border-[#F97316]/80 shadow-[0_0_30px_rgba(249,115,22,0.30)]" />
+                  <div className="pointer-events-none absolute inset-x-8 top-8 bottom-8 rounded-[18px] border-2 border-[#F97316]/80 shadow-[0_0_30px_rgba(249,115,22,0.30)]" />
                   <div className="absolute left-8 right-8 top-0 h-0.5 bg-[#F97316] shadow-[0_0_18px_#F97316] animate-[scan_2.1s_infinite] pointer-events-none z-10" />
 
                   <button
                     type="button"
                     onClick={stopCameraScan}
-                    className="absolute bottom-4 left-1/2 z-20 -translate-x-1/2 rounded-2xl bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-[#0A375A] shadow-lg transition hover:bg-orange-50"
+                    className="absolute bottom-4 left-1/2 z-20 -translate-x-1/2 rounded-[18px] bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-[#0A375A] shadow-lg transition hover:bg-orange-50"
                   >
                     {lang === 'es' ? 'Detener cámara' : 'Stop camera'}
                   </button>
                 </div>
               ) : (
                 <div className="px-6 py-12 text-center">
-                  <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 text-[#F97316]">
+                  <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-[18px] bg-white/10 text-[#F97316]">
                     <HiOutlineCamera className="h-8 w-8" />
                   </div>
                   <button
                     type="button"
                     onClick={startCameraScan}
-                    className="mx-auto inline-flex items-center justify-center gap-2 rounded-2xl bg-[#F97316] px-5 py-3 text-xs font-black uppercase tracking-wide text-white shadow-lg shadow-orange-500/20 transition hover:bg-orange-600 active:scale-[0.98]"
+                    className="mx-auto inline-flex items-center justify-center gap-2 rounded-[18px] bg-[#F97316] px-5 py-3 text-xs font-black uppercase tracking-wide text-white shadow-lg shadow-orange-500/20 transition hover:bg-orange-600 active:scale-[0.98]"
                   >
                     <HiOutlineCamera className="h-4 w-4" />
                     {lang === 'es' ? 'Iniciar scanner' : 'Start scanner'}
@@ -342,7 +342,7 @@ export default function TicketScannerPage() {
           )}
 
           {validationResult && !validating && (
-            <div className={`rounded-2xl border p-6 text-center ${
+            <div className={`rounded-[18px] border p-6 text-center ${
               validationResult.valid
                 ? 'border-emerald-400/40 bg-emerald-500/10 text-emerald-100'
                 : 'border-red-400/40 bg-red-500/10 text-red-100'
@@ -364,7 +364,7 @@ export default function TicketScannerPage() {
               <p className="mt-2 text-xs font-bold text-white/65">{validationResult.message}</p>
 
               {validationResult.ticket && (
-                <div className="mt-5 rounded-2xl border border-white/10 bg-white/95 p-4 text-left text-xs text-slate-800">
+                <div className="mt-5 rounded-[18px] border border-white/10 bg-white/95 p-4 text-left text-xs text-slate-800">
                   <div className="border-b border-slate-100 pb-3">
                     <span className="block text-[9px] font-black uppercase tracking-widest text-slate-400">
                       {lang === 'es' ? 'Evento' : 'Event'}
@@ -411,7 +411,7 @@ export default function TicketScannerPage() {
                 <button
                   type="button"
                   onClick={resetTerminal}
-                  className="rounded-2xl bg-[#F97316] px-5 py-3 text-xs font-black uppercase tracking-wide text-white transition hover:bg-orange-600"
+                  className="rounded-[18px] bg-[#F97316] px-5 py-3 text-xs font-black uppercase tracking-wide text-white transition hover:bg-orange-600"
                 >
                   {lang === 'es' ? 'Validar siguiente entrada' : 'Validate next ticket'}
                 </button>
@@ -420,7 +420,7 @@ export default function TicketScannerPage() {
                   <Link
                     href={`/verify/${validationResult.code}`}
                     target="_blank"
-                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-5 py-3 text-[10px] font-black uppercase tracking-wide text-white transition hover:bg-white/15"
+                    className="inline-flex items-center justify-center gap-2 rounded-[18px] border border-white/10 bg-white/10 px-5 py-3 text-[10px] font-black uppercase tracking-wide text-white transition hover:bg-white/15"
                   >
                     <HiOutlineExternalLink className="h-4 w-4" />
                     {lang === 'es' ? 'Ver boleto digital' : 'View digital ticket'}
@@ -431,7 +431,7 @@ export default function TicketScannerPage() {
           )}
 
           {scanResult && !validationResult && (
-            <div className="flex items-center gap-3 rounded-2xl border border-red-400/30 bg-red-500/10 p-4 text-red-200">
+            <div className="flex items-center gap-3 rounded-[18px] border border-red-400/30 bg-red-500/10 p-4 text-red-200">
               <HiOutlineXCircle className="h-6 w-6 shrink-0" />
               <span className="text-xs font-bold">{scanResult.message}</span>
             </div>
@@ -455,7 +455,7 @@ export default function TicketScannerPage() {
                     value={manualCode}
                     onChange={(e) => setManualCode(e.target.value)}
                     placeholder={lang === 'es' ? 'Código del ticket' : 'Ticket code'}
-                    className={`w-full rounded-2xl border px-12 py-3 text-sm font-black uppercase tracking-widest outline-none transition focus:ring-2 focus:ring-[#F97316] ${
+                    className={`w-full rounded-[18px] border px-12 py-3 text-sm font-black uppercase tracking-widest outline-none transition focus:ring-2 focus:ring-[#F97316] ${
                       highContrast ? 'border-white/10 bg-white/5 text-white placeholder:text-white/30' : 'border-slate-200 bg-white text-slate-900'
                     }`}
                     required
@@ -463,7 +463,7 @@ export default function TicketScannerPage() {
                 </div>
                 <button
                   type="submit"
-                  className="w-full rounded-2xl bg-[#0A375A] px-5 py-3.5 text-xs font-black uppercase tracking-wide text-white shadow-md transition hover:bg-[#082d49]"
+                  className="w-full rounded-[18px] bg-[#0A375A] px-5 py-3.5 text-xs font-black uppercase tracking-wide text-white shadow-md transition hover:bg-[#082d49]"
                 >
                   {lang === 'es' ? 'Validar código' : 'Validate code'}
                 </button>
@@ -472,7 +472,7 @@ export default function TicketScannerPage() {
           )}
         </div>
 
-        <div className={`rounded-2xl border p-5 md:p-7 ${panelClass}`}>
+        <div className={`rounded-[18px] border p-5 md:p-7 ${panelClass}`}>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-[11px] font-black uppercase tracking-[0.24em] text-[#F97316]">
@@ -486,7 +486,7 @@ export default function TicketScannerPage() {
             <button
               type="button"
               onClick={resetStats}
-              className={`inline-flex items-center justify-center gap-2 rounded-2xl px-3 py-2 text-[10px] font-black uppercase tracking-wide transition ${
+              className={`inline-flex items-center justify-center gap-2 rounded-[18px] px-3 py-2 text-[10px] font-black uppercase tracking-wide transition ${
                 highContrast ? 'bg-white/10 text-white hover:bg-white/15' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
             >
@@ -496,15 +496,15 @@ export default function TicketScannerPage() {
           </div>
 
           <div className="mt-5 grid grid-cols-3 gap-3">
-            <div className={`rounded-2xl border p-4 ${highContrast ? 'border-white/10 bg-white/5' : 'border-slate-100 bg-slate-50'}`}>
+            <div className={`rounded-[18px] border p-4 ${highContrast ? 'border-white/10 bg-white/5' : 'border-slate-100 bg-slate-50'}`}>
               <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">{lang === 'es' ? 'Total' : 'Total'}</p>
               <p className={`mt-2 text-3xl font-black ${highContrast ? 'text-white' : 'text-[#0A375A]'}`}>{liveStats.total}</p>
             </div>
-            <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-4">
+            <div className="rounded-[18px] border border-emerald-400/20 bg-emerald-500/10 p-4">
               <p className="text-[10px] font-black uppercase tracking-wide text-emerald-300">{lang === 'es' ? 'Aprobados' : 'Approved'}</p>
               <p className="mt-2 text-3xl font-black text-emerald-300">{liveStats.approved}</p>
             </div>
-            <div className="rounded-2xl border border-red-400/20 bg-red-500/10 p-4">
+            <div className="rounded-[18px] border border-red-400/20 bg-red-500/10 p-4">
               <p className="text-[10px] font-black uppercase tracking-wide text-red-300">{lang === 'es' ? 'Denegados' : 'Denied'}</p>
               <p className="mt-2 text-3xl font-black text-red-300">{liveStats.denied}</p>
             </div>
@@ -523,7 +523,7 @@ export default function TicketScannerPage() {
                 {recentScans.map((scan, index) => (
                   <div
                     key={`${scan.code}-${scan.time}-${index}`}
-                    className={`rounded-2xl border p-4 ${
+                    className={`rounded-[18px] border p-4 ${
                       scan.valid
                         ? 'border-emerald-400/20 bg-emerald-500/10'
                         : 'border-red-400/20 bg-red-500/10'
@@ -545,7 +545,7 @@ export default function TicketScannerPage() {
                           {scan.location || '-'} · {scan.code}
                         </p>
                       </div>
-                      <span className={`shrink-0 rounded-2xl px-2.5 py-1 text-[10px] font-black ${highContrast ? 'bg-white/10 text-white' : 'bg-white text-slate-600'}`}>
+                      <span className={`shrink-0 rounded-[18px] px-2.5 py-1 text-[10px] font-black ${highContrast ? 'bg-white/10 text-white' : 'bg-white text-slate-600'}`}>
                         {scan.time}
                       </span>
                     </div>
@@ -553,7 +553,7 @@ export default function TicketScannerPage() {
                 ))}
               </div>
             ) : (
-              <div className={`rounded-2xl border px-5 py-12 text-center ${highContrast ? 'border-white/10 bg-white/5 text-white/45' : 'border-slate-100 bg-slate-50 text-slate-500'}`}>
+              <div className={`rounded-[18px] border px-5 py-12 text-center ${highContrast ? 'border-white/10 bg-white/5 text-white/45' : 'border-slate-100 bg-slate-50 text-slate-500'}`}>
                 <HiOutlineTicket className="mx-auto mb-3 h-10 w-10 opacity-50" />
                 <p className="text-sm font-bold">
                   {lang === 'es' ? 'Todavía no hay escaneos en esta sesión.' : 'No scans in this session yet.'}
