@@ -13,12 +13,35 @@ function resolveImage(url?: string | null) {
   return `${backendBase}${url.startsWith('/') ? url : `/${url}`}`;
 }
 
+function cleanText(value?: string | null, fallback = '') {
+  return String(value || fallback).replace(/\s+/g, ' ').trim();
+}
+
+function formatEventDate(value?: string | null, timezone = 'UTC') {
+  if (!value) return '';
+  try {
+    return new Intl.DateTimeFormat('es-US', {
+      timeZone: timezone || 'UTC',
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    }).format(new Date(value));
+  } catch {
+    return '';
+  }
+}
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
+  const eventUrl = `${siteUrl}/events/${slug}`;
 
   try {
     const response = await fetch(`${apiUrl.replace(/\/$/, '')}/events/${slug}`, {
@@ -29,31 +52,59 @@ export async function generateMetadata({
 
     const event = await response.json();
     const image = resolveImage(event.bannerImageUrl || event.imageUrl);
+    const dateText = formatEventDate(event.eventDate, event.eventTimezone || 'UTC');
+    const venueText = cleanText(event.venueName || event.venueAddress);
+    const title = `${cleanText(event.title, 'Evento')} — LPTicket`;
+    const description = cleanText(
+      event.description,
+      [event.title, venueText && `en ${venueText}`, dateText && `el ${dateText}`, 'Compra tickets seguros en LPTicket.']
+        .filter(Boolean)
+        .join(' ')
+    ).slice(0, 220);
 
     return {
-      title: `${event.title} — LPTicket`,
-      description: event.venueName
-        ? `${event.title} en ${event.venueName}. Compra tus tickets en LPTicket.`
-        : `${event.title}. Compra tus tickets en LPTicket.`,
+      title,
+      description,
+      keywords: [
+        event.title,
+        event.venueName,
+        event.venueAddress,
+        event.category,
+        'LPTicket',
+        'tickets',
+        'eventos',
+        'boletos',
+      ].filter(Boolean),
+      alternates: {
+        canonical: eventUrl,
+      },
       openGraph: {
-        title: event.title,
-        description: event.venueName || 'Evento disponible en LPTicket',
-        url: `${siteUrl}/events/${slug}`,
+        title,
+        description,
+        url: eventUrl,
         siteName: 'LPTicket',
         images: [{ url: image, width: 1200, height: 630, alt: event.title }],
         type: 'website',
+        locale: 'es_US',
       },
       twitter: {
         card: 'summary_large_image',
-        title: event.title,
-        description: event.venueName || 'Evento disponible en LPTicket',
+        title,
+        description,
         images: [image],
+      },
+      robots: {
+        index: true,
+        follow: true,
       },
     };
   } catch {
     return {
       title: 'Evento — LPTicket',
-      description: 'Compra tus tickets en LPTicket.',
+      description: 'Compra tickets seguros para eventos en LPTicket.',
+      alternates: {
+        canonical: eventUrl,
+      },
     };
   }
 }

@@ -248,8 +248,50 @@ export default function EventDetailPage() {
     labelEs: 'Otro', labelEn: 'Other', icon: '🎫', color: '#6366f1'
   };
 
+  const publicSiteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.lpticket.com';
+  const eventPublicUrl = `${publicSiteUrl}/events/${event.slug}`;
+  const eventImageUrl = getImageUrl(event.bannerImageUrl || event.imageUrl) || `${publicSiteUrl}/logo.png`;
+  const lowestSectionPrice = event.sections?.length
+    ? Math.min(...event.sections.map((section) => Number(section.price || 0)))
+    : Number(event.minPrice || 0);
+
+  const eventJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Event',
+    name: event.title,
+    description: event.description || `${event.title} en ${event.venueName}. Compra tickets seguros en LPTicket.`,
+    image: [eventImageUrl],
+    startDate: event.eventDate,
+    eventStatus: 'https://schema.org/EventScheduled',
+    eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+    url: eventPublicUrl,
+    location: {
+      '@type': 'Place',
+      name: event.venueName,
+      address: event.venueAddress || event.venueName,
+    },
+    organizer: {
+      '@type': 'Organization',
+      name: 'LPTicket',
+      url: publicSiteUrl,
+    },
+    offers: {
+      '@type': 'Offer',
+      url: eventPublicUrl,
+      price: lowestSectionPrice,
+      priceCurrency: event.currency || 'USD',
+      availability: 'https://schema.org/InStock',
+      validFrom: event.createdAt,
+    },
+  };
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(eventJsonLd) }}
+      />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Hero Image */}
       <div className="relative rounded-lg overflow-hidden mb-8 aspect-[16/9] sm:aspect-[21/8]">
         {(event.bannerImageUrl || event.imageUrl) ? (
@@ -509,6 +551,7 @@ export default function EventDetailPage() {
           `}} />
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
