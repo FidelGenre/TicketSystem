@@ -499,6 +499,7 @@ export class OrdersService {
       await this.orderRepo.update(orderId, {
         status: OrderStatus.PAID,
         stripePaymentIntent: session.payment_intent as string,
+        paidAt: new Date(),
       });
 
       const seatsInfo = JSON.parse(order.seatsData || '[]');
@@ -574,7 +575,7 @@ export class OrdersService {
     const [orders, total] = await this.orderRepo.findAndCount({
       where: { userId },
       relations: ['event'],
-      order: { createdAt: 'DESC' },
+      order: { paidAt: 'DESC', createdAt: 'DESC' },
       skip,
       take: limit,
     });
@@ -768,6 +769,7 @@ export class OrdersService {
       processingFee: 0,
       total: 0,
       status: OrderStatus.PAID,
+      paidAt: new Date(),
       ticketCount: seatIds.length,
     });
     const savedOrder = await this.orderRepo.save(order);

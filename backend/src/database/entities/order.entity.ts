@@ -86,6 +86,9 @@ export class Order {
   @Column({ type: 'text', nullable: true })
   seatsData: string;
 
+  @Column({ type: 'timestamp', nullable: true })
+  paidAt: Date | null;
+
   @CreateDateColumn()
   createdAt: Date;
 }

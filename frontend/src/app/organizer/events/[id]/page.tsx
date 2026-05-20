@@ -543,7 +543,7 @@ export default function EventDetailPage() {
     const csv = [
       lang === 'es' ? 'Cliente,Email,Cantidad Boletos,Total Pagado,Fecha' : 'Client,Email,Ticket Count,Total Paid,Date',
       ...sales.orders.map((o: any) =>
-        `"${o.user?.firstName || ''} ${o.user?.lastName || ''}","${o.user?.email || ''}",${o.ticketCount},"${Number(o.total).toFixed(2)}","${format(parseSafeDate(o.createdAt), 'yyyy-MM-dd HH:mm')}"`
+        `"${o.user?.firstName || ''} ${o.user?.lastName || ''}","${o.user?.email || ''}",${o.ticketCount},"${Number(o.total).toFixed(2)}","${format(parseSafeDate(o.paidAt || o.createdAt), 'yyyy-MM-dd HH:mm')}"`
       ),
     ].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -592,7 +592,7 @@ export default function EventDetailPage() {
   const estimatedNetRevenue = Math.max(totalRevenue - (totalRevenue * 0.029) - (totalOrders * 0.30), 0);
 
   const rawSalesByDay = salesOrders.reduce<Record<string, { date: string; orders: number; tickets: number; revenue: number }>>((acc, order) => {
-    const key = format(parseSafeDate(order.createdAt), 'yyyy-MM-dd');
+    const key = format(parseSafeDate(order.paidAt || order.createdAt), 'yyyy-MM-dd');
     if (!acc[key]) acc[key] = { date: key, orders: 0, tickets: 0, revenue: 0 };
     acc[key].orders += 1;
     acc[key].tickets += Number(order.ticketCount || 0);
@@ -1281,7 +1281,7 @@ export default function EventDetailPage() {
                         <td className="px-4 py-4 text-sm text-gray-600">{o.user?.email}</td>
                         <td className="px-4 py-4 text-sm text-gray-900 font-semibold text-center">{o.ticketCount}</td>
                         <td className="px-4 py-4 text-sm text-primary-600 font-bold text-right">${Number(o.total).toFixed(2)}</td>
-                        <td className="px-4 py-4 text-xs text-gray-500 text-center">{format(parseSafeDate(o.createdAt), 'dd MMM yyyy')}</td>
+                        <td className="px-4 py-4 text-xs text-gray-500 text-center">{format(parseSafeDate(o.paidAt || o.createdAt), 'dd MMM yyyy')}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1292,7 +1292,7 @@ export default function EventDetailPage() {
                     <div key={o.id} className="p-4 flex justify-between items-center">
                       <div>
                         <p className="font-bold text-gray-900 text-sm">{o.user?.firstName} {o.user?.lastName}</p>
-                        <p className="text-xs text-gray-500">{o.ticketCount} {o.ticketCount === 1 ? 'boleto' : 'boletos'} · {format(parseSafeDate(o.createdAt), 'dd MMM')}</p>
+                        <p className="text-xs text-gray-500">{o.ticketCount} {o.ticketCount === 1 ? 'boleto' : 'boletos'} · {format(parseSafeDate(o.paidAt || o.createdAt), 'dd MMM')}</p>
                       </div>
                       <p className="text-sm font-extrabold text-primary-600">${Number(o.total).toFixed(2)}</p>
                     </div>
