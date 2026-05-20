@@ -96,7 +96,7 @@ export class MailService {
         <!-- Card branding header -->
         <div style="border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 18px; display: table; width: 100%;">
           <div style="display: table-cell; vertical-align: middle;">
-            <img src="${appUrl}/logo.png" alt="LPTicket" width="150" style="display:block; width:150px; max-width:150px; height:auto; border:0; outline:none; text-decoration:none;" />
+            <img src="${appUrl}/logo.png" alt="LPTicket" width="150" style="display:block; width:150px; max-width:150px; height:auto; border:0; outline:none; text-decoration:none; filter: drop-shadow(0 0 2px #ffffff) drop-shadow(0 0 6px #ffffff) drop-shadow(0 0 10px #ffffff);" />
           </div>
           <div style="display: table-cell; text-align: right; font-size: 9px; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; vertical-align: middle;">Digital Ticket</div>
         </div>
