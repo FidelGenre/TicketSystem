@@ -259,10 +259,10 @@ export default function TicketScannerPage() {
   return (
     <div className={`${shellClass} flex flex-col items-center justify-center px-4 py-8 md:py-12`}>
       <div className="w-full max-w-6xl grid grid-cols-1 xl:grid-cols-[minmax(0,460px)_minmax(0,1fr)] gap-5">
-        <div className={`w-full rounded-3xl border p-5 md:p-7 space-y-5 overflow-hidden ${panelClass}`}>
+        <div className={`w-full rounded-2xl border p-5 md:p-7 space-y-5 overflow-hidden ${panelClass}`}>
           <div className="flex items-start justify-between gap-3">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full bg-[#F97316] px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white">
+              <div className="inline-flex items-center gap-2 rounded-2xl bg-[#F97316] px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white">
                 <HiOutlineQrcode className="h-4 w-4" />
                 {lang === 'es' ? 'Modo evento' : 'Event mode'}
               </div>
@@ -278,14 +278,14 @@ export default function TicketScannerPage() {
               <button
                 type="button"
                 onClick={() => setHighContrast((v) => !v)}
-                className={`rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-wide transition ${highContrast ? 'bg-white/10 text-white hover:bg-white/15' : 'bg-[#0A375A] text-white hover:bg-[#082d49]'}`}
+                className={`rounded-2xl px-3 py-2 text-[10px] font-black uppercase tracking-wide transition ${highContrast ? 'bg-white/10 text-white hover:bg-white/15' : 'bg-[#0A375A] text-white hover:bg-[#082d49]'}`}
               >
                 {highContrast ? (lang === 'es' ? 'Claro' : 'Light') : (lang === 'es' ? 'Oscuro' : 'Dark')}
               </button>
               <button
                 type="button"
                 onClick={() => setSoundEnabled((v) => !v)}
-                className={`rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-wide transition ${soundEnabled ? 'bg-[#F97316] text-white' : 'bg-white/10 text-white'}`}
+                className={`rounded-2xl px-3 py-2 text-[10px] font-black uppercase tracking-wide transition ${soundEnabled ? 'bg-[#F97316] text-white' : 'bg-white/10 text-white'}`}
               >
                 {soundEnabled ? (lang === 'es' ? 'Sonido ON' : 'Sound ON') : (lang === 'es' ? 'Sonido OFF' : 'Sound OFF')}
               </button>
@@ -303,13 +303,13 @@ export default function TicketScannerPage() {
               {isScanning ? (
                 <div className="relative w-full overflow-hidden">
                   <div id="reader" className="relative w-full overflow-hidden" />
-                  <div className="pointer-events-none absolute inset-x-8 top-8 bottom-8 rounded-3xl border-2 border-[#F97316]/80 shadow-[0_0_30px_rgba(249,115,22,0.30)]" />
+                  <div className="pointer-events-none absolute inset-x-8 top-8 bottom-8 rounded-2xl border-2 border-[#F97316]/80 shadow-[0_0_30px_rgba(249,115,22,0.30)]" />
                   <div className="absolute left-8 right-8 top-0 h-0.5 bg-[#F97316] shadow-[0_0_18px_#F97316] animate-[scan_2.1s_infinite] pointer-events-none z-10" />
 
                   <button
                     type="button"
                     onClick={stopCameraScan}
-                    className="absolute bottom-4 left-1/2 z-20 -translate-x-1/2 rounded-xl bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-[#0A375A] shadow-lg transition hover:bg-orange-50"
+                    className="absolute bottom-4 left-1/2 z-20 -translate-x-1/2 rounded-2xl bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-[#0A375A] shadow-lg transition hover:bg-orange-50"
                   >
                     {lang === 'es' ? 'Detener cámara' : 'Stop camera'}
                   </button>
@@ -342,7 +342,7 @@ export default function TicketScannerPage() {
           )}
 
           {validationResult && !validating && (
-            <div className={`rounded-3xl border p-6 text-center ${
+            <div className={`rounded-2xl border p-6 text-center ${
               validationResult.valid
                 ? 'border-emerald-400/40 bg-emerald-500/10 text-emerald-100'
                 : 'border-red-400/40 bg-red-500/10 text-red-100'
@@ -472,7 +472,7 @@ export default function TicketScannerPage() {
           )}
         </div>
 
-        <div className={`rounded-3xl border p-5 md:p-7 ${panelClass}`}>
+        <div className={`rounded-2xl border p-5 md:p-7 ${panelClass}`}>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-[11px] font-black uppercase tracking-[0.24em] text-[#F97316]">
@@ -486,7 +486,7 @@ export default function TicketScannerPage() {
             <button
               type="button"
               onClick={resetStats}
-              className={`inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-wide transition ${
+              className={`inline-flex items-center justify-center gap-2 rounded-2xl px-3 py-2 text-[10px] font-black uppercase tracking-wide transition ${
                 highContrast ? 'bg-white/10 text-white hover:bg-white/15' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
             >
@@ -545,7 +545,7 @@ export default function TicketScannerPage() {
                           {scan.location || '-'} · {scan.code}
                         </p>
                       </div>
-                      <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-black ${highContrast ? 'bg-white/10 text-white' : 'bg-white text-slate-600'}`}>
+                      <span className={`shrink-0 rounded-2xl px-2.5 py-1 text-[10px] font-black ${highContrast ? 'bg-white/10 text-white' : 'bg-white text-slate-600'}`}>
                         {scan.time}
                       </span>
                     </div>
