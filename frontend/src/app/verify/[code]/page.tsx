@@ -324,8 +324,8 @@ export default function VerifyTicketPage() {
           }
 
           html.mobile-print-mode .ticket-page {
-            width: 3.72in !important;
-            max-width: calc(100% - 8mm) !important;
+            width: 3.45in !important;
+            max-width: calc(100% - 12mm) !important;
             margin: 0 auto !important;
           }
 
@@ -337,52 +337,74 @@ export default function VerifyTicketPage() {
             padding-bottom: 0 !important;
             overflow: visible !important;
             border-radius: 8pt !important;
+            font-size: 7.2pt !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
           }
 
           html.mobile-print-mode .ticket-header {
-            padding: 8pt 9pt 0 !important;
+            padding: 6pt 8pt 0 !important;
           }
 
           html.mobile-print-mode .ticket-body {
             display: block !important;
-            padding: 7pt 9pt 7pt !important;
+            padding: 5pt 8pt 5pt !important;
             flex: none !important;
           }
 
           html.mobile-print-mode .ticket-footer {
-            position: relative !important;
+            position: static !important;
             left: auto !important;
             right: auto !important;
             bottom: auto !important;
             min-height: 0 !important;
             margin-top: 0 !important;
-            padding: 7pt 9pt !important;
+            padding: 5pt 8pt !important;
             background: #0a375a !important;
             box-sizing: border-box !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
           }
 
+          html.mobile-print-mode .ticket-footer > div {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: flex-end !important;
+            gap: 8pt !important;
+          }
+
           html.mobile-print-mode .brand-logo {
-            width: 104pt !important;
+            width: 90pt !important;
             height: auto !important;
           }
 
           html.mobile-print-mode .qr-img {
-            width: 68pt !important;
-            height: 68pt !important;
+            width: 54pt !important;
+            height: 54pt !important;
           }
 
           html.mobile-print-mode .event-title {
-            font-size: 12pt !important;
+            font-size: 10.5pt !important;
             line-height: 1.05 !important;
           }
 
+          html.mobile-print-mode .premium-divider {
+            margin-top: 5pt !important;
+            height: 4pt !important;
+          }
+
+          html.mobile-print-mode .ticket-body .grid {
+            gap: 4pt !important;
+          }
+
+          html.mobile-print-mode .ticket-body .rounded-xl,
+          html.mobile-print-mode .ticket-body .rounded-2xl {
+            padding: 5pt !important;
+          }
+
           html.mobile-print-mode .terms-text {
-            font-size: 4.8pt !important;
-            line-height: 1.18 !important;
+            font-size: 4.2pt !important;
+            line-height: 1.1 !important;
           }
         }
 
@@ -390,15 +412,15 @@ export default function VerifyTicketPage() {
         /* IOS MOBILE PRINT ONLY */
         @media print {
           @supports (-webkit-touch-callout: none) {
-            html,
-            body {
+            html.mobile-print-mode,
+            html.mobile-print-mode body {
               background: #ffffff !important;
               overflow: visible !important;
               width: 100% !important;
               min-height: 0 !important;
             }
 
-            .ticket-wrapper {
+            html.mobile-print-mode .ticket-wrapper {
               display: flex !important;
               justify-content: center !important;
               align-items: flex-start !important;
@@ -409,14 +431,14 @@ export default function VerifyTicketPage() {
               overflow: visible !important;
             }
 
-            .ticket-page {
-              width: 3.65in !important;
-              max-width: calc(100% - 8mm) !important;
+            html.mobile-print-mode .ticket-page {
+              width: 3.4in !important;
+              max-width: calc(100% - 12mm) !important;
               margin: 0 auto !important;
               padding: 0 !important;
             }
 
-            .ticket-card {
+            html.mobile-print-mode .ticket-card {
               position: static !important;
               display: block !important;
               height: auto !important;
@@ -427,28 +449,32 @@ export default function VerifyTicketPage() {
               border: 1px solid #cbd5e1 !important;
               border-radius: 8pt !important;
               box-shadow: none !important;
+              font-size: 7pt !important;
               page-break-inside: avoid !important;
               break-inside: avoid !important;
             }
 
-            .ticket-header {
-              padding: 7pt 9pt 0 !important;
+            html.mobile-print-mode .ticket-header {
+              padding: 5pt 8pt 0 !important;
               background: #ffffff !important;
             }
 
-            .ticket-body {
+            html.mobile-print-mode .ticket-body {
               display: block !important;
-              padding: 6pt 9pt 6pt !important;
+              padding: 4pt 8pt 4pt !important;
               flex: none !important;
               background: #ffffff !important;
             }
 
-            .ticket-footer {
-              position: relative !important;
+            html.mobile-print-mode .ticket-footer {
+              position: static !important;
+              left: auto !important;
+              right: auto !important;
+              bottom: auto !important;
               display: block !important;
               min-height: 0 !important;
               margin: 0 !important;
-              padding: 7pt 9pt !important;
+              padding: 5pt 8pt !important;
               background: #0a375a !important;
               color: #ffffff !important;
               box-sizing: border-box !important;
@@ -456,39 +482,46 @@ export default function VerifyTicketPage() {
               break-inside: avoid !important;
             }
 
-            .brand-logo {
-              width: 96pt !important;
+            html.mobile-print-mode .ticket-footer > div {
+              display: flex !important;
+              flex-direction: row !important;
+              align-items: flex-end !important;
+              gap: 8pt !important;
+            }
+
+            html.mobile-print-mode .brand-logo {
+              width: 84pt !important;
               height: auto !important;
             }
 
-            .qr-img {
-              width: 62pt !important;
-              height: 62pt !important;
+            html.mobile-print-mode .qr-img {
+              width: 50pt !important;
+              height: 50pt !important;
             }
 
-            .event-title {
-              font-size: 11.2pt !important;
+            html.mobile-print-mode .event-title {
+              font-size: 10pt !important;
               line-height: 1.05 !important;
-              margin-bottom: 3pt !important;
+              margin-bottom: 2pt !important;
             }
 
-            .premium-divider {
-              margin-top: 8pt !important;
-              height: 5pt !important;
+            html.mobile-print-mode .premium-divider {
+              margin-top: 4pt !important;
+              height: 4pt !important;
             }
 
-            .ticket-body .grid {
-              gap: 7pt !important;
+            html.mobile-print-mode .ticket-body .grid {
+              gap: 4pt !important;
             }
 
-            .ticket-body .rounded-xl,
-            .ticket-body .rounded-2xl {
-              padding: 8pt !important;
+            html.mobile-print-mode .ticket-body .rounded-xl,
+            html.mobile-print-mode .ticket-body .rounded-2xl {
+              padding: 5pt !important;
             }
 
-            .terms-text {
-              font-size: 4.6pt !important;
-              line-height: 1.16 !important;
+            html.mobile-print-mode .terms-text {
+              font-size: 4pt !important;
+              line-height: 1.08 !important;
             }
           }
         }
