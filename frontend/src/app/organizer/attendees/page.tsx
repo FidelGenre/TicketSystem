@@ -1,5 +1,7 @@
 'use client';
 
+import toast from 'react-hot-toast';
+
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { formatSeatLabel } from '@/lib/seatLabel';
@@ -69,7 +71,7 @@ export default function AttendeesPage() {
       await api.post(`/orders/ticket/${code}/validate`);
       await loadAttendees(selectedEvent);
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error');
+      toast.error(err.response?.data?.message || 'Error');
     } finally {
       setValidating('');
     }

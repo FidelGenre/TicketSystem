@@ -1,5 +1,7 @@
 'use client';
 
+import toast from 'react-hot-toast';
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import api from '@/lib/api';
@@ -44,7 +46,7 @@ export default function OrganizerEventsPage() {
       await api.post(`/events/${id}/publish`);
       await loadEvents();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error');
+      toast.error(err.response?.data?.message || 'Error');
     }
   };
 
@@ -54,7 +56,7 @@ export default function OrganizerEventsPage() {
       await api.delete(`/events/${id}`);
       await loadEvents();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error');
+      toast.error(err.response?.data?.message || 'Error');
     }
   };
 

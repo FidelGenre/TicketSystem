@@ -637,8 +637,8 @@ export default function EventDetailPage() {
           <div className="bg-white rounded-xl p-5 border border-gray-200">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-gray-500">{t('orgOrders')}</span>
-              <div className="w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center">
-                <HiOutlineShoppingCart className="w-5 h-5 text-purple-600" />
+              <div className="w-9 h-9 rounded-lg bg-[rgba(10,55,90,0.05)] flex items-center justify-center">
+                <HiOutlineShoppingCart className="w-5 h-5 text-[#0A375A]" />
               </div>
             </div>
             <p className="text-2xl font-bold text-gray-900">{sales.totalOrders}</p>
@@ -1066,7 +1066,7 @@ export default function EventDetailPage() {
             <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                  <HiOutlineShoppingCart className="w-5 h-5 text-purple-500" />
+                  <HiOutlineShoppingCart className="w-5 h-5 text-[rgba(10,55,90,0.05)]0" />
                   {lang === 'es' ? 'Órdenes y Clientes' : 'Orders & Clients'}
                 </h3>
                 <p className="text-xs text-gray-500 mt-0.5">{sales?.orders?.length || 0} {lang === 'es' ? 'transacciones realizadas' : 'completed transactions'}</p>

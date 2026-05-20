@@ -175,19 +175,19 @@ export default function AdminEventsPage() {
 
   const handleApprove = async (id: string) => {
     try { await api.patch(`/admin/events/${id}/approve`); await loadEvents(); }
-    catch (err: any) { alert(err.response?.data?.message || 'Error'); }
+    catch (err: any) { toast.error(err.response?.data?.message || 'Error'); }
   };
 
   const handleReject = async (id: string) => {
     if (!confirm(lang === 'es' ? '¿Rechazar este evento?' : 'Reject this event?')) return;
     try { await api.patch(`/admin/events/${id}/reject`); await loadEvents(); }
-    catch (err: any) { alert(err.response?.data?.message || 'Error'); }
+    catch (err: any) { toast.error(err.response?.data?.message || 'Error'); }
   };
 
   const handleDelete = async (id: string, title: string) => {
     if (!confirm(lang === 'es' ? `¿Estás seguro de eliminar el evento "${title}"?` : `Are you sure you want to delete "${title}"?`)) return;
     try { await api.delete(`/admin/events/${id}`); await loadEvents(); }
-    catch (err: any) { alert(err.response?.data?.message || 'Error'); }
+    catch (err: any) { toast.error(err.response?.data?.message || 'Error'); }
   };
 
   const handleToggleFeatured = async (id: string) => {
@@ -195,7 +195,7 @@ export default function AdminEventsPage() {
       await api.patch(`/admin/events/${id}/toggle-featured`);
       await loadEvents();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error');
+      toast.error(err.response?.data?.message || 'Error');
     }
   };
 
@@ -374,10 +374,10 @@ export default function AdminEventsPage() {
                           )}
                           <button
                             onClick={() => handleOpenFeesModal(ev)}
-                            className="px-3 py-1.5 rounded-lg bg-purple-50 text-purple-700 text-xs font-bold hover:bg-purple-100 transition-colors flex items-center gap-1 shrink-0 shadow-sm border border-purple-200"
+                            className="px-3 py-1.5 rounded-lg bg-[rgba(10,55,90,0.05)] text-[#0A375A] text-xs font-bold hover:bg-[rgba(10,55,90,0.10)] transition-colors flex items-center gap-1 shrink-0 shadow-sm border border-[rgba(10,55,90,0.12)]"
                             title={lang === 'es' ? 'Configurar Fees' : 'Configure Fees'}
                           >
-                            <HiOutlineCog className="w-4 h-4 text-purple-600" />
+                            <HiOutlineCog className="w-4 h-4 text-[#0A375A]" />
                             {lang === 'es' ? 'Fees' : 'Fees'}
                           </button>
                           <Link
@@ -477,7 +477,7 @@ export default function AdminEventsPage() {
                     <div className="flex gap-2 w-full mt-1">
                       <button
                         onClick={() => handleOpenFeesModal(ev)}
-                        className="flex-1 bg-purple-50 text-purple-600 border border-purple-100 text-[10px] font-bold py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+                        className="flex-1 bg-[rgba(10,55,90,0.05)] text-[#0A375A] border border-[rgba(10,55,90,0.10)] text-[10px] font-bold py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 active:scale-95 transition-all"
                       >
                         <HiOutlineCog className="w-4 h-4" />
                         {lang === 'es' ? 'CONFIGURAR FEES' : 'CONFIG FEES'}
@@ -904,9 +904,9 @@ export default function AdminEventsPage() {
           
           <div className="relative w-full max-w-2xl bg-white h-screen shadow-2xl flex flex-col z-10 animate-[slideOver_0.3s_ease-out] border-l border-gray-150">
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 shrink-0 bg-purple-50/50">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 shrink-0 bg-[rgba(10,55,90,0.05)]">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-[rgba(10,55,90,0.10)] text-[#0A375A] flex items-center justify-center">
                   <HiOutlineCog className="w-6 h-6" />
                 </div>
                 <div>
@@ -931,7 +931,7 @@ export default function AdminEventsPage() {
                 onClick={() => setActiveTab('global')}
                 className={`py-3.5 px-5 text-xs font-bold border-b-2 transition-all ${
                   activeTab === 'global'
-                    ? 'border-purple-600 text-purple-600 bg-purple-50/50'
+                    ? 'border-[#0A375A] text-[#0A375A] bg-[rgba(10,55,90,0.05)]'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -942,7 +942,7 @@ export default function AdminEventsPage() {
                 onClick={() => setActiveTab('sections')}
                 className={`py-3.5 px-5 text-xs font-bold border-b-2 transition-all ${
                   activeTab === 'sections'
-                    ? 'border-purple-600 text-purple-600 bg-purple-50/50'
+                    ? 'border-[#0A375A] text-[#0A375A] bg-[rgba(10,55,90,0.05)]'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -959,7 +959,7 @@ export default function AdminEventsPage() {
               ) : eventFeeConfig ? (
                 activeTab === 'global' ? (
                   <form onSubmit={handleSaveEventFees} className="space-y-6 animate-fade-in">
-                    <div className="bg-purple-50/30 border border-purple-100 rounded-2xl p-4 text-xs text-purple-800 leading-relaxed">
+                    <div className="bg-[rgba(10,55,90,0.05)] border border-[rgba(10,55,90,0.10)] rounded-2xl p-4 text-xs text-[#0A375A] leading-relaxed">
                       {lang === 'es'
                         ? 'Configura los porcentajes y cargos fijos globales para este evento. Si dejas un campo vacío, se aplicarán los valores por defecto del sistema (12% LPTicket, 2.9% + $0.30 Stripe).'
                         : 'Configure global percentages and fixed fees for this event. If left empty, system defaults will apply (12% LPTicket, 2.9% + $0.30 Stripe).'}
@@ -982,7 +982,7 @@ export default function AdminEventsPage() {
                                 ...eventFeeConfig,
                                 event: { ...eventFeeConfig.event, serviceFeePercent: e.target.value }
                               })}
-                              className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                              className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[rgba(10,55,90,0.05)]0 bg-white"
                             />
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-bold">ej: 0.12</span>
                           </div>
@@ -1005,7 +1005,7 @@ export default function AdminEventsPage() {
                                 ...eventFeeConfig,
                                 event: { ...eventFeeConfig.event, serviceFeeFixedPerTicket: e.target.value }
                               })}
-                              className="w-full pl-8 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                              className="w-full pl-8 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[rgba(10,55,90,0.05)]0 bg-white"
                             />
                           </div>
                           <p className="text-[10px] text-gray-400">{lang === 'es' ? 'En la moneda del evento' : 'In event currency'}</p>
@@ -1030,7 +1030,7 @@ export default function AdminEventsPage() {
                                 ...eventFeeConfig,
                                 event: { ...eventFeeConfig.event, processingFeePercent: e.target.value }
                               })}
-                              className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                              className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[rgba(10,55,90,0.05)]0 bg-white"
                             />
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-bold">ej: 0.029</span>
                           </div>
@@ -1053,7 +1053,7 @@ export default function AdminEventsPage() {
                                 ...eventFeeConfig,
                                 event: { ...eventFeeConfig.event, processingFeeFixedPerTicket: e.target.value }
                               })}
-                              className="w-full pl-8 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                              className="w-full pl-8 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[rgba(10,55,90,0.05)]0 bg-white"
                             />
                           </div>
                           <p className="text-[10px] text-gray-400">{lang === 'es' ? 'En la moneda del evento' : 'In event currency'}</p>
@@ -1072,7 +1072,7 @@ export default function AdminEventsPage() {
                       <button
                         type="submit"
                         disabled={feeSaving}
-                        className="px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl shadow-lg shadow-purple-200 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
+                        className="px-6 py-2.5 bg-[#0A375A] hover:bg-[#0A375A] text-white text-xs font-bold rounded-xl shadow-lg shadow-[rgba(10,55,90,0.12)] transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
                       >
                         {feeSaving && <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
                         {lang === 'es' ? 'Guardar Fees Globales' : 'Save Global Fees'}
@@ -1081,7 +1081,7 @@ export default function AdminEventsPage() {
                   </form>
                 ) : (
                   <div className="space-y-6 animate-fade-in">
-                    <div className="bg-purple-50/30 border border-purple-100 rounded-2xl p-4 text-xs text-purple-800 leading-relaxed">
+                    <div className="bg-[rgba(10,55,90,0.05)] border border-[rgba(10,55,90,0.10)] rounded-2xl p-4 text-xs text-[#0A375A] leading-relaxed">
                       {lang === 'es'
                         ? 'Configura fees personalizados para secciones específicas. Estos valores sobreescriben la configuración global del evento para los tickets de esa sección.'
                         : 'Configure custom fees for specific sections. These values override the global event configuration for tickets in that section.'}
@@ -1116,7 +1116,7 @@ export default function AdminEventsPage() {
                                   updated[index].serviceFeePercent = e.target.value;
                                   setEventFeeConfig({ ...eventFeeConfig, sections: updated });
                                 }}
-                                className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                                className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[rgba(10,55,90,0.05)]0 bg-white"
                               />
                             </div>
 
@@ -1135,7 +1135,7 @@ export default function AdminEventsPage() {
                                   updated[index].serviceFeeFixedPerTicket = e.target.value;
                                   setEventFeeConfig({ ...eventFeeConfig, sections: updated });
                                 }}
-                                className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                                className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[rgba(10,55,90,0.05)]0 bg-white"
                               />
                             </div>
 
@@ -1154,7 +1154,7 @@ export default function AdminEventsPage() {
                                   updated[index].processingFeePercent = e.target.value;
                                   setEventFeeConfig({ ...eventFeeConfig, sections: updated });
                                 }}
-                                className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                                className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[rgba(10,55,90,0.05)]0 bg-white"
                               />
                             </div>
 
@@ -1173,7 +1173,7 @@ export default function AdminEventsPage() {
                                   updated[index].processingFeeFixedPerTicket = e.target.value;
                                   setEventFeeConfig({ ...eventFeeConfig, sections: updated });
                                 }}
-                                className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                                className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[rgba(10,55,90,0.05)]0 bg-white"
                               />
                             </div>
                           </div>
@@ -1183,7 +1183,7 @@ export default function AdminEventsPage() {
                               type="button"
                               disabled={feeSaving}
                               onClick={() => handleSaveSectionFees(sec.id, sec)}
-                              className="px-4 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs font-bold rounded-xl transition-all active:scale-95 disabled:opacity-50"
+                              className="px-4 py-2 bg-[rgba(10,55,90,0.10)] hover:bg-[rgba(10,55,90,0.12)] text-[#0A375A] text-xs font-bold rounded-xl transition-all active:scale-95 disabled:opacity-50"
                             >
                               {lang === 'es' ? `Guardar Fees de ${sec.name}` : `Save ${sec.name} Fees`}
                             </button>

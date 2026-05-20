@@ -1,5 +1,7 @@
 'use client';
 
+import toast from 'react-hot-toast';
+
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import {
@@ -68,7 +70,7 @@ export default function AdminCategoriesPage() {
       await api.patch(`/categories/${id}`, updates);
       await loadCategories();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error');
+      toast.error(err.response?.data?.message || 'Error');
     }
   };
 

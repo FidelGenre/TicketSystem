@@ -173,14 +173,14 @@ export default function AdminUsersPage() {
     try {
       await api.patch(`/admin/users/${userId}/toggle-active`);
       await loadUsers();
-    } catch (err: any) { alert(err.response?.data?.message || 'Error'); }
+    } catch (err: any) { toast.error(err.response?.data?.message || 'Error'); }
   };
 
   const handleChangeRole = async (userId: string, newRole: string) => {
     try {
       await api.patch(`/admin/users/${userId}/role`, { role: newRole });
       await loadUsers();
-    } catch (err: any) { alert(err.response?.data?.message || 'Error'); }
+    } catch (err: any) { toast.error(err.response?.data?.message || 'Error'); }
   };
 
   const handleDeleteUser = async (userId: string, userName: string) => {

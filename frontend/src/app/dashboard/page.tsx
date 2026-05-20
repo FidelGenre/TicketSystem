@@ -412,7 +412,7 @@ function DashboardPageBody() {
                           const { uploadAvatar } = useAuthStore.getState();
                           await uploadAvatar(file);
                         } catch (err) {
-                          alert('Error al subir imagen');
+                          toast.error(lang === 'es' ? 'Error al subir imagen' : 'Error uploading image');
                         }
                       }
                     }} 

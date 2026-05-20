@@ -60,7 +60,7 @@ export default function AdminDashboard() {
     { label: t('adminTotalRevenue'), value: `$${stats.totalRevenue.toFixed(2)}`, icon: HiOutlineCurrencyDollar, bg: 'bg-green-50', iconColor: 'text-green-600', iconBg: 'bg-green-100' },
     { label: t('adminTotalUsers'), value: stats.totalUsers.toString(), icon: HiOutlineUsers, bg: 'bg-blue-50', iconColor: 'text-blue-600', iconBg: 'bg-blue-100' },
     { label: t('adminTotalEvents'), value: stats.totalEvents.toString(), icon: HiOutlineCalendar, bg: 'bg-orange-50', iconColor: 'text-orange-600', iconBg: 'bg-orange-100' },
-    { label: t('adminTotalOrders'), value: stats.totalOrders.toString(), icon: HiOutlineShoppingCart, bg: 'bg-purple-50', iconColor: 'text-purple-600', iconBg: 'bg-purple-100' },
+    { label: t('adminTotalOrders'), value: stats.totalOrders.toString(), icon: HiOutlineShoppingCart, bg: 'bg-[rgba(10,55,90,0.05)]', iconColor: 'text-[#0A375A]', iconBg: 'bg-[rgba(10,55,90,0.10)]' },
   ];
 
   return (
@@ -125,9 +125,9 @@ export default function AdminDashboard() {
               <p className="text-xl font-bold text-yellow-700">{stats.draftEvents}</p>
               <p className="text-xs text-yellow-600 font-medium">{t('adminDrafts')}</p>
             </div>
-            <div className="bg-indigo-50 rounded-lg p-3 text-center">
-              <p className="text-xl font-bold text-indigo-700">{stats.totalTickets}</p>
-              <p className="text-xs text-indigo-600 font-medium">{t('adminTicketsSold')}</p>
+            <div className="bg-[rgba(10,55,90,0.05)] rounded-lg p-3 text-center">
+              <p className="text-xl font-bold text-[#0A375A]">{stats.totalTickets}</p>
+              <p className="text-xs text-[#0A375A] font-medium">{t('adminTicketsSold')}</p>
             </div>
           </div>
         </div>
