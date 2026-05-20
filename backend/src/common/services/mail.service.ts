@@ -215,12 +215,9 @@ export class MailService {
           <div style="max-width:560px;margin:0 auto;box-shadow:0 10px 25px rgba(0,0,0,0.05);border-radius:16px;overflow:hidden;">
 
             <!-- Header / Logo -->
-            <div style="background-color:#0a375a;padding:24px 28px;text-align:center;">
-              <div style="display:inline-flex;align-items:center;gap:6px;margin-bottom:4px;">
-                <span style="font-size:24px;font-weight:900;color:#f97316;letter-spacing:-1px;">LP</span>
-                <span style="font-size:24px;font-weight:900;color:#ffffff;letter-spacing:-1px;">Ticket</span>
-              </div>
-              <p style="margin:0;font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:2px;font-weight:700;">
+            <div style="background-color:#ffffff;padding:24px 28px;text-align:center;">
+              <img src="${appUrl}/logo.png" alt="LPTicket" width="180" style="display:block;margin:0 auto 8px auto;max-width:180px;height:auto;" />
+              <p style="margin:0;font-size:10px;color:#0a375a;text-transform:uppercase;letter-spacing:2px;font-weight:700;">
                 Recordatorio de Evento
               </p>
             </div>
