@@ -15,6 +15,7 @@ import ShareEventButton from '@/components/events/ShareEventButton';
 import { useLang } from '@/context/LanguageContext';
 
 import { getImageUrl } from '@/lib/api';
+import TrustBadges from '@/components/layout/TrustBadges';
 
 const getTimezoneAbbr = (timezone: string): string => {
   if (!timezone) return '';

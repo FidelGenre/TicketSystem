@@ -19,6 +19,7 @@ import {
 import SeatMapInteractive from '@/components/events/SeatMapInteractive';
 import ReservationTimer from '@/components/events/ReservationTimer';
 import InvoiceBreakdown, { InvoiceData } from '@/components/events/InvoiceBreakdown';
+import TrustBadges from '@/components/layout/TrustBadges';
 
 /**
  * Steps for the checkout wizard.
