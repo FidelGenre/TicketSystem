@@ -32,6 +32,7 @@ import {
   HiOutlineBan,
   HiOutlineMail,
   HiOutlineBell,
+  HiOutlineChartBar,
 } from 'react-icons/hi';
 import VenueMapBuilder from '@/components/events/VenueMapBuilder';
 import toast from 'react-hot-toast';
@@ -579,6 +580,68 @@ export default function EventDetailPage() {
   const catInfo = getCategoryInfo(event.category);
   const catLabel = catInfo ? (lang === 'en' ? catInfo.labelEn : catInfo.labelEs) : event.category;
 
+  const salesOrders = ((sales?.orders || []) as any[]);
+  const totalRevenue = Number(sales?.totalRevenue || 0);
+  const totalOrders = Number(sales?.totalOrders || salesOrders.length || 0);
+  const totalTickets = Number(sales?.totalTickets || attendees.length || 0);
+  const scannedTickets = attendees.filter((a) => a.status === 'used').length;
+  const pendingTickets = attendees.filter((a) => a.status === 'active').length;
+  const cancelledTickets = attendees.filter((a) => a.status === 'cancelled').length;
+  const averageOrder = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+  const scanRate = totalTickets > 0 ? Math.round((scannedTickets / totalTickets) * 100) : 0;
+  const estimatedNetRevenue = Math.max(totalRevenue - (totalRevenue * 0.029) - (totalOrders * 0.30), 0);
+
+  const salesByDay = Object.values(
+    salesOrders.reduce<Record<string, { date: string; orders: number; tickets: number; revenue: number }>>((acc, order) => {
+      const key = format(parseSafeDate(order.createdAt), 'yyyy-MM-dd');
+      if (!acc[key]) acc[key] = { date: key, orders: 0, tickets: 0, revenue: 0 };
+      acc[key].orders += 1;
+      acc[key].tickets += Number(order.ticketCount || 0);
+      acc[key].revenue += Number(order.total || 0);
+      return acc;
+    }, {})
+  ).sort((a, b) => a.date.localeCompare(b.date));
+
+  const salesBySection = Object.values(
+    attendees.reduce<Record<string, { section: string; tickets: number; scanned: number; pending: number }>>((acc, attendee) => {
+      const key = attendee.sectionName || (lang === 'es' ? 'General' : 'General');
+      if (!acc[key]) acc[key] = { section: key, tickets: 0, scanned: 0, pending: 0 };
+      acc[key].tickets += 1;
+      if (attendee.status === 'used') acc[key].scanned += 1;
+      if (attendee.status === 'active') acc[key].pending += 1;
+      return acc;
+    }, {})
+  ).sort((a, b) => b.tickets - a.tickets);
+
+  const exportAnalyticsCSV = () => {
+    const rows = [
+      [lang === 'es' ? 'Métrica' : 'Metric', lang === 'es' ? 'Valor' : 'Value'],
+      [lang === 'es' ? 'Ingresos brutos' : 'Gross revenue', totalRevenue.toFixed(2)],
+      [lang === 'es' ? 'Ingreso neto estimado' : 'Estimated net revenue', estimatedNetRevenue.toFixed(2)],
+      [lang === 'es' ? 'Órdenes' : 'Orders', String(totalOrders)],
+      [lang === 'es' ? 'Tickets vendidos' : 'Tickets sold', String(totalTickets)],
+      [lang === 'es' ? 'Tickets escaneados' : 'Scanned tickets', String(scannedTickets)],
+      [lang === 'es' ? 'Asistentes pendientes' : 'Pending attendees', String(pendingTickets)],
+      [lang === 'es' ? 'Cancelados' : 'Cancelled', String(cancelledTickets)],
+      [lang === 'es' ? 'Promedio por orden' : 'Average order', averageOrder.toFixed(2)],
+      [],
+      [lang === 'es' ? 'Ventas por día' : 'Sales by day'],
+      [lang === 'es' ? 'Fecha' : 'Date', lang === 'es' ? 'Órdenes' : 'Orders', lang === 'es' ? 'Tickets' : 'Tickets', lang === 'es' ? 'Ingresos' : 'Revenue'],
+      ...salesByDay.map((day) => [day.date, String(day.orders), String(day.tickets), day.revenue.toFixed(2)]),
+      [],
+      [lang === 'es' ? 'Tickets por sección' : 'Tickets by section'],
+      [lang === 'es' ? 'Sección' : 'Section', lang === 'es' ? 'Tickets' : 'Tickets', lang === 'es' ? 'Escaneados' : 'Scanned', lang === 'es' ? 'Pendientes' : 'Pending'],
+      ...salesBySection.map((section) => [section.section, String(section.tickets), String(section.scanned), String(section.pending)]),
+    ];
+
+    const csv = rows.map((row) => row.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `analytics-${event?.title || id}.csv`;
+    a.click();
+  };
+
   return (
     <div className="p-6 lg:p-8 space-y-6 animate-fade-in">
       {/* Back & Header */}
@@ -613,35 +676,146 @@ export default function EventDetailPage() {
         </div>
       </div>
 
-      {/* Sales Stats */}
+      {/* Premium Analytics */}
       {sales && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white rounded-xl p-5 border border-gray-200">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-500">{t('orgRevenue')}</span>
-              <div className="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center">
-                <HiOutlineCurrencyDollar className="w-5 h-5 text-green-600" />
+        <div className="space-y-5">
+          <div className="overflow-hidden rounded-2xl border border-[rgba(10,55,90,0.10)] bg-white shadow-sm">
+            <div className="flex flex-col gap-4 border-b border-gray-100 bg-gradient-to-r from-[#0A375A] to-[#0A375A] px-5 py-5 text-white sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-[0.24em] text-orange-300">
+                  {lang === 'es' ? 'Analytics del evento' : 'Event analytics'}
+                </p>
+                <h2 className="mt-1 text-xl font-black">
+                  {lang === 'es' ? 'Rendimiento en vivo' : 'Live performance'}
+                </h2>
+                <p className="mt-1 text-xs font-semibold text-white/70">
+                  {lang === 'es' ? 'Ventas, acceso, asistentes y comportamiento por sección.' : 'Sales, access, attendees and section performance.'}
+                </p>
               </div>
+              <button
+                onClick={exportAnalyticsCSV}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#F97316] px-4 py-2.5 text-xs font-black uppercase tracking-wide text-white shadow-lg shadow-black/10 transition hover:bg-orange-600"
+              >
+                <HiOutlineDownload className="h-4 w-4" />
+                {lang === 'es' ? 'Export premium' : 'Premium export'}
+              </button>
             </div>
-            <p className="text-2xl font-bold text-gray-900">${sales.totalRevenue.toFixed(2)}</p>
+
+            <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 xl:grid-cols-4">
+              {[
+                {
+                  label: lang === 'es' ? 'Ingresos brutos' : 'Gross revenue',
+                  value: `$${totalRevenue.toFixed(2)}`,
+                  note: `${totalOrders} ${lang === 'es' ? 'órdenes' : 'orders'}`,
+                  icon: HiOutlineCurrencyDollar,
+                },
+                {
+                  label: lang === 'es' ? 'Neto estimado' : 'Estimated net',
+                  value: `$${estimatedNetRevenue.toFixed(2)}`,
+                  note: lang === 'es' ? 'después de fee estimado' : 'after estimated fees',
+                  icon: HiOutlineChartBar,
+                },
+                {
+                  label: lang === 'es' ? 'Tickets vendidos' : 'Tickets sold',
+                  value: String(totalTickets),
+                  note: `$${averageOrder.toFixed(2)} ${lang === 'es' ? 'promedio/orden' : 'avg/order'}`,
+                  icon: HiOutlineTicket,
+                },
+                {
+                  label: lang === 'es' ? 'Entrada escaneada' : 'Entry scanned',
+                  value: `${scanRate}%`,
+                  note: `${scannedTickets} ${lang === 'es' ? 'escaneados' : 'scanned'} · ${pendingTickets} ${lang === 'es' ? 'pendientes' : 'pending'}`,
+                  icon: HiOutlineCheckCircle,
+                },
+              ].map((card) => (
+                <div key={card.label} className="rounded-2xl border border-gray-100 bg-gray-50/60 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wide text-gray-500">{card.label}</p>
+                      <p className="mt-2 text-2xl font-black text-[#0A375A]">{card.value}</p>
+                      <p className="mt-1 text-xs font-semibold text-gray-500">{card.note}</p>
+                    </div>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[rgba(249,115,22,0.12)] text-[#0A375A]">
+                      <card.icon className="h-5 w-5" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="bg-white rounded-xl p-5 border border-gray-200">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-500">{t('orgTickets')}</span>
-              <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
-                <HiOutlineTicket className="w-5 h-5 text-blue-600" />
+
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-black text-gray-900">{lang === 'es' ? 'Ventas por día' : 'Sales by day'}</h3>
+                  <p className="text-xs font-semibold text-gray-500">{lang === 'es' ? 'Órdenes, tickets e ingresos diarios' : 'Daily orders, tickets and revenue'}</p>
+                </div>
+                <HiOutlineCalendar className="h-5 w-5 text-[#F97316]" />
               </div>
+
+              {salesByDay.length > 0 ? (
+                <div className="space-y-3">
+                  {salesByDay.slice(-7).map((day) => {
+                    const maxRevenue = Math.max(...salesByDay.map((d) => d.revenue), 1);
+                    return (
+                      <div key={day.date}>
+                        <div className="mb-1 flex items-center justify-between text-xs">
+                          <span className="font-bold text-gray-700">{format(parseSafeDate(day.date), 'dd MMM yyyy', { locale: dateFnsLocale })}</span>
+                          <span className="font-black text-[#0A375A]">${day.revenue.toFixed(2)}</span>
+                        </div>
+                        <div className="h-2 overflow-hidden rounded-full bg-gray-100">
+                          <div className="h-full rounded-full bg-[#F97316]" style={{ width: `${Math.max(6, (day.revenue / maxRevenue) * 100)}%` }} />
+                        </div>
+                        <p className="mt-1 text-[11px] font-semibold text-gray-500">
+                          {day.orders} {lang === 'es' ? 'órdenes' : 'orders'} · {day.tickets} tickets
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="rounded-xl bg-gray-50 px-4 py-8 text-center text-sm font-semibold text-gray-500">
+                  {lang === 'es' ? 'Aún no hay ventas para graficar.' : 'No sales to chart yet.'}
+                </div>
+              )}
             </div>
-            <p className="text-2xl font-bold text-gray-900">{sales.totalTickets}</p>
-          </div>
-          <div className="bg-white rounded-xl p-5 border border-gray-200">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-500">{t('orgOrders')}</span>
-              <div className="w-9 h-9 rounded-lg bg-[rgba(10,55,90,0.05)] flex items-center justify-center">
-                <HiOutlineShoppingCart className="w-5 h-5 text-[#0A375A]" />
+
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-black text-gray-900">{lang === 'es' ? 'Tickets por sección' : 'Tickets by section'}</h3>
+                  <p className="text-xs font-semibold text-gray-500">{lang === 'es' ? 'Vendido, escaneado y pendiente por área' : 'Sold, scanned and pending by area'}</p>
+                </div>
+                <HiOutlineUsers className="h-5 w-5 text-[#F97316]" />
               </div>
+
+              {salesBySection.length > 0 ? (
+                <div className="space-y-3">
+                  {salesBySection.slice(0, 8).map((section) => {
+                    const maxTickets = Math.max(...salesBySection.map((item) => item.tickets), 1);
+                    return (
+                      <div key={section.section} className="rounded-xl border border-gray-100 bg-gray-50/60 p-3">
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                          <span className="truncate text-xs font-black text-gray-800">{section.section}</span>
+                          <span className="text-xs font-black text-[#0A375A]">{section.tickets} tickets</span>
+                        </div>
+                        <div className="h-2 overflow-hidden rounded-full bg-white">
+                          <div className="h-full rounded-full bg-[#0A375A]" style={{ width: `${Math.max(8, (section.tickets / maxTickets) * 100)}%` }} />
+                        </div>
+                        <p className="mt-2 text-[11px] font-semibold text-gray-500">
+                          {section.scanned} {lang === 'es' ? 'escaneados' : 'scanned'} · {section.pending} {lang === 'es' ? 'pendientes' : 'pending'}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="rounded-xl bg-gray-50 px-4 py-8 text-center text-sm font-semibold text-gray-500">
+                  {lang === 'es' ? 'Aún no hay tickets por sección.' : 'No section ticket data yet.'}
+                </div>
+              )}
             </div>
-            <p className="text-2xl font-bold text-gray-900">{sales.totalOrders}</p>
           </div>
         </div>
       )}
