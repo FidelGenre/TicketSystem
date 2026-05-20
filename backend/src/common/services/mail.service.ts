@@ -96,7 +96,7 @@ export class MailService {
         <!-- Card branding header -->
         <div bgcolor="#ffffff" style="background:#ffffff !important; background-color:#ffffff !important; border-bottom:2px solid #f1f5f9; padding:12px 12px 14px 12px; margin-bottom:18px; display:table; width:100%; box-sizing:border-box;">
           <div bgcolor="#ffffff" style="display:table-cell; vertical-align:middle; background:#ffffff !important; background-color:#ffffff !important;">
-            <img src="${appUrl}/logo-email.png" alt="LPTicket" width="190" style="display:block; width:190px; max-width:190px; height:auto; border:0; outline:none; text-decoration:none;" />
+            <img src="${appUrl}/logo-email-orange.png" alt="LPTicket" width="220" style="display:block; width:220px; max-width:220px; height:auto; border:0; outline:none; text-decoration:none;" />
           </div>
           <div bgcolor="#ffffff" style="display:table-cell; text-align:right; font-size:9px; font-weight:bold; color:#94a3b8 !important; text-transform:uppercase; letter-spacing:1px; vertical-align:middle; background:#ffffff !important; background-color:#ffffff !important;">
             Digital Ticket
@@ -238,7 +238,7 @@ export class MailService {
 
             <!-- Header / Logo -->
             <div style="background-color:#ffffff;padding:24px 28px;text-align:center;">
-              <img src="${appUrl}/logo.png" alt="LPTicket" width="180" style="display:block;margin:0 auto 8px auto;max-width:180px;height:auto;" />
+              <img src="${appUrl}/logo-email-orange.png" alt="LPTicket" width="180" style="display:block;margin:0 auto 8px auto;max-width:180px;height:auto;" />
               <p style="margin:0;font-size:10px;color:#0A375A;text-transform:uppercase;letter-spacing:2px;font-weight:700;">
                 Recordatorio de Evento
               </p>
