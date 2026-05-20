@@ -262,7 +262,7 @@ export default function TicketScannerPage() {
         <div className={`w-full rounded-[18px] border p-5 md:p-7 space-y-5 overflow-hidden ${panelClass}`}>
           <div className="flex items-start justify-between gap-3">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-[18px] bg-[#F97316] px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white">
+              <div className="inline-flex items-center gap-2 whitespace-nowrap rounded-[18px] bg-[#F97316] px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-white shadow-sm">
                 <HiOutlineQrcode className="h-4 w-4" />
                 {lang === 'es' ? 'Modo evento' : 'Event mode'}
               </div>
@@ -278,16 +278,16 @@ export default function TicketScannerPage() {
               <button
                 type="button"
                 onClick={() => setHighContrast((v) => !v)}
-                className={`rounded-[18px] px-3 py-2 text-[10px] font-black uppercase tracking-wide transition ${highContrast ? 'bg-white/10 text-white hover:bg-white/15' : 'bg-[#0A375A] text-white hover:bg-[#082d49]'}`}
+                className="min-w-[104px] whitespace-nowrap rounded-[18px] bg-[#0A375A] px-4 py-3 text-center text-[11px] font-black uppercase tracking-wide text-white shadow-sm transition hover:bg-[#082d49]"
               >
                 {highContrast ? (lang === 'es' ? 'Claro' : 'Light') : (lang === 'es' ? 'Oscuro' : 'Dark')}
               </button>
               <button
                 type="button"
                 onClick={() => setSoundEnabled((v) => !v)}
-                className={`rounded-[18px] px-3 py-2 text-[10px] font-black uppercase tracking-wide transition ${soundEnabled ? 'bg-[#F97316] text-white' : 'bg-white/10 text-white'}`}
+                className={`min-w-[104px] whitespace-nowrap rounded-[18px] px-4 py-3 text-center text-[11px] font-black uppercase tracking-wide text-white shadow-sm transition ${soundEnabled ? 'bg-[#F97316] hover:bg-orange-600' : 'bg-[#0A375A] hover:bg-[#082d49]'}`}
               >
-                {soundEnabled ? (lang === 'es' ? 'Sonido ON' : 'Sound ON') : (lang === 'es' ? 'Sonido OFF' : 'Sound OFF')}
+                {soundEnabled ? (lang === 'es' ? 'Sonido' : 'Sound') : (lang === 'es' ? 'Silencio' : 'Muted')}
               </button>
             </div>
           </div>
@@ -299,7 +299,7 @@ export default function TicketScannerPage() {
           )}
 
           {!validationResult && !validating && (
-            <div className="relative overflow-hidden rounded-[18px] border border-white/10 bg-black text-white">
+            <div className="relative overflow-hidden rounded-[18px] border border-[rgba(10,55,90,0.12)] bg-white text-[#0A375A] shadow-sm">
               {isScanning ? (
                 <div className="relative w-full overflow-hidden">
                   <div id="reader" className="relative w-full overflow-hidden" />
@@ -316,13 +316,13 @@ export default function TicketScannerPage() {
                 </div>
               ) : (
                 <div className="px-6 py-12 text-center">
-                  <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-[18px] bg-white/10 text-[#F97316]">
+                  <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-[18px] bg-[rgba(249,115,22,0.12)] text-[#F97316]">
                     <HiOutlineCamera className="h-8 w-8" />
                   </div>
                   <button
                     type="button"
                     onClick={startCameraScan}
-                    className="mx-auto inline-flex items-center justify-center gap-2 rounded-[18px] bg-[#F97316] px-5 py-3 text-xs font-black uppercase tracking-wide text-white shadow-lg shadow-orange-500/20 transition hover:bg-orange-600 active:scale-[0.98]"
+                    className="mx-auto inline-flex min-h-[56px] items-center justify-center gap-2 rounded-[18px] bg-[#F97316] px-8 py-4 text-xs font-black uppercase tracking-wide text-white shadow-lg shadow-orange-500/20 transition hover:bg-orange-600 active:scale-[0.98]"
                   >
                     <HiOutlineCamera className="h-4 w-4" />
                     {lang === 'es' ? 'Iniciar scanner' : 'Start scanner'}
@@ -455,7 +455,7 @@ export default function TicketScannerPage() {
                     value={manualCode}
                     onChange={(e) => setManualCode(e.target.value)}
                     placeholder={lang === 'es' ? 'Código del ticket' : 'Ticket code'}
-                    className={`w-full rounded-[18px] border px-12 py-3 text-sm font-black uppercase tracking-widest outline-none transition focus:ring-2 focus:ring-[#F97316] ${
+                    className={`w-full min-h-[56px] rounded-[18px] border px-12 py-4 text-sm font-black uppercase tracking-widest outline-none transition focus:ring-2 focus:ring-[#F97316] ${
                       highContrast ? 'border-white/10 bg-white/5 text-white placeholder:text-white/30' : 'border-slate-200 bg-white text-slate-900'
                     }`}
                     required
@@ -463,7 +463,7 @@ export default function TicketScannerPage() {
                 </div>
                 <button
                   type="submit"
-                  className="w-full rounded-[18px] bg-[#0A375A] px-5 py-3.5 text-xs font-black uppercase tracking-wide text-white shadow-md transition hover:bg-[#082d49]"
+                  className="w-full min-h-[56px] rounded-[18px] bg-[#0A375A] px-5 py-4 text-xs font-black uppercase tracking-wide text-white shadow-md transition hover:bg-[#082d49]"
                 >
                   {lang === 'es' ? 'Validar código' : 'Validate code'}
                 </button>
