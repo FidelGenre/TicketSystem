@@ -6,6 +6,7 @@ import {
   SocialMatchConnection,
   SocialMatchConnectionStatus,
   SocialMatchInterest,
+  SocialMatchMessage,
   SocialMatchPreference,
   Ticket,
   TicketStatus,
@@ -31,6 +32,8 @@ export class SocialMatchService {
     private readonly preferenceRepo: Repository<SocialMatchPreference>,
     @InjectRepository(SocialMatchConnection)
     private readonly connectionRepo: Repository<SocialMatchConnection>,
+    @InjectRepository(SocialMatchMessage)
+    private readonly messageRepo: Repository<SocialMatchMessage>,
     @InjectRepository(Ticket)
     private readonly ticketRepo: Repository<Ticket>,
     @InjectRepository(Event)
@@ -49,31 +52,18 @@ export class SocialMatchService {
     );
 
     const connections = await this.getConnections(userId);
-
-    return {
-      eligibleEvents,
-      preferences,
-      summaries,
-      connections,
-      interests: Object.values(SocialMatchInterest),
-    };
+    return { eligibleEvents, preferences, summaries, connections, interests: Object.values(SocialMatchInterest) };
   }
 
   async updatePreference(userId: string, eventId: string, dto: UpdateSocialMatchDto) {
     const canUseEvent = await this.userHasTicketForEvent(userId, eventId);
-    if (!canUseEvent) {
-      throw new ForbiddenException('Social Match solo puede activarse en eventos donde tienes una entrada.');
-    }
+    if (!canUseEvent) throw new ForbiddenException('Social Match solo puede activarse en eventos donde tienes una entrada.');
 
     const interests = this.normalizeInterests(dto.interests || []);
-    if (dto.isActive && interests.length === 0) {
-      throw new BadRequestException('Selecciona al menos un interés para activar Social Match.');
-    }
+    if (dto.isActive && interests.length === 0) throw new BadRequestException('Selecciona al menos un interés para activar Social Match.');
 
     let preference = await this.preferenceRepo.findOne({ where: { userId, eventId } });
-    if (!preference) {
-      preference = this.preferenceRepo.create({ userId, eventId });
-    }
+    if (!preference) preference = this.preferenceRepo.create({ userId, eventId });
 
     preference.isActive = Boolean(dto.isActive);
     preference.interests = interests;
@@ -94,9 +84,7 @@ export class SocialMatchService {
     if (!myPreference || myPreference.invisibleMode) return { suggestions: [] };
 
     const canUseEvent = await this.userHasTicketForEvent(userId, eventId);
-    if (!canUseEvent) {
-      throw new ForbiddenException('Social Match solo puede usarse en eventos donde tienes una entrada.');
-    }
+    if (!canUseEvent) throw new ForbiddenException('Social Match solo puede usarse en eventos donde tienes una entrada.');
 
     const existingConnections = await this.connectionRepo.find({
       where: [
@@ -104,9 +92,7 @@ export class SocialMatchService {
         { eventId, receiverId: userId },
       ],
     });
-    const connectedUserIds = new Set(
-      existingConnections.flatMap((connection) => [connection.requesterId, connection.receiverId]),
-    );
+    const connectedUserIds = new Set(existingConnections.flatMap((connection) => [connection.requesterId, connection.receiverId]));
 
     const candidates = await this.preferenceRepo.find({
       where: { eventId, isActive: true, invisibleMode: false, userId: Not(userId) },
@@ -118,18 +104,12 @@ export class SocialMatchService {
       .filter((candidate) => !connectedUserIds.has(candidate.userId))
       .map((candidate) => {
         const sharedInterests = (candidate.interests || []).filter((interest) => myInterests.includes(interest));
-        const industryMatch = Boolean(
-          myPreference.industry &&
-          candidate.industry &&
-          candidate.industry.toLowerCase() === myPreference.industry.toLowerCase(),
-        );
+        const industryMatch = Boolean(myPreference.industry && candidate.industry && candidate.industry.toLowerCase() === myPreference.industry.toLowerCase());
         const score = sharedInterests.length + (industryMatch ? 2 : 0) + (candidate.shareLocation && myPreference.shareLocation ? 1 : 0);
 
         return {
           userId: candidate.userId,
-          displayName: candidate.privateMode
-            ? 'Asistente compatible'
-            : `${candidate.user?.firstName || 'Asistente'} ${candidate.user?.lastName?.[0] || ''}.`.trim(),
+          displayName: candidate.privateMode ? 'Asistente compatible' : `${candidate.user?.firstName || 'Asistente'} ${candidate.user?.lastName?.[0] || ''}.`.trim(),
           sharedInterests,
           industryMatch,
           canShareLocationLater: candidate.shareLocation && myPreference.shareLocation,
@@ -144,9 +124,7 @@ export class SocialMatchService {
   }
 
   async requestConnection(userId: string, eventId: string, receiverId: string) {
-    if (!receiverId || receiverId === userId) {
-      throw new BadRequestException('Selecciona una conexión válida.');
-    }
+    if (!receiverId || receiverId === userId) throw new BadRequestException('Selecciona una conexión válida.');
 
     await this.ensureActivePreference(userId, eventId);
     await this.ensureActivePreference(receiverId, eventId);
@@ -159,10 +137,7 @@ export class SocialMatchService {
     });
 
     if (existing) {
-      if (
-        existing.status === SocialMatchConnectionStatus.DECLINED ||
-        existing.status === SocialMatchConnectionStatus.CANCELLED
-      ) {
+      if (existing.status === SocialMatchConnectionStatus.DECLINED || existing.status === SocialMatchConnectionStatus.CANCELLED) {
         existing.requesterId = userId;
         existing.receiverId = receiverId;
         existing.status = SocialMatchConnectionStatus.PENDING;
@@ -171,14 +146,12 @@ export class SocialMatchService {
       return existing;
     }
 
-    return this.connectionRepo.save(
-      this.connectionRepo.create({
-        eventId,
-        requesterId: userId,
-        receiverId,
-        status: SocialMatchConnectionStatus.PENDING,
-      }),
-    );
+    return this.connectionRepo.save(this.connectionRepo.create({
+      eventId,
+      requesterId: userId,
+      receiverId,
+      status: SocialMatchConnectionStatus.PENDING,
+    }));
   }
 
   async updateConnection(
@@ -193,19 +166,57 @@ export class SocialMatchService {
     if (!connection) throw new BadRequestException('Solicitud no encontrada.');
 
     if (status === SocialMatchConnectionStatus.CANCELLED) {
-      if (connection.requesterId !== userId) {
-        throw new ForbiddenException('Solo quien envió la solicitud puede cancelarla.');
-      }
+      if (connection.requesterId !== userId) throw new ForbiddenException('Solo quien envió la solicitud puede cancelarla.');
       connection.status = SocialMatchConnectionStatus.CANCELLED;
       return this.connectionRepo.save(connection);
     }
 
-    if (connection.receiverId !== userId) {
-      throw new ForbiddenException('Solo quien recibe la solicitud puede responderla.');
-    }
-
+    if (connection.receiverId !== userId) throw new ForbiddenException('Solo quien recibe la solicitud puede responderla.');
     connection.status = status;
     return this.connectionRepo.save(connection);
+  }
+
+  async getMessages(userId: string, connectionId: string) {
+    await this.ensureAcceptedConnectionMember(userId, connectionId);
+    const messages = await this.messageRepo.find({
+      where: { connectionId },
+      relations: ['sender'],
+      order: { createdAt: 'ASC' },
+      take: 100,
+    });
+
+    return {
+      messages: messages.map((message) => ({
+        id: message.id,
+        message: message.message,
+        senderId: message.senderId,
+        senderName: message.sender ? `${message.sender.firstName} ${message.sender.lastName?.[0] || ''}.`.trim() : 'Asistente',
+        isMine: message.senderId === userId,
+        createdAt: message.createdAt,
+      })),
+    };
+  }
+
+  async sendMessage(userId: string, connectionId: string, rawMessage: string) {
+    await this.ensureAcceptedConnectionMember(userId, connectionId);
+
+    const message = typeof rawMessage === 'string' ? rawMessage.trim() : '';
+    if (!message) throw new BadRequestException('El mensaje no puede estar vacío.');
+    if (message.length > 1000) throw new BadRequestException('El mensaje es demasiado largo.');
+
+    const saved = await this.messageRepo.save(this.messageRepo.create({
+      connectionId,
+      senderId: userId,
+      message,
+    }));
+
+    return {
+      id: saved.id,
+      message: saved.message,
+      senderId: saved.senderId,
+      isMine: true,
+      createdAt: saved.createdAt,
+    };
   }
 
   private async getEligibleEvents(userId: string) {
@@ -234,10 +245,16 @@ export class SocialMatchService {
 
   private async ensureActivePreference(userId: string, eventId: string) {
     const preference = await this.preferenceRepo.findOne({ where: { userId, eventId, isActive: true } });
-    if (!preference || preference.invisibleMode) {
-      throw new ForbiddenException('Ambas personas deben tener Social Match activo para conectar.');
-    }
+    if (!preference || preference.invisibleMode) throw new ForbiddenException('Ambas personas deben tener Social Match activo para conectar.');
     return preference;
+  }
+
+  private async ensureAcceptedConnectionMember(userId: string, connectionId: string) {
+    const connection = await this.connectionRepo.findOne({ where: { id: connectionId } });
+    if (!connection) throw new BadRequestException('Conexión no encontrada.');
+    if (connection.status !== SocialMatchConnectionStatus.ACCEPTED) throw new ForbiddenException('El chat solo se activa cuando ambos aceptan la conexión.');
+    if (connection.requesterId !== userId && connection.receiverId !== userId) throw new ForbiddenException('No tienes acceso a este chat.');
+    return connection;
   }
 
   private async getConnections(userId: string) {

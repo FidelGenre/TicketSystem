@@ -77,3 +77,22 @@ export async function updateSocialMatchConnection(connectionId: string, status: 
   const { data } = await api.put(`/social-match/connections/${connectionId}`, { status });
   return data;
 }
+
+export type SocialMatchMessage = {
+  id: string;
+  message: string;
+  senderId: string;
+  senderName?: string;
+  isMine: boolean;
+  createdAt: string;
+};
+
+export async function getSocialMatchMessages(connectionId: string) {
+  const { data } = await api.get(`/social-match/connections/${connectionId}/messages`);
+  return data;
+}
+
+export async function sendSocialMatchMessage(connectionId: string, message: string) {
+  const { data } = await api.post(`/social-match/connections/${connectionId}/messages`, { message });
+  return data;
+}
