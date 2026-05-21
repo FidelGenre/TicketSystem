@@ -40,11 +40,6 @@ export default function VerifyTicketPage() {
     try { 
       const { data } = await api.get(`/orders/ticket/${code}`); 
       setTicket(data); 
-      // Clear cart for this event
-      if (data?.eventId) {
-        localStorage.removeItem(`selectedSeats_${data.eventId}`);
-        window.dispatchEvent(new Event('cart-updated'));
-      }
     } catch { 
       setTicket(null); 
     } finally { 
