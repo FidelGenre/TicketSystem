@@ -25,6 +25,7 @@ import {
   HiOutlineDownload,
 } from 'react-icons/hi';
 import PaymentMethods from '@/components/dashboard/PaymentMethods';
+import SocialMatchPanel from '@/components/social/SocialMatchPanel';
 import { Suspense } from 'react';
 
 function DashboardPageBody() {
@@ -34,7 +35,7 @@ function DashboardPageBody() {
   const searchParams = useSearchParams();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [activeTab, setActiveTab] = useState<'tickets' | 'orders' | 'profile' | 'payments'>('tickets');
+  const [activeTab, setActiveTab] = useState<'tickets' | 'social' | 'orders' | 'profile' | 'payments'>('tickets');
   const [editMode, setEditMode] = useState(false);
   const [ticketsPage, setTicketsPage] = useState(1);
   const [ticketsPagination, setTicketsPagination] = useState({ total: 0, pages: 1 });
@@ -80,8 +81,8 @@ function DashboardPageBody() {
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam === 'profile' || tabParam === 'orders' || tabParam === 'tickets' || tabParam === 'payments') {
-      setActiveTab(tabParam as 'tickets' | 'orders' | 'profile' | 'payments');
+    if (tabParam === 'profile' || tabParam === 'orders' || tabParam === 'tickets' || tabParam === 'social' || tabParam === 'payments') {
+      setActiveTab(tabParam as 'tickets' | 'social' | 'orders' | 'profile' | 'payments');
     }
   }, [searchParams]);
 
@@ -188,6 +189,7 @@ function DashboardPageBody() {
 
   const tabs = [
     { id: 'tickets' as const, label: t('clientMyTickets'), icon: HiOutlineTicket, count: tickets.length },
+    { id: 'social' as const, label: 'Social Match', icon: HiOutlineUser },
     { id: 'orders' as const, label: t('clientHistory'), icon: HiOutlineShoppingCart, count: orders.length },
     { id: 'payments' as const, label: 'Pagos', icon: HiOutlineCreditCard },
     { id: 'profile' as const, label: t('clientProfile'), icon: HiOutlineUser },
@@ -334,6 +336,11 @@ function DashboardPageBody() {
             <Link href="/events" className="btn-primary text-sm inline-flex">{t('clientExplore')}</Link>
           </div>
         )
+      )}
+
+      {/* Social Match */}
+      {activeTab === 'social' && (
+        <SocialMatchPanel />
       )}
 
       {/* Orders */}
