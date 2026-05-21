@@ -1,6 +1,14 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'react-hot-toast';
+import {
+  HiOutlineEyeOff,
+  HiOutlineLocationMarker,
+  HiOutlineSparkles,
+  HiOutlineUserGroup,
+} from 'react-icons/hi';
+import { Event } from '@/types';
 import {
   getMySocialMatch,
   getSocialMatchSuggestions,
@@ -14,7 +22,9 @@ import {
   socialMatchInterestOptions,
 } from '@/lib/socialMatch';
 
-type Props = { lang: 'es' | 'en' };
+type Props = {
+  lang: 'es' | 'en';
+};
 
 const emptyPreference = (eventId: string): SocialMatchPreference => ({
   eventId,
@@ -45,17 +55,15 @@ export default function SocialMatchPanel({ lang }: Props) {
   }, [preferences, selectedEventId]);
 
   const selectedSummary = summaries.find((item) => item.eventId === selectedEventId);
-  const privacyOptions = [
-    { key: 'privateMode', label: lang === 'es' ? 'Modo privado' : 'Private mode', Icon: HiOutlineUserGroup },
-    { key: 'invisibleMode', label: lang === 'es' ? 'Modo invisible' : 'Invisible mode', Icon: HiOutlineEyeOff },
-    { key: 'shareInstagram', label: lang === 'es' ? 'Compartir Instagram solo si ambos aceptan' : 'Share Instagram only if both accept', Icon: HiOutlineSparkles },
-    { key: 'shareLocation', label: lang === 'es' ? 'Permitir ubicación aproximada solo si ambos aceptan' : 'Allow approximate location only if both accept', Icon: HiOutlineLocationMarker },
-  ];
 
   const copy = {
     title: 'Social Match',
-    subtitle: lang === 'es' ? 'Conecta con personas compatibles en los eventos donde ya tienes entrada.' : 'Connect with compatible people at events where you already have a ticket.',
-    noEvents: lang === 'es' ? 'Compra una entrada para activar Social Match en ese evento.' : 'Buy a ticket to activate Social Match for that event.',
+    subtitle: lang === 'es'
+      ? 'Conecta con personas compatibles en los eventos donde ya tienes entrada.'
+      : 'Connect with compatible people at events where you already have a ticket.',
+    noEvents: lang === 'es'
+      ? 'Compra una entrada para activar Social Match en ese evento.'
+      : 'Buy a ticket to activate Social Match for that event.',
     event: lang === 'es' ? 'Evento' : 'Event',
     interests: lang === 'es' ? 'Intereses' : 'Interests',
     active: lang === 'es' ? 'Activar Social Match' : 'Activate Social Match',
@@ -75,7 +83,17 @@ export default function SocialMatchPanel({ lang }: Props) {
     cancel: lang === 'es' ? 'Cancelar' : 'Cancel',
   };
 
-  useEffect(() => { loadSocialMatch(); }, []);
+  useEffect(() => {
+    loadSocialMatch();
+  }, []);
+
+  useEffect(() => {
+    if (selectedEventId && selectedPreference?.isActive) {
+      loadSuggestions(selectedEventId);
+    } else {
+      setSuggestions([]);
+    }
+  }, [selectedEventId, selectedPreference?.isActive]);
 
   const loadSocialMatch = async () => {
     try {
@@ -92,15 +110,6 @@ export default function SocialMatchPanel({ lang }: Props) {
       setLoading(false);
     }
   };
-
-
-  useEffect(() => {
-    if (selectedEventId && selectedPreference?.isActive) {
-      loadSuggestions(selectedEventId);
-    } else {
-      setSuggestions([]);
-    }
-  }, [selectedEventId, selectedPreference?.isActive]);
 
   const loadSuggestions = async (eventId: string) => {
     try {
@@ -119,14 +128,17 @@ export default function SocialMatchPanel({ lang }: Props) {
     if (!selectedEventId) return;
     setPreferences((current) => {
       const existing = current.find((item) => item.eventId === selectedEventId) || emptyPreference(selectedEventId);
-      const next = { ...existing, ...patch };
-      return [...current.filter((item) => item.eventId !== selectedEventId), next];
+      return [...current.filter((item) => item.eventId !== selectedEventId), { ...existing, ...patch }];
     });
   };
 
   const toggleInterest = (interest: string) => {
     const current = selectedPreference?.interests || [];
-    updatePreference({ interests: current.includes(interest) ? current.filter((item) => item !== interest) : [...current, interest] });
+    updatePreference({
+      interests: current.includes(interest)
+        ? current.filter((item) => item !== interest)
+        : [...current, interest],
+    });
   };
 
   const handleSave = async () => {
@@ -144,11 +156,8 @@ export default function SocialMatchPanel({ lang }: Props) {
         const next = current.filter((item) => item.eventId !== selectedEventId);
         return result.summary ? [...next, result.summary] : next;
       });
-      if (result.preference?.isActive) {
-        await loadSuggestions(selectedEventId);
-      } else {
-        setSuggestions([]);
-      }
+      if (result.preference?.isActive) await loadSuggestions(selectedEventId);
+      else setSuggestions([]);
       toast.success(copy.saved);
     } catch (error) {
       console.error(error);
@@ -158,7 +167,38 @@ export default function SocialMatchPanel({ lang }: Props) {
     }
   };
 
-  if (loading) return <div className="bg-white border border-gray-100 rounded-3xl p-8 shadow-[0_10px_40px_rgba(0,0,0,0.03)]"><div className="h-6 w-40 bg-gray-100 rounded mb-4 animate-pulse" /><div className="h-24 bg-gray-100 rounded-2xl animate-pulse" /></div>;
+  const handleRequestConnection = async (receiverId: string) => {
+    if (!selectedEventId) return;
+    try {
+      await requestSocialMatchConnection(selectedEventId, receiverId);
+      toast.success(copy.sent);
+      await loadSocialMatch();
+      await loadSuggestions(selectedEventId);
+    } catch (error) {
+      console.error(error);
+      toast.error(lang === 'es' ? 'No se pudo enviar la solicitud' : 'Could not send request');
+    }
+  };
+
+  const handleUpdateConnection = async (connectionId: string, status: 'accepted' | 'declined' | 'cancelled') => {
+    try {
+      await updateSocialMatchConnection(connectionId, status);
+      await loadSocialMatch();
+      toast.success(lang === 'es' ? 'Solicitud actualizada' : 'Request updated');
+    } catch (error) {
+      console.error(error);
+      toast.error(lang === 'es' ? 'No se pudo actualizar la solicitud' : 'Could not update request');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-white border border-gray-100 rounded-3xl p-8 shadow-[0_10px_40px_rgba(0,0,0,0.03)]">
+        <div className="h-6 w-40 bg-gray-100 rounded mb-4 animate-pulse" />
+        <div className="h-24 bg-gray-100 rounded-2xl animate-pulse" />
+      </div>
+    );
+  }
 
   if (events.length === 0) {
     return (
@@ -174,7 +214,10 @@ export default function SocialMatchPanel({ lang }: Props) {
     <div className="bg-white border border-gray-100 rounded-3xl p-6 sm:p-8 shadow-[0_10px_40px_rgba(0,0,0,0.03)]">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-50 text-orange-600 text-xs font-bold uppercase tracking-wider mb-3"><HiOutlineSparkles className="w-4 h-4" />Premium</div>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-50 text-orange-600 text-xs font-bold uppercase tracking-wider mb-3">
+            <HiOutlineSparkles className="w-4 h-4" />
+            Premium
+          </div>
           <h3 className="font-bold text-2xl text-gray-900">{copy.title}</h3>
           <p className="text-gray-500 text-sm mt-1 max-w-xl">{copy.subtitle}</p>
         </div>
@@ -197,29 +240,117 @@ export default function SocialMatchPanel({ lang }: Props) {
           <div className="flex flex-wrap gap-2">
             {socialMatchInterestOptions.map((interest) => {
               const selected = (selectedPreference?.interests || []).includes(interest.id);
-              return <button key={interest.id} type="button" onClick={() => toggleInterest(interest.id)} className={`px-3 py-2 rounded-full text-xs font-bold border transition-all ${selected ? 'bg-[#0a375a] border-[#0a375a] text-white' : 'bg-white border-gray-200 text-gray-600 hover:border-orange-300 hover:text-orange-600'}`}>{lang === 'es' ? interest.es : interest.en}</button>;
+              return (
+                <button key={interest.id} type="button" onClick={() => toggleInterest(interest.id)} className={`px-3 py-2 rounded-full text-xs font-bold border transition-all ${selected ? 'bg-[#0a375a] border-[#0a375a] text-white' : 'bg-white border-gray-200 text-gray-600 hover:border-orange-300 hover:text-orange-600'}`}>
+                  {lang === 'es' ? interest.es : interest.en}
+                </button>
+              );
             })}
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div><label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">{copy.industry}</label><input value={selectedPreference?.industry || ''} onChange={(event) => updatePreference({ industry: event.target.value })} className="input bg-gray-50 border-gray-200" placeholder={lang === 'es' ? 'Ej. Música, finanzas, real estate' : 'Ex. Music, finance, real estate'} /></div>
-          <div><label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">{copy.instagram}</label><input value={selectedPreference?.instagram || ''} onChange={(event) => updatePreference({ instagram: event.target.value })} className="input bg-gray-50 border-gray-200" placeholder="@lpticket" /></div>
+          <div>
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">{copy.industry}</label>
+            <input value={selectedPreference?.industry || ''} onChange={(event) => updatePreference({ industry: event.target.value })} className="input bg-gray-50 border-gray-200" placeholder={lang === 'es' ? 'Ej. Música, finanzas, real estate' : 'Ex. Music, finance, real estate'} />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">{copy.instagram}</label>
+            <input value={selectedPreference?.instagram || ''} onChange={(event) => updatePreference({ instagram: event.target.value })} className="input bg-gray-50 border-gray-200" placeholder="@lpticket" />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {privacyOptions.map(({ key, label, Icon }) => (
-            <label key={key} className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4 cursor-pointer">
-              <input type="checkbox" checked={Boolean(selectedPreference?.[key])} onChange={(event) => updatePreference({ [key]: event.target.checked } as Partial<SocialMatchPreference>)} className="w-4 h-4 accent-orange-500" />
-              <Icon className="w-5 h-5 text-[#0a375a]" />
-              <span className="text-sm font-semibold text-gray-700">{label}</span>
-            </label>
-          ))}
+          <label className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4 cursor-pointer">
+            <input type="checkbox" checked={Boolean(selectedPreference?.privateMode)} onChange={(event) => updatePreference({ privateMode: event.target.checked })} className="w-4 h-4 accent-orange-500" />
+            <HiOutlineUserGroup className="w-5 h-5 text-[#0a375a]" />
+            <span className="text-sm font-semibold text-gray-700">{lang === 'es' ? 'Modo privado' : 'Private mode'}</span>
+          </label>
+          <label className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4 cursor-pointer">
+            <input type="checkbox" checked={Boolean(selectedPreference?.invisibleMode)} onChange={(event) => updatePreference({ invisibleMode: event.target.checked })} className="w-4 h-4 accent-orange-500" />
+            <HiOutlineEyeOff className="w-5 h-5 text-[#0a375a]" />
+            <span className="text-sm font-semibold text-gray-700">{lang === 'es' ? 'Modo invisible' : 'Invisible mode'}</span>
+          </label>
+          <label className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4 cursor-pointer">
+            <input type="checkbox" checked={Boolean(selectedPreference?.shareInstagram)} onChange={(event) => updatePreference({ shareInstagram: event.target.checked })} className="w-4 h-4 accent-orange-500" />
+            <HiOutlineSparkles className="w-5 h-5 text-[#0a375a]" />
+            <span className="text-sm font-semibold text-gray-700">{lang === 'es' ? 'Compartir Instagram solo si ambos aceptan' : 'Share Instagram only if both accept'}</span>
+          </label>
+          <label className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4 cursor-pointer">
+            <input type="checkbox" checked={Boolean(selectedPreference?.shareLocation)} onChange={(event) => updatePreference({ shareLocation: event.target.checked })} className="w-4 h-4 accent-orange-500" />
+            <HiOutlineLocationMarker className="w-5 h-5 text-[#0a375a]" />
+            <span className="text-sm font-semibold text-gray-700">{lang === 'es' ? 'Permitir ubicación aproximada solo si ambos aceptan' : 'Allow approximate location only if both accept'}</span>
+          </label>
         </div>
 
-        {selectedSummary && <div className="rounded-2xl border border-orange-100 bg-orange-50/60 p-4"><p className="text-xs font-bold uppercase tracking-wider text-orange-600 mb-2">{lang === 'es' ? 'Sugerencias compatibles' : 'Compatible suggestions'}</p><div className="space-y-1">{selectedSummary.messages.map((message) => <p key={message} className="text-sm font-semibold text-gray-800">{message}</p>)}</div></div>}
+        {selectedSummary && (
+          <div className="rounded-2xl border border-orange-100 bg-orange-50/60 p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-orange-600 mb-2">{lang === 'es' ? 'Sugerencias compatibles' : 'Compatible suggestions'}</p>
+            <div className="space-y-1">
+              {selectedSummary.messages.map((message) => <p key={message} className="text-sm font-semibold text-gray-800">{message}</p>)}
+            </div>
+          </div>
+        )}
 
-        <button onClick={handleSave} disabled={saving} className="btn-primary w-full py-3.5 rounded-xl font-bold shadow-lg shadow-orange-500/20 disabled:opacity-60">{saving ? copy.saving : copy.save}</button>
+        {selectedPreference?.isActive && (
+          <div className="rounded-2xl border border-gray-100 bg-white p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-[#0a375a] mb-3">{copy.suggestions}</p>
+            {loadingSuggestions ? (
+              <div className="h-16 bg-gray-50 rounded-xl animate-pulse" />
+            ) : suggestions.length > 0 ? (
+              <div className="space-y-3">
+                {suggestions.map((suggestion) => (
+                  <div key={suggestion.userId} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-gray-100 bg-gray-50 p-4">
+                    <div>
+                      <p className="font-bold text-gray-900">{suggestion.displayName}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {suggestion.sharedInterests.length} {lang === 'es' ? 'intereses en común' : 'shared interests'}
+                        {suggestion.industryMatch ? ` · ${lang === 'es' ? 'misma industria' : 'same industry'}` : ''}
+                        {suggestion.canShareLocationLater ? ` · ${lang === 'es' ? 'ubicación opcional' : 'optional location'}` : ''}
+                      </p>
+                    </div>
+                    <button type="button" onClick={() => handleRequestConnection(suggestion.userId)} className="px-4 py-2 rounded-lg bg-orange-500 text-white text-xs font-bold hover:bg-orange-600 transition-colors">
+                      {copy.connect}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">{copy.noSuggestions}</p>
+            )}
+          </div>
+        )}
+
+        {connections.length > 0 && (
+          <div className="rounded-2xl border border-gray-100 bg-white p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-[#0a375a] mb-3">{copy.requests}</p>
+            <div className="space-y-3">
+              {connections.map((connection) => (
+                <div key={connection.id} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                      <p className="font-bold text-gray-900">{connection.otherUserName}</p>
+                      <p className="text-xs text-gray-500">{connection.eventTitle} · {connection.status}</p>
+                    </div>
+                    {connection.status === 'pending' && connection.direction === 'incoming' && (
+                      <div className="flex gap-2">
+                        <button type="button" onClick={() => handleUpdateConnection(connection.id, 'accepted')} className="px-3 py-2 rounded-lg bg-[#0a375a] text-white text-xs font-bold">{copy.accept}</button>
+                        <button type="button" onClick={() => handleUpdateConnection(connection.id, 'declined')} className="px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-600 text-xs font-bold">{copy.decline}</button>
+                      </div>
+                    )}
+                    {connection.status === 'pending' && connection.direction === 'outgoing' && (
+                      <button type="button" onClick={() => handleUpdateConnection(connection.id, 'cancelled')} className="px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-600 text-xs font-bold">{copy.cancel}</button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <button onClick={handleSave} disabled={saving} className="btn-primary w-full py-3.5 rounded-xl font-bold shadow-lg shadow-orange-500/20 disabled:opacity-60">
+          {saving ? copy.saving : copy.save}
+        </button>
       </div>
     </div>
   );

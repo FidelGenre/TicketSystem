@@ -33,16 +33,6 @@ export type SocialMatchSummary = {
   messages: string[];
 };
 
-export async function getMySocialMatch() {
-  const { data } = await api.get('/social-match/me');
-  return data;
-}
-
-export async function saveSocialMatchPreference(eventId: string, payload: Partial<SocialMatchPreference>) {
-  const { data } = await api.put(`/social-match/events/${eventId}/preferences`, payload);
-  return data;
-}
-
 export type SocialMatchSuggestion = {
   userId: string;
   displayName: string;
@@ -62,6 +52,16 @@ export type SocialMatchConnection = {
   createdAt: string;
   updatedAt: string;
 };
+
+export async function getMySocialMatch() {
+  const { data } = await api.get('/social-match/me');
+  return data;
+}
+
+export async function saveSocialMatchPreference(eventId: string, payload: Partial<SocialMatchPreference>) {
+  const { data } = await api.put(`/social-match/events/${eventId}/preferences`, payload);
+  return data;
+}
 
 export async function getSocialMatchSuggestions(eventId: string) {
   const { data } = await api.get(`/social-match/events/${eventId}/suggestions`);
