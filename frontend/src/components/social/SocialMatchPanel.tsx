@@ -5,7 +5,9 @@ import { toast } from 'react-hot-toast';
 import type { IconType } from 'react-icons';
 import { HiOutlineSparkles, HiOutlineUserGroup, HiOutlineEyeOff, HiOutlineLocationMarker } from 'react-icons/hi';
 import { Event } from '@/types';
-import { getMySocialMatch, saveSocialMatchPreference, SocialMatchPreference, SocialMatchSummary, socialMatchInterestOptions } from '@/lib/socialMatch';
+import { getMySocialMatch, saveSocialMatchConnection,
+  SocialMatchPreference, SocialMatchConnection,
+  SocialMatchPreference, SocialMatchSummary, socialMatchInterestOptions } from '@/lib/socialMatch';
 
 type Props = { lang: 'es' | 'en' };
 
