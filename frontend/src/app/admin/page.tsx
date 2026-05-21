@@ -58,8 +58,8 @@ export default function AdminDashboard() {
 
   const mainCards = [
     { label: t('adminTotalRevenue'), value: `$${stats.totalRevenue.toFixed(2)}`, icon: HiOutlineCurrencyDollar, bg: 'bg-green-50', iconColor: 'text-green-600', iconBg: 'bg-green-100' },
-    { label: t('adminTotalUsers'), value: stats.totalUsers.toString(), icon: HiOutlineUsers, bg: 'bg-blue-50', iconColor: 'text-blue-600', iconBg: 'bg-blue-100' },
-    { label: t('adminTotalEvents'), value: stats.totalEvents.toString(), icon: HiOutlineCalendar, bg: 'bg-orange-50', iconColor: 'text-orange-600', iconBg: 'bg-orange-100' },
+    { label: t('adminTotalUsers'), value: stats.totalUsers.toString(), icon: HiOutlineUsers, bg: 'bg-[rgba(10,55,90,0.06)]', iconColor: 'text-[#0A375A]', iconBg: 'bg-[rgba(10,55,90,0.10)]' },
+    { label: t('adminTotalEvents'), value: stats.totalEvents.toString(), icon: HiOutlineCalendar, bg: 'bg-orange-50', iconColor: 'text-[#F97316]', iconBg: 'bg-orange-100' },
     { label: t('adminTotalOrders'), value: stats.totalOrders.toString(), icon: HiOutlineShoppingCart, bg: 'bg-[rgba(10,55,90,0.05)]', iconColor: 'text-[#0A375A]', iconBg: 'bg-[rgba(10,55,90,0.10)]' },
   ];
 
@@ -95,9 +95,9 @@ export default function AdminDashboard() {
             {t('adminUserManagement')}
           </h3>
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-blue-50 rounded-xl p-4 text-center border border-blue-100 shadow-sm">
-              <p className="text-2xl font-black text-blue-700">{stats.clients}</p>
-              <p className="text-xs text-blue-600 font-bold mt-1 uppercase tracking-wider">
+            <div className="bg-[rgba(10,55,90,0.06)] rounded-xl p-4 text-center border border-[rgba(10,55,90,0.14)] shadow-sm">
+              <p className="text-2xl font-black text-[#0A375A]">{stats.clients}</p>
+              <p className="text-xs text-[#0A375A] font-bold mt-1 uppercase tracking-wider">
                 {lang === 'es' ? 'Clientes-Organizadores' : 'Clients-Organizers'}
               </p>
             </div>

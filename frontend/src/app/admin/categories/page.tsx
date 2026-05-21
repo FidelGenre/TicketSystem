@@ -263,7 +263,7 @@ export default function AdminCategoriesPage() {
               {categories.map((cat) => (
                 <tr key={cat.id} className="hover:bg-gray-50 transition-colors">
                   {editingId === cat.id ? (
-                    <td colSpan={5} className="px-5 py-6 bg-blue-50/30">
+                    <td colSpan={5} className="px-5 py-6 bg-[rgba(10,55,90,0.06)]/30">
                       {error && <div className="p-2 mb-4 bg-red-50 border border-red-200 rounded text-red-600 text-xs">{error}</div>}
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                         <div className="space-y-1">
@@ -284,7 +284,7 @@ export default function AdminCategoriesPage() {
                         </div>
                         <div className="flex gap-2">
                           <button onClick={() => handleSaveEdit(cat.id)} disabled={saving}
-                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#1a73e8] text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#0A375A] text-white text-xs font-bold rounded-lg hover:bg-[#0A375A] transition-colors shadow-sm">
                             <HiOutlineCheck className="w-4 h-4" /> {saving ? '...' : 'Guardar'}
                           </button>
                           <button onClick={() => setEditingId(null)}
@@ -330,7 +330,7 @@ export default function AdminCategoriesPage() {
                         <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => startEdit(cat)}
-                            className="p-2 rounded-lg text-gray-400 hover:text-[#1a73e8] hover:bg-blue-50 transition-colors"
+                            className="p-2 rounded-lg text-gray-400 hover:text-[#0A375A] hover:bg-[rgba(10,55,90,0.06)] transition-colors"
                           >
                             <HiOutlinePencil className="w-4.5 h-4.5" />
                           </button>
@@ -397,7 +397,7 @@ export default function AdminCategoriesPage() {
                     </div>
                   </div>
                   <div className="flex flex-col gap-1">
-                    <button onClick={() => startEdit(cat)} className="p-2 text-gray-400 hover:text-blue-600">
+                    <button onClick={() => startEdit(cat)} className="p-2 text-gray-400 hover:text-[#0A375A]">
                       <HiOutlinePencil className="w-5 h-5" />
                     </button>
                     <button onClick={() => handleDelete(cat.id, cat.labelEs)} className="p-2 text-gray-400 hover:text-red-500">
@@ -418,9 +418,9 @@ export default function AdminCategoriesPage() {
         )}
       </div>
 
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-700">
+      <div className="bg-[rgba(10,55,90,0.06)] border border-[rgba(10,55,90,0.18)] rounded-lg p-4 text-sm text-[#0A375A]">
         <strong>💡 Tip:</strong> Las categorías activas aparecen en el menú del sitio y en el formulario de creación de eventos.
-        El <strong>slug</strong> es el identificador interno (ej: <code className="bg-blue-100 px-1 rounded">concierto</code>).
+        El <strong>slug</strong> es el identificador interno (ej: <code className="bg-[rgba(10,55,90,0.10)] px-1 rounded">concierto</code>).
       </div>
     </div>
   );

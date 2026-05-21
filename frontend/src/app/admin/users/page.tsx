@@ -202,7 +202,7 @@ export default function AdminUsersPage() {
   const getRoleBadge = (role: string) => {
     switch (role) {
       case 'admin': return { label: 'Admin', classes: 'bg-red-100 text-red-700' };
-      default: return { label: lang === 'es' ? 'Cliente' : 'Client', classes: 'bg-blue-100 text-blue-700' };
+      default: return { label: lang === 'es' ? 'Cliente' : 'Client', classes: 'bg-[rgba(10,55,90,0.10)] text-[#0A375A]' };
     }
   };
 
@@ -251,7 +251,7 @@ export default function AdminUsersPage() {
         {/* Create User Button */}
         <button
           onClick={() => setIsCreating(true)}
-          className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 cursor-pointer self-start lg:self-auto shrink-0"
+          className="px-4 py-2.5 bg-[#0A375A] hover:bg-[#0A375A] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 cursor-pointer self-start lg:self-auto shrink-0"
         >
           <HiOutlineUserAdd className="w-4 h-4" />
           {lang === 'es' ? 'Crear Usuario' : 'Create User'}
@@ -321,7 +321,7 @@ export default function AdminUsersPage() {
                             </select>
                             <button
                               onClick={(e) => { e.stopPropagation(); handleSelectUser(u, true); }}
-                              className="p-2 rounded-lg text-blue-500 hover:text-blue-700 hover:bg-blue-50 transition-colors"
+                              className="p-2 rounded-lg text-[#0A375A] hover:text-[#0A375A] hover:bg-[rgba(10,55,90,0.06)] transition-colors"
                               title={lang === 'es' ? 'Editar usuario' : 'Edit user'}
                             >
                               <HiOutlinePencil className="w-5 h-5" />
@@ -400,7 +400,7 @@ export default function AdminUsersPage() {
                     <div className="flex gap-1">
                       <button
                         onClick={(e) => { e.stopPropagation(); handleSelectUser(u, true); }}
-                        className="p-2.5 rounded-xl border border-blue-100 text-blue-500 bg-blue-50"
+                        className="p-2.5 rounded-xl border border-[rgba(10,55,90,0.14)] text-[#0A375A] bg-[rgba(10,55,90,0.06)]"
                         title={lang === 'es' ? 'Editar usuario' : 'Edit user'}
                       >
                         <HiOutlinePencil className="w-5 h-5" />
@@ -453,7 +453,7 @@ export default function AdminUsersPage() {
           />
           
           {/* Centered Modal Panel */}
-          <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl flex flex-col z-10 max-h-[85vh] overflow-hidden animate-[scaleIn_0.2s_ease-out]">
+          <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl flex flex-col z-10 max-h-[85vh] overflow-hidden animate-[scaleIn_0.2s_ease-out]">
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-gray-50/50">
               <div className="flex items-center gap-3">
@@ -675,11 +675,11 @@ export default function AdminUsersPage() {
           />
           
           {/* Centered Modal Panel */}
-          <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl flex flex-col z-10 max-h-[90vh] overflow-hidden animate-[scaleIn_0.2s_ease-out]">
+          <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl flex flex-col z-10 max-h-[90vh] overflow-hidden animate-[scaleIn_0.2s_ease-out]">
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-gray-50/50">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-lg shrink-0">
+                <div className="w-11 h-11 rounded-full bg-[rgba(10,55,90,0.10)] text-[#0A375A] flex items-center justify-center font-bold text-lg shrink-0">
                   ➕
                 </div>
                 <div>
@@ -781,7 +781,7 @@ export default function AdminUsersPage() {
                         navigator.clipboard.writeText(randomPass);
                         toast.success(lang === 'es' ? 'Clave generada y copiada al portapapeles' : 'Password generated and copied to clipboard');
                       }}
-                      className="text-[10px] text-blue-600 hover:text-blue-700 font-bold lowercase normal-case cursor-pointer"
+                      className="text-[10px] text-[#0A375A] hover:text-[#0A375A] font-bold lowercase normal-case cursor-pointer"
                     >
                       ⚡ {lang === 'es' ? 'Generar clave' : 'Generate pass'}
                     </button>
@@ -838,7 +838,7 @@ export default function AdminUsersPage() {
                 type="button"
                 onClick={handleCreateUser}
                 disabled={creatingLoading}
-                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 active:scale-95 transition-all shadow-md shadow-blue-500/15 cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-[#0A375A] text-white hover:bg-[#0A375A] active:scale-95 transition-all shadow-md shadow-blue-500/15 cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
               >
                 {creatingLoading ? (
                   <>

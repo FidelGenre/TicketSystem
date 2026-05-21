@@ -46,7 +46,7 @@ export default function ModeToggle({ variant = 'pill' }: ModeToggleProps) {
         </span>
         <div
           className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-            mode === 'organizer' ? 'bg-blue-600' : 'bg-gray-200'
+            mode === 'organizer' ? 'bg-[#0A375A]' : 'bg-gray-200'
           }`}
         >
           <span
@@ -65,7 +65,7 @@ export default function ModeToggle({ variant = 'pill' }: ModeToggleProps) {
         onClick={() => handleModeChange('buyer')}
         className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
           mode === 'buyer'
-            ? 'bg-blue-600 text-white shadow-md'
+            ? 'bg-[#0A375A] text-white shadow-md'
             : 'text-gray-500 hover:text-gray-700'
         }`}
       >
@@ -76,7 +76,7 @@ export default function ModeToggle({ variant = 'pill' }: ModeToggleProps) {
         onClick={() => handleModeChange('organizer')}
         className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
           mode === 'organizer'
-            ? 'bg-blue-600 text-white shadow-md'
+            ? 'bg-[#0A375A] text-white shadow-md'
             : 'text-gray-500 hover:text-gray-700'
         }`}
       >

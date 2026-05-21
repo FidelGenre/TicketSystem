@@ -342,14 +342,14 @@ export default function EventDetailPage() {
           {/* Quick info */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <HiOutlineCalendar className="w-5 h-5 text-blue-600 shrink-0" />
+              <HiOutlineCalendar className="w-5 h-5 text-[#0A375A] shrink-0" />
               <div>
                 <div className="text-xs text-gray-500">{t('dateLabel')}</div>
                 <div className="text-sm font-semibold text-gray-900">{formatDateInTimezone(event.eventDate, event.eventTimezone || 'UTC', lang === 'en' ? 'en-US' : 'es', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
               </div>
             </div>
             <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <HiOutlineClock className="w-5 h-5 text-blue-600 shrink-0" />
+              <HiOutlineClock className="w-5 h-5 text-[#0A375A] shrink-0" />
               <div>
                 <div className="text-xs text-gray-500">{t('timeLabel')}</div>
                 <div className="text-sm font-semibold text-gray-900">
@@ -359,7 +359,7 @@ export default function EventDetailPage() {
               </div>
             </div>
             <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <HiOutlineLocationMarker className="w-5 h-5 text-blue-600 shrink-0" />
+              <HiOutlineLocationMarker className="w-5 h-5 text-[#0A375A] shrink-0" />
               <div className="min-w-0 flex-1">
                 <div className="text-xs text-gray-500">{t('venueLabel')}</div>
                 <div className="text-sm font-semibold text-gray-900 truncate">{event.venueName}</div>
@@ -520,7 +520,7 @@ export default function EventDetailPage() {
           <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 transform scale-100 transition-all duration-300 animate-scaleUp">
             <div className="flex flex-col items-center text-center space-y-4">
               {/* Animated Warning Icon */}
-              <div className="w-16 h-16 rounded-full bg-orange-50 flex items-center justify-center text-orange-500 animate-bounce-slow shadow-inner">
+              <div className="w-16 h-16 rounded-full bg-orange-50 flex items-center justify-center text-[#F97316] animate-bounce-slow shadow-inner">
                 <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>

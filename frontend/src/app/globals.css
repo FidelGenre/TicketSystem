@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
-/* ===== TicketPro Design System — mdticket style ===== */
+/* ===== LP Ticket Visual System — 2026 ===== */
 
 @theme {
-  /* Orange primary (like mdticket) */
+  /* LP Ticket brand orange */
   --color-primary-50: #fff7ed;
   --color-primary-100: #ffedd5;
   --color-primary-200: #fed7aa;
@@ -15,12 +15,18 @@
   --color-primary-800: #9a3412;
   --color-primary-900: #7c2d12;
 
-  /* Blue for header/accents */
-  --color-blue-500: #0a375a;
-  --color-blue-600: #0a375a;
-  --color-blue-700: #0a375a;
-  --color-blue-800: #0a375a;
-  --color-blue-900: #0a375a;
+  /* LP Ticket brand blue */
+  --color-blue-50: rgba(10, 55, 90, 0.06);
+  --color-blue-100: rgba(10, 55, 90, 0.10);
+  --color-blue-200: rgba(10, 55, 90, 0.18);
+  --color-blue-300: rgba(10, 55, 90, 0.28);
+  --color-blue-400: rgba(10, 55, 90, 0.42);
+  --color-blue-500: #0A375A;
+  --color-blue-600: #0A375A;
+  --color-blue-700: #0A375A;
+  --color-blue-800: #0A375A;
+  --color-blue-900: #0A375A;
+  --color-blue-950: #0A375A;
 
   /* Neutrals */
   --color-gray-50: #f9fafb;
@@ -68,7 +74,7 @@ body {
   justify-content: center;
   gap: 0.5rem;
   padding: 0.625rem 1.5rem;
-  border-radius: 0.375rem;
+  border-radius: 8px;
   font-weight: 700;
   font-size: 0.8125rem;
   text-transform: uppercase;
@@ -95,7 +101,7 @@ body {
   justify-content: center;
   gap: 0.5rem;
   padding: 0.625rem 1.5rem;
-  border-radius: 0.375rem;
+  border-radius: 8px;
   font-weight: 600;
   font-size: 0.8125rem;
   background: white;
@@ -115,7 +121,7 @@ body {
   justify-content: center;
   gap: 0.5rem;
   padding: 0.625rem 1.5rem;
-  border-radius: 0.375rem;
+  border-radius: 8px;
   font-weight: 600;
   font-size: 0.8125rem;
   background: var(--color-blue-600);
@@ -134,7 +140,7 @@ body {
 .card {
   background: white;
   border: 1px solid var(--color-gray-200);
-  border-radius: 0.5rem;
+  border-radius: 12px;
   overflow: hidden;
   transition: box-shadow 0.3s ease, transform 0.3s ease;
   box-shadow: var(--shadow-card);
@@ -150,7 +156,7 @@ body {
 .input {
   width: 100%;
   padding: 0.625rem 0.875rem;
-  border-radius: 0.375rem;
+  border-radius: 8px;
   background: white;
   border: 1px solid var(--color-gray-300);
   color: var(--color-gray-800);
@@ -175,7 +181,7 @@ body {
   align-items: center;
   gap: 0.25rem;
   padding: 0.375rem 1rem;
-  border-radius: 0.375rem;
+  border-radius: 8px;
   font-size: 0.8125rem;
   font-weight: 500;
   border: 1.5px solid var(--color-primary-500);
@@ -199,7 +205,7 @@ body {
 .seat {
   width: 26px;
   height: 26px;
-  border-radius: 5px 5px 7px 7px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s ease;
   border: 2px solid transparent;
@@ -394,7 +400,7 @@ html {
   overflow: hidden;
   background: #f8fafc;
   border: 1px solid var(--color-gray-200);
-  border-radius: 0.5rem;
+  border-radius: 12px;
   cursor: grab;
   user-select: none;
 }
@@ -414,7 +420,7 @@ html {
   gap: 0.75rem;
   background: #fff7ed;
   border: 1.5px solid #fed7aa;
-  border-radius: 0.5rem;
+  border-radius: 12px;
   padding: 0.625rem 1rem;
   margin-bottom: 1rem;
 }
@@ -899,7 +905,7 @@ html {
   justify-content: center;
   gap: 0.5rem;
   overflow: hidden;
-  border-radius: 0.5rem;
+  border-radius: 12px;
   border: 1px solid transparent;
   color: #0a375a;
   background: transparent;
@@ -1137,7 +1143,7 @@ html {
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border-radius: 0.5rem;
+  border-radius: 12px;
   border: 1px solid rgba(15, 74, 120, 0.12);
   background: white;
   color: rgba(10, 55, 90, 0.56);
@@ -1157,7 +1163,7 @@ html {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border-radius: 0.5rem;
+  border-radius: 12px;
   background: var(--color-primary-500);
   padding: 0 1rem;
   color: white;
@@ -1329,4 +1335,17 @@ html {
 .floating-action-status {
   background: #22c55e !important;
   box-shadow: 0 0 0 3px rgba(34,197,94,.18), 0 0 10px rgba(34,197,94,.55) !important;
+}
+
+
+/* ===== LP Ticket Premium Utilities ===== */
+.lp-brand-blue { color: #0A375A; }
+.lp-brand-orange { color: #F97316; }
+.lp-bg-blue { background-color: #0A375A; }
+.lp-bg-orange { background-color: #F97316; }
+.lp-border-blue { border-color: rgba(10, 55, 90, 0.18); }
+.lp-focus:focus {
+  outline: none;
+  border-color: #F97316;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.16);
 }

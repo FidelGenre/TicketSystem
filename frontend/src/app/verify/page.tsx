@@ -321,7 +321,7 @@ export default function TicketScannerPage() {
               <button
                 type="button"
                 onClick={() => setSoundEnabled((v) => !v)}
-                className={`min-w-[104px] whitespace-nowrap rounded-lg px-4 py-3 text-center text-[11px] font-black uppercase tracking-wide text-white shadow-sm transition ${soundEnabled ? 'bg-[#F97316] hover:bg-orange-600' : 'bg-[#0A375A] hover:bg-[#082d49]'}`}
+                className={`min-w-[104px] whitespace-nowrap rounded-lg px-4 py-3 text-center text-[11px] font-black uppercase tracking-wide text-white shadow-sm transition ${soundEnabled ? 'bg-[#F97316] hover:bg-[#F97316]' : 'bg-[#0A375A] hover:bg-[#082d49]'}`}
               >
                 {soundEnabled ? (lang === 'es' ? 'Sonido' : 'Sound') : (lang === 'es' ? 'Silencio' : 'Muted')}
               </button>
@@ -358,7 +358,7 @@ export default function TicketScannerPage() {
                   <button
                     type="button"
                     onClick={startCameraScan}
-                    className="mx-auto inline-flex min-h-[56px] items-center justify-center gap-2 rounded-lg bg-[#F97316] px-8 py-4 text-xs font-black uppercase tracking-wide text-white shadow-lg shadow-orange-500/20 transition hover:bg-orange-600 active:scale-[0.98]"
+                    className="mx-auto inline-flex min-h-[56px] items-center justify-center gap-2 rounded-lg bg-[#F97316] px-8 py-4 text-xs font-black uppercase tracking-wide text-white shadow-lg shadow-orange-500/20 transition hover:bg-[#F97316] active:scale-[0.98]"
                   >
                     <HiOutlineCamera className="h-4 w-4" />
                     {lang === 'es' ? 'Iniciar scanner' : 'Start scanner'}
@@ -447,7 +447,7 @@ export default function TicketScannerPage() {
                 <button
                   type="button"
                   onClick={resetTerminal}
-                  className="rounded-lg bg-[#F97316] px-5 py-3 text-xs font-black uppercase tracking-wide text-white transition hover:bg-orange-600"
+                  className="rounded-lg bg-[#F97316] px-5 py-3 text-xs font-black uppercase tracking-wide text-white transition hover:bg-[#F97316]"
                 >
                   {lang === 'es' ? 'Validar siguiente entrada' : 'Validate next ticket'}
                 </button>

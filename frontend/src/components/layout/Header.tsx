@@ -188,13 +188,13 @@ export default function Header() {
             <div className="flex border border-gray-200 rounded-lg overflow-hidden h-8 w-[110px] shrink-0">
               <button 
                 onClick={() => setLang('es')}
-                className={`flex-1 text-[10px] font-bold transition-colors ${lang === 'es' ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+                className={`flex-1 text-[10px] font-bold transition-colors ${lang === 'es' ? 'bg-[#0A375A] text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
               >
                 ES
               </button>
               <button 
                 onClick={() => setLang('en')}
-                className={`flex-1 text-[10px] font-bold border-l border-gray-200 transition-colors ${lang === 'en' ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+                className={`flex-1 text-[10px] font-bold border-l border-gray-200 transition-colors ${lang === 'en' ? 'bg-[#0A375A] text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
               >
                 EN
               </button>
@@ -204,7 +204,7 @@ export default function Header() {
             {isAuthenticated ? (
               <Link
                 href="/verify"
-                className="h-8 w-[110px] bg-orange-500 hover:bg-orange-600 text-white rounded-lg flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 shrink-0"
+                className="h-8 w-[110px] bg-[#F97316] hover:bg-[#F97316] text-white rounded-lg flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 shrink-0"
               >
                 <HiOutlineQrcode className="w-3.5 h-3.5" />
                 <span className="text-[10px] font-black uppercase tracking-wider">SCAN</span>
@@ -212,7 +212,7 @@ export default function Header() {
             ) : (
               <Link 
                 href="/login" 
-                className="h-8 w-[110px] border border-blue-600 text-blue-600 hover:bg-blue-50 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all text-center flex items-center justify-center shrink-0"
+                className="h-8 w-[110px] border border-blue-600 text-[#0A375A] hover:bg-[rgba(10,55,90,0.06)] text-[10px] font-black uppercase tracking-wider rounded-lg transition-all text-center flex items-center justify-center shrink-0"
               >
                 {t('login')}
               </Link>
@@ -222,7 +222,7 @@ export default function Header() {
             {!isAuthenticated && (
               <Link 
                 href="/login?redirect=/organizer/events/create"
-                className="h-8 w-[110px] bg-blue-600 text-white hover:bg-blue-700 text-[10px] font-black uppercase tracking-wider rounded-lg shadow-md transition-all text-center flex items-center justify-center shrink-0"
+                className="h-8 w-[110px] bg-[#0A375A] text-white hover:bg-[#0A375A] text-[10px] font-black uppercase tracking-wider rounded-lg shadow-md transition-all text-center flex items-center justify-center shrink-0"
               >
                 {lang === 'es' ? 'Crear Evento' : 'Create Event'}
               </Link>
@@ -321,13 +321,13 @@ export default function Header() {
             <div className="flex border border-gray-200 rounded-lg overflow-hidden h-9 w-[70px] shrink-0">
               <button 
                 onClick={() => setLang('es')}
-                className={`flex-1 text-[11px] font-bold transition-colors ${lang === 'es' ? 'bg-blue-600 text-white' : 'bg-white text-gray-500'}`}
+                className={`flex-1 text-[11px] font-bold transition-colors ${lang === 'es' ? 'bg-[#0A375A] text-white' : 'bg-white text-gray-500'}`}
               >
                 ES
               </button>
               <button 
                 onClick={() => setLang('en')}
-                className={`flex-1 text-[11px] font-bold border-l border-gray-200 transition-colors ${lang === 'en' ? 'bg-blue-600 text-white' : 'bg-white text-gray-500'}`}
+                className={`flex-1 text-[11px] font-bold border-l border-gray-200 transition-colors ${lang === 'en' ? 'bg-[#0A375A] text-white' : 'bg-white text-gray-500'}`}
               >
                 EN
               </button>
@@ -338,7 +338,7 @@ export default function Header() {
               <Link
                 href="/verify"
                 onClick={() => setMobileMenuOpen(false)}
-                className="h-9 px-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg flex items-center gap-2 transition-all shadow-md active:scale-95 shrink-0"
+                className="h-9 px-3 bg-[#F97316] hover:bg-[#F97316] text-white rounded-lg flex items-center gap-2 transition-all shadow-md active:scale-95 shrink-0"
               >
                 <HiOutlineQrcode className="w-4 h-4" />
                 <span className="text-[11px] font-black uppercase tracking-wider">SCAN</span>
@@ -347,14 +347,14 @@ export default function Header() {
               <Link 
                 href="/login" 
                 onClick={() => setMobileMenuOpen(false)}
-                className="h-9 px-3 border border-blue-600 text-blue-600 hover:bg-blue-50 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all text-center flex items-center justify-center shrink-0"
+                className="h-9 px-3 border border-blue-600 text-[#0A375A] hover:bg-[rgba(10,55,90,0.06)] text-[10px] font-black uppercase tracking-wider rounded-lg transition-all text-center flex items-center justify-center shrink-0"
               >
                 {t('login')}
               </Link>
             )}
 
             {/* Menu Toggle */}
-            <button className="p-1 text-blue-600 ml-1" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            <button className="p-1 text-[#0A375A] ml-1" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
               {mobileMenuOpen ? <HiOutlineX className="w-8 h-8" /> : <HiOutlineMenu className="w-8 h-8" />}
             </button>
           </div>
@@ -376,7 +376,7 @@ export default function Header() {
                     href={item.href}
                     onClick={() => setMobileMenuOpen(false)}
                     className={`relative block px-4 py-3 font-black text-[16px] rounded-xl transition-all overflow-hidden ${
-                      active ? 'text-blue-700 bg-blue-50' : 'text-blue-600 hover:bg-blue-50'
+                      active ? 'text-[#0A375A] bg-[rgba(10,55,90,0.06)]' : 'text-[#0A375A] hover:bg-[rgba(10,55,90,0.06)]'
                     }`}
                   >
                     <span className="relative z-10">{item.label}</span>
@@ -445,7 +445,7 @@ export default function Header() {
         
         {/* Cart Dropdown Content */}
         {cartDropdown && (
-          <div className="w-80 bg-white rounded-3xl shadow-elevated border border-gray-100 p-5 animate-fade-in-up mb-2 max-h-[420px] flex flex-col overflow-hidden pointer-events-auto">
+          <div className="w-80 bg-white rounded-2xl shadow-elevated border border-gray-100 p-5 animate-fade-in-up mb-2 max-h-[420px] flex flex-col overflow-hidden pointer-events-auto">
             {/* Cart Header */}
             <div className="flex justify-between items-center mb-3 shrink-0">
               <div className="flex items-center gap-2">
@@ -500,8 +500,8 @@ export default function Header() {
 
                       {/* Reservation Timer & Direct Pay Button */}
                       <div className="flex items-center justify-between pt-1 border-t border-gray-100/50">
-                        <div className="flex items-center gap-1.5 text-orange-600">
-                          <span className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-ping" />
+                        <div className="flex items-center gap-1.5 text-[#F97316]">
+                          <span className="w-1.5 h-1.5 bg-[#F97316] rounded-full animate-ping" />
                           <span className="text-[10px] font-bold font-mono tracking-wider">{timeLeft}</span>
                         </div>
                         <Link 
@@ -525,7 +525,7 @@ export default function Header() {
                   setCartDropdown(false);
                   router.push(`/events/${cartItems[0].eventSlug}/purchase`);
                 }}
-                className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-black text-xs rounded-xl shadow-lg shadow-orange-500/10 transition-transform active:scale-[0.98] uppercase tracking-widest mt-2"
+                className="w-full py-3 bg-[#F97316] hover:bg-[#F97316] text-white font-black text-xs rounded-xl shadow-lg shadow-orange-500/10 transition-transform active:scale-[0.98] uppercase tracking-widest mt-2"
               >
                 {lang === 'es' ? 'Continuar Compra' : 'Checkout'}
               </button>

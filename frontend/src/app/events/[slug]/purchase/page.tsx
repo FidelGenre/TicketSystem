@@ -403,7 +403,7 @@ export default function PurchasePage() {
           {/* Event Header Information */}
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <h1 className="font-bold text-lg text-gray-900 leading-tight">{event.title}</h1>
-            <div className="flex flex-wrap gap-4 mt-2 text-sm text-blue-600">
+            <div className="flex flex-wrap gap-4 mt-2 text-sm text-[#0A375A]">
               <span className="flex items-center gap-1.5">
                 <HiOutlineLocationMarker className="w-4 h-4" />
                 {event.venueName}
@@ -424,7 +424,7 @@ export default function PurchasePage() {
           {/* ── STEP 1: Section Selection ── */}
           {step === 'section' && (
             <div className="bg-white rounded-lg border border-gray-200 p-5 step-panel">
-              <h2 className="font-bold text-base text-blue-600 mb-4 border-b border-gray-100 pb-2">
+              <h2 className="font-bold text-base text-[#0A375A] mb-4 border-b border-gray-100 pb-2">
                 {lang === 'es' ? 'Escoge dónde quieres estar' : 'Choose where you want to be'}
               </h2>
 
@@ -467,7 +467,7 @@ export default function PurchasePage() {
           {step === 'seats' && selectedSection && (
             <div className="bg-white rounded-lg border border-gray-200 p-5 step-panel">
               <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-2">
-                <h2 className="font-bold text-base text-blue-600">
+                <h2 className="font-bold text-base text-[#0A375A]">
                   {selectedSection.sectionType === 'standing' ? (lang === 'es' ? 'Cantidad de entradas' : 'Number of tickets') : (lang === 'es' ? 'Selecciona tus asientos' : 'Select your seats')} — <span style={{ color: selectedSection.color }}>{selectedSection.name}</span>
                 </h2>
                 <button
@@ -495,7 +495,7 @@ export default function PurchasePage() {
                       type="button"
                       onClick={() => setStandingQuantity((q) => Math.max(0, q - 1))}
                       disabled={standingQuantity <= 0}
-                      className="w-12 h-12 rounded-xl flex items-center justify-center border-2 border-gray-200 hover:border-blue-500 text-gray-600 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed font-extrabold text-xl transition-all active:scale-90"
+                      className="w-12 h-12 rounded-xl flex items-center justify-center border-2 border-gray-200 hover:border-blue-500 text-gray-600 hover:text-[#0A375A] disabled:opacity-40 disabled:cursor-not-allowed font-extrabold text-xl transition-all active:scale-90"
                     >
                       －
                     </button>
@@ -506,13 +506,13 @@ export default function PurchasePage() {
                       type="button"
                       onClick={() => setStandingQuantity((q) => Math.min(event?.maxTicketsPerTransaction || 10, q + 1))}
                       disabled={standingQuantity >= (event?.maxTicketsPerTransaction || 10)}
-                      className="w-12 h-12 rounded-xl flex items-center justify-center border-2 border-gray-200 hover:border-blue-500 text-gray-600 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed font-extrabold text-xl transition-all active:scale-90"
+                      className="w-12 h-12 rounded-xl flex items-center justify-center border-2 border-gray-200 hover:border-blue-500 text-gray-600 hover:text-[#0A375A] disabled:opacity-40 disabled:cursor-not-allowed font-extrabold text-xl transition-all active:scale-90"
                     >
                       ＋
                     </button>
                   </div>
 
-                  <p className="text-xs text-gray-500 font-semibold bg-blue-50 border border-blue-100 text-blue-700 px-4 py-1.5 rounded-full shadow-sm">
+                  <p className="text-xs text-gray-500 font-semibold bg-[rgba(10,55,90,0.06)] border border-[rgba(10,55,90,0.14)] text-[#0A375A] px-4 py-1.5 rounded-full shadow-sm">
                     {lang === 'es' 
                       ? `Puedes seleccionar un máximo de ${event?.maxTicketsPerTransaction || 10} entradas por transacción` 
                       : `You can select a maximum of ${event?.maxTicketsPerTransaction || 10} tickets per transaction`}
@@ -588,7 +588,7 @@ export default function PurchasePage() {
           {/* ── STEP 3: Identification & Personal Info ── */}
           {step === 'info' && (
             <div className="bg-white rounded-lg border border-gray-200 p-5 step-panel">
-              <h2 className="font-bold text-base text-blue-600 mb-1 border-b border-gray-100 pb-2">
+              <h2 className="font-bold text-base text-[#0A375A] mb-1 border-b border-gray-100 pb-2">
                 {lang === 'es' ? 'Información personal' : 'Personal Information'}
               </h2>
               
@@ -638,7 +638,7 @@ export default function PurchasePage() {
           {/* ── STEP 4: Payment Summary ── */}
           {step === 'payment' && invoice && (
             <div className="bg-white rounded-lg border border-gray-200 p-5 step-panel">
-              <h2 className="font-bold text-base text-blue-600 mb-4 border-b border-gray-100 pb-2">
+              <h2 className="font-bold text-base text-[#0A375A] mb-4 border-b border-gray-100 pb-2">
                 {lang === 'es' ? 'Forma de pago' : 'Payment Method'}
               </h2>
 

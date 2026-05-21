@@ -479,7 +479,7 @@ function DashboardPageBody() {
                     <input type="password" value={profileForm.password || ''} onChange={(e) => setProfileForm({ ...profileForm, password: e.target.value })} placeholder="******" className="input bg-gray-50 border-transparent focus:bg-white" />
                   </div>
                   <div className="sm:col-span-2 pt-4">
-                    <button onClick={handleSaveProfile} className="btn-primary w-full py-3.5 rounded-xl font-bold shadow-lg shadow-primary-500/20">{t('clientSave')}</button>
+                    <button onClick={handleSaveProfile} className="btn-primary w-full py-3.5 rounded-lg font-bold shadow-lg shadow-primary-500/20">{t('clientSave')}</button>
                   </div>
                 </div>
               ) : (

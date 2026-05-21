@@ -192,7 +192,7 @@ export default function PaymentMethods() {
           <p className="text-xs text-gray-500 mt-1">{lang === 'es' ? 'Administra tus tarjetas de crédito y cuentas bancarias asociadas.' : 'Manage your credit cards and bank accounts.'}</p>
         </div>
         {!adding && (
-          <button onClick={() => setAdding(true)} className="btn-primary text-xs py-2 px-3 flex items-center gap-1 font-semibold rounded-xl">
+          <button onClick={() => setAdding(true)} className="btn-primary text-xs py-2 px-3 flex items-center gap-1 font-semibold rounded-lg">
             <HiOutlinePlus className="w-4 h-4" /> {lang === 'es' ? 'Agregar Método' : 'Add Method'}
           </button>
         )}
@@ -342,7 +342,7 @@ export default function PaymentMethods() {
           </div>
 
           <div className="flex gap-3 pt-2">
-            <button type="submit" className="flex-1 btn-primary py-2.5 text-sm font-semibold rounded-xl">
+            <button type="submit" className="flex-1 btn-primary py-2.5 text-sm font-semibold rounded-lg">
               {lang === 'es' ? 'Guardar Método de Pago' : 'Save Payment Method'}
             </button>
             <button type="button" onClick={() => setAdding(false)} className="flex-1 py-2.5 text-sm font-semibold text-gray-600 border border-gray-200 bg-white rounded-xl hover:bg-gray-50 transition-all">
@@ -357,7 +357,7 @@ export default function PaymentMethods() {
           {methods.map(method => (
             <div key={method.id} className="flex items-center justify-between p-4 border border-gray-150 rounded-2xl hover:border-primary-400 hover:shadow-[0_4px_15px_rgba(0,0,0,0.015)] transition-all">
               <div className="flex items-center gap-4">
-                <div className={`w-11 h-11 rounded-full flex items-center justify-center ${method.type === 'credit_card' ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                <div className={`w-11 h-11 rounded-full flex items-center justify-center ${method.type === 'credit_card' ? 'bg-[rgba(10,55,90,0.06)] text-[#0A375A]' : 'bg-emerald-50 text-emerald-600'}`}>
                   {method.type === 'credit_card' ? (
                     <HiCreditCard className="w-5 h-5" />
                   ) : (

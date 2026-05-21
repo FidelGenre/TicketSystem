@@ -88,7 +88,7 @@ export default function OrganizerEventsPage() {
     switch (status) {
       case 'published': return { label: t('orgPublished'), classes: 'bg-green-100 text-green-700' };
       case 'draft': return { label: t('orgDraft'), classes: 'bg-yellow-100 text-yellow-700' };
-      case 'pending_approval': return { label: t('orgPending'), classes: 'bg-blue-100 text-blue-700' };
+      case 'pending_approval': return { label: t('orgPending'), classes: 'bg-[rgba(10,55,90,0.10)] text-[#0A375A]' };
       case 'cancelled': return { label: t('orgCancelled'), classes: 'bg-red-100 text-red-700' };
       default: return { label: status, classes: 'bg-gray-100 text-gray-700' };
     }
@@ -226,7 +226,7 @@ export default function OrganizerEventsPage() {
                               <HiOutlineGlobe className="w-4 h-4" />
                             </button>
                           )}
-                          <Link href={`/organizer/events/${ev.id}`} className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors" title={t('orgEditEvent')}>
+                          <Link href={`/organizer/events/${ev.id}`} className="p-1.5 rounded-lg text-[#0A375A] hover:bg-[rgba(10,55,90,0.06)] transition-colors" title={t('orgEditEvent')}>
                             <HiOutlinePencil className="w-4 h-4" />
                           </Link>
                           <button onClick={() => exportCSV(ev.id)} className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors" title={t('orgExportCSV')}>

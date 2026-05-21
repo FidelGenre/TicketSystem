@@ -32,7 +32,7 @@ export default function InvoiceBreakdown({ invoice, eventTitle }: InvoiceBreakdo
   const cur = invoice.currency || 'USD';
 
   return (
-    <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       {/* Header */}
       <div className="bg-gray-50/50 px-6 py-4 border-b border-gray-100 flex items-center justify-between">
         <div>

@@ -65,9 +65,9 @@ export default function OrganizerDashboard() {
 
   const statCards = [
     { label: t('orgTotalRevenue'), value: `$${stats.totalRevenue.toFixed(2)}`, icon: HiOutlineCurrencyDollar, color: 'from-green-500 to-emerald-600', bg: 'bg-green-50', iconColor: 'text-green-600' },
-    { label: t('orgTicketsSold'), value: stats.totalTickets.toString(), icon: HiOutlineTicket, color: 'from-blue-500 to-[#0A375A]', bg: 'bg-blue-50', iconColor: 'text-blue-600' },
-    { label: t('orgActiveEvents'), value: stats.activeEvents.toString(), icon: HiOutlineCalendar, color: 'from-orange-500 to-amber-600', bg: 'bg-orange-50', iconColor: 'text-orange-600' },
-    { label: t('orgTotalOrders'), value: stats.totalOrders.toString(), icon: HiOutlineShoppingCart, color: 'from-[rgba(10,55,90,0.05)]0 to-violet-600', bg: 'bg-[rgba(10,55,90,0.05)]', iconColor: 'text-[#0A375A]' },
+    { label: t('orgTicketsSold'), value: stats.totalTickets.toString(), icon: HiOutlineTicket, color: 'from-blue-500 to-[#0A375A]', bg: 'bg-[rgba(10,55,90,0.06)]', iconColor: 'text-[#0A375A]' },
+    { label: t('orgActiveEvents'), value: stats.activeEvents.toString(), icon: HiOutlineCalendar, color: 'from-orange-500 to-amber-600', bg: 'bg-orange-50', iconColor: 'text-[#F97316]' },
+    { label: t('orgTotalOrders'), value: stats.totalOrders.toString(), icon: HiOutlineShoppingCart, color: 'from-[rgba(10,55,90,0.06)] to-[rgba(10,55,90,0.12)]', bg: 'bg-[rgba(10,55,90,0.05)]', iconColor: 'text-[#0A375A]' },
   ];
 
   const getStatusBadge = (status: string, isPast: boolean) => {
@@ -77,7 +77,7 @@ export default function OrganizerDashboard() {
     switch (status) {
       case 'published': return { label: t('orgPublished'), classes: 'bg-green-100 text-green-700' };
       case 'draft': return { label: t('orgDraft'), classes: 'bg-yellow-100 text-yellow-700' };
-      case 'pending_approval': return { label: t('orgPending'), classes: 'bg-blue-100 text-blue-700' };
+      case 'pending_approval': return { label: t('orgPending'), classes: 'bg-[rgba(10,55,90,0.10)] text-[#0A375A]' };
       case 'cancelled': return { label: t('orgCancelled'), classes: 'bg-red-100 text-red-700' };
       default: return { label: status, classes: 'bg-gray-100 text-gray-700' };
     }

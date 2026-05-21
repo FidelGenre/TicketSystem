@@ -572,7 +572,7 @@ export default function EventDetailPage() {
     switch (status) {
       case 'published': return { label: t('orgPublished'), classes: 'bg-green-100 text-green-700' };
       case 'draft': return { label: t('orgDraft'), classes: 'bg-yellow-100 text-yellow-700' };
-      case 'pending_approval': return { label: t('orgPending'), classes: 'bg-blue-100 text-blue-700' };
+      case 'pending_approval': return { label: t('orgPending'), classes: 'bg-[rgba(10,55,90,0.10)] text-[#0A375A]' };
       default: return { label: status, classes: 'bg-gray-100 text-gray-700' };
     }
   };
@@ -719,7 +719,7 @@ export default function EventDetailPage() {
               </div>
               <button
                 onClick={exportAnalyticsCSV}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#F97316] px-4 py-2.5 text-xs font-black uppercase tracking-wide text-white shadow-lg shadow-black/10 transition hover:bg-orange-600"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#F97316] px-4 py-2.5 text-xs font-black uppercase tracking-wide text-white shadow-lg shadow-black/10 transition hover:bg-[#F97316]"
               >
                 <HiOutlineDownload className="h-4 w-4" />
                 {lang === 'es' ? 'Export premium' : 'Premium export'}
@@ -847,11 +847,11 @@ export default function EventDetailPage() {
 
       {/* Event Submission Notice */}
       {event.status === 'pending_approval' && (
-        <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl flex items-start gap-3 text-sm text-blue-800 shadow-sm animate-fade-in">
+        <div className="p-4 bg-[rgba(10,55,90,0.06)] border border-[rgba(10,55,90,0.18)] rounded-2xl flex items-start gap-3 text-sm text-[#0A375A] shadow-sm animate-fade-in">
           <span className="text-lg">✨</span>
           <div className="space-y-1">
-            <p className="font-bold text-blue-900">{lang === 'es' ? 'Evento en espera de aprobación' : 'Event pending approval'}</p>
-            <p className="text-xs text-blue-700 leading-relaxed">
+            <p className="font-bold text-[#0A375A]">{lang === 'es' ? 'Evento en espera de aprobación' : 'Event pending approval'}</p>
+            <p className="text-xs text-[#0A375A] leading-relaxed">
               {lang === 'es' 
                 ? 'Este evento ha sido enviado al administrador para su aprobación. Se publicará automáticamente en la plataforma una vez sea autorizado por el administrador.'
                 : 'This event has been submitted to the administrator for approval. It will be automatically published on the platform once authorized.'}
@@ -956,12 +956,12 @@ export default function EventDetailPage() {
       {/* Reminder Modal */}
       {showReminderModal && (
         <div className="fixed inset-0 z-50 flex items-start justify-center p-4 sm:p-10 bg-black/40 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 w-full max-w-4xl p-6 sm:p-8 space-y-6 animate-fade-in mt-4 sm:mt-8 mb-10">
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-4xl p-6 sm:p-8 space-y-6 animate-fade-in mt-4 sm:mt-8 mb-10">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-gray-100 pb-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center">
-                  <HiOutlineBell className="w-6 h-6 text-orange-500" />
+                  <HiOutlineBell className="w-6 h-6 text-[#F97316]" />
                 </div>
                 <div>
                   <h3 className="font-extrabold text-xl text-gray-900">
@@ -988,7 +988,7 @@ export default function EventDetailPage() {
               <div className="space-y-6 lg:pr-4 flex flex-col justify-between">
                 <div className="space-y-6">
                   <div className="flex items-center gap-2">
-                    <span className="p-1 rounded-lg bg-orange-50 text-orange-600 font-black text-[10px] uppercase tracking-wider">
+                    <span className="p-1 rounded-lg bg-orange-50 text-[#F97316] font-black text-[10px] uppercase tracking-wider">
                       {lang === 'es' ? 'Automático' : 'Automated'}
                     </span>
                     <h4 className="font-black text-sm text-gray-800 uppercase tracking-wider">
@@ -1087,7 +1087,7 @@ export default function EventDetailPage() {
               <div className="space-y-6 pt-6 lg:pt-0 lg:pl-8 flex flex-col justify-between">
                 <div className="space-y-6">
                   <div className="flex items-center gap-2">
-                    <span className="p-1 rounded-lg bg-orange-50 text-orange-600 font-black text-[10px] uppercase tracking-wider">
+                    <span className="p-1 rounded-lg bg-orange-50 text-[#F97316] font-black text-[10px] uppercase tracking-wider">
                       {lang === 'es' ? 'Manual' : 'Manual'}
                     </span>
                     <h4 className="font-black text-sm text-gray-800 uppercase tracking-wider">
@@ -1095,7 +1095,7 @@ export default function EventDetailPage() {
                     </h4>
                   </div>
 
-                  <div className="bg-orange-50/70 border border-orange-100/50 rounded-2xl p-4 text-sm text-orange-900 space-y-2">
+                  <div className="bg-orange-50/70 border border-[rgba(249,115,22,0.22)]/50 rounded-2xl p-4 text-sm text-orange-900 space-y-2">
                     <p className="font-extrabold flex items-center gap-2">
                       <span>📢</span>
                       <span>{event?.title}</span>
@@ -1112,7 +1112,7 @@ export default function EventDetailPage() {
                       <select
                         value={reminderDays}
                         onChange={(e) => setReminderDays(Number(e.target.value))}
-                        className="w-full px-4 py-3 border border-orange-200 rounded-2xl text-sm font-bold focus:outline-none focus:ring-1 focus:ring-orange-400 bg-white"
+                        className="w-full px-4 py-3 border border-[rgba(249,115,22,0.28)] rounded-2xl text-sm font-bold focus:outline-none focus:ring-1 focus:ring-orange-400 bg-white"
                       >
                         <optgroup label={lang === 'es' ? 'Horas antes' : 'Hours before'}>
                           <option value={-1}>{lang === 'es' ? '1 hora antes del evento' : '1 hour before the event'}</option>
@@ -1129,7 +1129,7 @@ export default function EventDetailPage() {
                           <option value={14}>{lang === 'es' ? '14 días antes' : '14 days before'}</option>
                         </optgroup>
                       </select>
-                      <p className="text-[10px] text-orange-600">
+                      <p className="text-[10px] text-[#F97316]">
                         {reminderDays < 0
                           ? (lang === 'es' ? `⚡ El correo dirá: Faltan ${Math.abs(reminderDays)} hora(s) para el evento` : `⚡ Email will say: ${Math.abs(reminderDays)} hour(s) until the event`)
                           : reminderDays === 0
@@ -1159,7 +1159,7 @@ export default function EventDetailPage() {
                 <button
                   onClick={handleSendReminder}
                   disabled={sendingReminder || attendees.length === 0}
-                  className="w-full mt-6 flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-black py-3 px-6 rounded-2xl transition-all shadow-md shadow-orange-500/10 disabled:opacity-60"
+                  className="w-full mt-6 flex items-center justify-center gap-2 bg-[#F97316] hover:bg-[#F97316] text-white text-xs font-black py-3 px-6 rounded-2xl transition-all shadow-md shadow-orange-500/10 disabled:opacity-60"
                 >
                   {sendingReminder ? (
                     <><div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /> {lang === 'es' ? 'Enviando...' : 'Sending...'}</>
@@ -1190,7 +1190,7 @@ export default function EventDetailPage() {
               <div className="flex gap-2 flex-wrap">
                 <button
                   onClick={() => setShowReminderModal(true)}
-                  className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold py-1.5 px-3 rounded-xl transition-all shadow-sm"
+                  className="flex items-center gap-1.5 bg-[#F97316] hover:bg-[#F97316] text-white text-xs font-bold py-1.5 px-3 rounded-xl transition-all shadow-sm"
                   title={lang === 'es' ? 'Enviar recordatorio por email a los asistentes' : 'Send email reminder to attendees'}
                 >
                   <HiOutlineBell className="w-4 h-4" />
@@ -1401,7 +1401,7 @@ export default function EventDetailPage() {
                         let bgClass = 'bg-white border-gray-200 hover:border-blue-500 text-gray-700';
                         if (isBlocked) bgClass = 'bg-amber-100 border-amber-300 text-amber-800 font-bold';
                         if (isSold) bgClass = 'bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed';
-                        if (isSelected) bgClass = 'bg-blue-600 border-blue-600 text-white font-bold scale-105 shadow-md shadow-blue-500/20';
+                        if (isSelected) bgClass = 'bg-[#0A375A] border-blue-600 text-white font-bold scale-105 shadow-md shadow-blue-500/20';
 
                         return (
                           <button
@@ -1758,7 +1758,7 @@ export default function EventDetailPage() {
                         <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">
                           {lang === 'es' ? 'Enfoque / Alineación Vertical' : 'Focal / Vertical Alignment'}
                         </span>
-                        <span className="text-xs font-extrabold text-blue-600 font-mono bg-blue-50 px-2.5 py-1 rounded-md border border-blue-100">
+                        <span className="text-xs font-extrabold text-[#0A375A] font-mono bg-[rgba(10,55,90,0.06)] px-2.5 py-1 rounded-md border border-[rgba(10,55,90,0.14)]">
                           {editForm.bannerPosition === 'center' ? '50% (Centro)' : 
                            editForm.bannerPosition === 'top' ? '0% (Arriba)' :
                            editForm.bannerPosition === 'bottom' ? '100% (Abajo)' : 
@@ -1778,7 +1778,7 @@ export default function EventDetailPage() {
                             onClick={() => setEditForm(prev => ({ ...prev, bannerPosition: btn.val }))}
                             className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all border shadow-sm ${
                               editForm.bannerPosition === btn.val 
-                                ? 'bg-blue-600 text-white border-blue-600 font-extrabold' 
+                                ? 'bg-[#0A375A] text-white border-blue-600 font-extrabold' 
                                 : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-100'
                             }`}
                           >
@@ -1847,7 +1847,7 @@ export default function EventDetailPage() {
               <button
                 type="submit"
                 disabled={savingEdit}
-                className="w-2/3 py-3 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
+                className="w-2/3 py-3 text-sm font-bold text-white bg-[#0A375A] hover:bg-[#0A375A] rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
               >
                 {savingEdit ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

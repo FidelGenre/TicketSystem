@@ -251,7 +251,7 @@ export default function SocialMatchPanel({ lang }: Props) {
 
   if (loading) {
     return (
-      <div className="bg-white border border-gray-100 rounded-3xl p-8 shadow-[0_10px_40px_rgba(0,0,0,0.03)]">
+      <div className="bg-white border border-gray-100 rounded-2xl p-8 shadow-[0_10px_40px_rgba(0,0,0,0.03)]">
         <div className="h-6 w-40 bg-gray-100 rounded mb-4 animate-pulse" />
         <div className="h-24 bg-gray-100 rounded-2xl animate-pulse" />
       </div>
@@ -260,7 +260,7 @@ export default function SocialMatchPanel({ lang }: Props) {
 
   if (events.length === 0) {
     return (
-      <div className="bg-white border border-gray-100 rounded-3xl p-8 shadow-[0_10px_40px_rgba(0,0,0,0.03)] text-center">
+      <div className="bg-white border border-gray-100 rounded-2xl p-8 shadow-[0_10px_40px_rgba(0,0,0,0.03)] text-center">
         <HiOutlineUserGroup className="w-12 h-12 text-gray-300 mx-auto mb-4" />
         <h3 className="font-bold text-xl text-gray-900">{copy.title}</h3>
         <p className="text-gray-500 mt-2">{copy.noEvents}</p>
@@ -269,10 +269,10 @@ export default function SocialMatchPanel({ lang }: Props) {
   }
 
   return (
-    <div className="bg-white border border-gray-100 rounded-3xl p-6 sm:p-8 shadow-[0_10px_40px_rgba(0,0,0,0.03)]">
+    <div className="bg-white border border-gray-100 rounded-2xl p-6 sm:p-8 shadow-[0_10px_40px_rgba(0,0,0,0.03)]">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-50 text-orange-600 text-xs font-bold uppercase tracking-wider mb-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-orange-50 text-[#F97316] text-xs font-bold uppercase tracking-wider mb-3">
             <HiOutlineSparkles className="w-4 h-4" />
             Premium
           </div>
@@ -299,7 +299,7 @@ export default function SocialMatchPanel({ lang }: Props) {
             {socialMatchInterestOptions.map((interest) => {
               const selected = (selectedPreference?.interests || []).includes(interest.id);
               return (
-                <button key={interest.id} type="button" onClick={() => toggleInterest(interest.id)} className={`px-3 py-2 rounded-full text-xs font-bold border transition-all ${selected ? 'bg-[#0a375a] border-[#0a375a] text-white' : 'bg-white border-gray-200 text-gray-600 hover:border-orange-300 hover:text-orange-600'}`}>
+                <button key={interest.id} type="button" onClick={() => toggleInterest(interest.id)} className={`px-3 py-2 rounded-lg text-xs font-bold border transition-all ${selected ? 'bg-[#0A375A] border-[#0A375A] text-white' : 'bg-white border-gray-200 text-gray-600 hover:border-[rgba(249,115,22,0.42)] hover:text-[#F97316]'}`}>
                   {lang === 'es' ? interest.es : interest.en}
                 </button>
               );
@@ -321,29 +321,29 @@ export default function SocialMatchPanel({ lang }: Props) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <label className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4 cursor-pointer">
             <input type="checkbox" checked={Boolean(selectedPreference?.privateMode)} onChange={(event) => updatePreference({ privateMode: event.target.checked })} className="w-4 h-4 accent-orange-500" />
-            <HiOutlineUserGroup className="w-5 h-5 text-[#0a375a]" />
+            <HiOutlineUserGroup className="w-5 h-5 text-[#0A375A]" />
             <span className="text-sm font-semibold text-gray-700">{lang === 'es' ? 'Modo privado' : 'Private mode'}</span>
           </label>
           <label className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4 cursor-pointer">
             <input type="checkbox" checked={Boolean(selectedPreference?.invisibleMode)} onChange={(event) => updatePreference({ invisibleMode: event.target.checked })} className="w-4 h-4 accent-orange-500" />
-            <HiOutlineEyeOff className="w-5 h-5 text-[#0a375a]" />
+            <HiOutlineEyeOff className="w-5 h-5 text-[#0A375A]" />
             <span className="text-sm font-semibold text-gray-700">{lang === 'es' ? 'Modo invisible' : 'Invisible mode'}</span>
           </label>
           <label className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4 cursor-pointer">
             <input type="checkbox" checked={Boolean(selectedPreference?.shareInstagram)} onChange={(event) => updatePreference({ shareInstagram: event.target.checked })} className="w-4 h-4 accent-orange-500" />
-            <HiOutlineSparkles className="w-5 h-5 text-[#0a375a]" />
+            <HiOutlineSparkles className="w-5 h-5 text-[#0A375A]" />
             <span className="text-sm font-semibold text-gray-700">{lang === 'es' ? 'Compartir Instagram solo si ambos aceptan' : 'Share Instagram only if both accept'}</span>
           </label>
           <label className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4 cursor-pointer">
             <input type="checkbox" checked={Boolean(selectedPreference?.shareLocation)} onChange={(event) => updatePreference({ shareLocation: event.target.checked })} className="w-4 h-4 accent-orange-500" />
-            <HiOutlineLocationMarker className="w-5 h-5 text-[#0a375a]" />
+            <HiOutlineLocationMarker className="w-5 h-5 text-[#0A375A]" />
             <span className="text-sm font-semibold text-gray-700">{lang === 'es' ? 'Permitir ubicación aproximada solo si ambos aceptan' : 'Allow approximate location only if both accept'}</span>
           </label>
         </div>
 
         {selectedSummary && (
-          <div className="rounded-2xl border border-orange-100 bg-orange-50/60 p-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-orange-600 mb-2">{lang === 'es' ? 'Sugerencias compatibles' : 'Compatible suggestions'}</p>
+          <div className="rounded-2xl border border-[rgba(249,115,22,0.22)] bg-orange-50/60 p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-[#F97316] mb-2">{lang === 'es' ? 'Sugerencias compatibles' : 'Compatible suggestions'}</p>
             <div className="space-y-1">
               {selectedSummary.messages.map((message) => <p key={message} className="text-sm font-semibold text-gray-800">{message}</p>)}
             </div>
@@ -352,7 +352,7 @@ export default function SocialMatchPanel({ lang }: Props) {
 
         {selectedPreference?.isActive && (
           <div className="rounded-2xl border border-gray-100 bg-white p-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-[#0a375a] mb-3">{copy.suggestions}</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-[#0A375A] mb-3">{copy.suggestions}</p>
             {loadingSuggestions ? (
               <div className="h-16 bg-gray-50 rounded-xl animate-pulse" />
             ) : suggestions.length > 0 ? (
@@ -367,7 +367,7 @@ export default function SocialMatchPanel({ lang }: Props) {
                         {suggestion.canShareLocationLater ? ` · ${lang === 'es' ? 'ubicación opcional' : 'optional location'}` : ''}
                       </p>
                     </div>
-                    <button type="button" onClick={() => handleRequestConnection(suggestion.userId)} className="px-4 py-2 rounded-lg bg-orange-500 text-white text-xs font-bold hover:bg-orange-600 transition-colors">
+                    <button type="button" onClick={() => handleRequestConnection(suggestion.userId)} className="px-4 py-2 rounded-lg bg-[#F97316] text-white text-xs font-bold hover:bg-[#F97316] transition-colors">
                       {copy.connect}
                     </button>
                   </div>
@@ -381,7 +381,7 @@ export default function SocialMatchPanel({ lang }: Props) {
 
         {connections.length > 0 && (
           <div className="rounded-2xl border border-gray-100 bg-white p-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-[#0a375a] mb-3">{copy.requests}</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-[#0A375A] mb-3">{copy.requests}</p>
             <div className="space-y-3">
               {connections.map((connection) => (
                 <div key={connection.id} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
@@ -392,7 +392,7 @@ export default function SocialMatchPanel({ lang }: Props) {
                     </div>
                     {connection.status === 'pending' && connection.direction === 'incoming' && (
                       <div className="flex gap-2">
-                        <button type="button" onClick={() => handleUpdateConnection(connection.id, 'accepted')} className="px-3 py-2 rounded-lg bg-[#0a375a] text-white text-xs font-bold">{copy.accept}</button>
+                        <button type="button" onClick={() => handleUpdateConnection(connection.id, 'accepted')} className="px-3 py-2 rounded-lg bg-[#0A375A] text-white text-xs font-bold">{copy.accept}</button>
                         <button type="button" onClick={() => handleUpdateConnection(connection.id, 'declined')} className="px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-600 text-xs font-bold">{copy.decline}</button>
                       </div>
                     )}
@@ -400,7 +400,7 @@ export default function SocialMatchPanel({ lang }: Props) {
                       <button type="button" onClick={() => handleUpdateConnection(connection.id, 'cancelled')} className="px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-600 text-xs font-bold">{copy.cancel}</button>
                     )}
                     {connection.status === 'accepted' && (
-                      <button type="button" onClick={() => openChat(connection.id)} className="px-3 py-2 rounded-lg bg-orange-500 text-white text-xs font-bold">{copy.chat}</button>
+                      <button type="button" onClick={() => openChat(connection.id)} className="px-3 py-2 rounded-lg bg-[#F97316] text-white text-xs font-bold">{copy.chat}</button>
                     )}
                   </div>
                 </div>
@@ -413,7 +413,7 @@ export default function SocialMatchPanel({ lang }: Props) {
         {activeChatId && (
           <div className="rounded-2xl border border-gray-100 bg-white p-4">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold uppercase tracking-wider text-[#0a375a]">{copy.chat}</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-[#0A375A]">{copy.chat}</p>
               <button type="button" onClick={() => setActiveChatId('')} className="text-xs font-bold text-gray-400 hover:text-gray-700">Cerrar</button>
             </div>
             <div className="max-h-72 overflow-y-auto rounded-xl bg-gray-50 p-3 space-y-2">
@@ -422,7 +422,7 @@ export default function SocialMatchPanel({ lang }: Props) {
               ) : chatMessages.length > 0 ? (
                 chatMessages.map((message) => (
                   <div key={message.id} className={`flex ${message.isMine ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${message.isMine ? 'bg-[#0a375a] text-white' : 'bg-white text-gray-800 border border-gray-100'}`}>
+                    <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${message.isMine ? 'bg-[#0A375A] text-white' : 'bg-white text-gray-800 border border-gray-100'}`}>
                       {!message.isMine && <p className="text-[10px] font-bold text-gray-400 mb-1">{message.senderName}</p>}
                       <p>{message.message}</p>
                     </div>
@@ -445,14 +445,14 @@ export default function SocialMatchPanel({ lang }: Props) {
                 className="input bg-gray-50 border-gray-200"
                 placeholder={copy.messagePlaceholder}
               />
-              <button type="button" onClick={handleSendMessage} disabled={chatSending || !chatDraft.trim()} className="px-4 rounded-xl bg-orange-500 text-white text-sm font-bold disabled:opacity-50">
+              <button type="button" onClick={handleSendMessage} disabled={chatSending || !chatDraft.trim()} className="px-4 rounded-xl bg-[#F97316] text-white text-sm font-bold disabled:opacity-50">
                 {copy.send}
               </button>
             </div>
           </div>
         )}
 
-        <button onClick={handleSave} disabled={saving} className="btn-primary w-full py-3.5 rounded-xl font-bold shadow-lg shadow-orange-500/20 disabled:opacity-60">
+        <button onClick={handleSave} disabled={saving} className="btn-primary w-full py-3.5 rounded-lg font-bold shadow-lg shadow-orange-500/20 disabled:opacity-60">
           {saving ? copy.saving : copy.save}
         </button>
       </div>

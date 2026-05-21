@@ -133,7 +133,7 @@ export default function HomePage() {
         <section className="home-hero-shell">
           <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8">
             <div className="home-hero-frame group">
-              <Link href={usingDemo ? '#' : `/events/${bannerEvent.slug}`} className="absolute inset-0 z-[5] block overflow-hidden bg-blue-950" aria-label={bannerEvent.title}>
+              <Link href={usingDemo ? '#' : `/events/${bannerEvent.slug}`} className="absolute inset-0 z-[5] block overflow-hidden bg-[#0A375A]" aria-label={bannerEvent.title}>
                 <AnimatePresence initial={false}>
                   <motion.img
                     key={`${bannerEvent.id}-mobile`}
@@ -218,7 +218,7 @@ export default function HomePage() {
           <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8">
             <div className="home-empty-hero">
               <p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-primary-600">LPTicket</p>
-              <h1 className="max-w-3xl text-4xl font-black leading-tight text-blue-900 sm:text-6xl">
+              <h1 className="max-w-3xl text-4xl font-black leading-tight text-[#0A375A] sm:text-6xl">
                 {lang === 'es' ? 'Descubre tu próximo evento.' : 'Discover your next event.'}
               </h1>
               <p className="mt-4 max-w-2xl text-base font-medium text-gray-500">
@@ -235,7 +235,7 @@ export default function HomePage() {
             <label className="home-search-field">
               <span>{lang === 'es' ? 'Buscar evento' : 'Search event'}</span>
               <div>
-                <HiOutlineSearch className="h-5 w-5 text-blue-700/70" />
+                <HiOutlineSearch className="h-5 w-5 text-[#0A375A]/70" />
                 <input type="text" placeholder={lang === 'es' ? 'Conciertos, teatro, talleres...' : 'Concerts, theater, workshops...'} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
               </div>
             </label>
@@ -243,17 +243,17 @@ export default function HomePage() {
             <label className="home-search-field">
               <span>{lang === 'es' ? 'Lugar' : 'Place'}</span>
               <div>
-                <HiOutlineLocationMarker className="h-5 w-5 text-blue-700/70" />
+                <HiOutlineLocationMarker className="h-5 w-5 text-[#0A375A]/70" />
                 <input type="text" placeholder={lang === 'es' ? 'Ciudad o venue' : 'City or venue'} value={locationQuery} onChange={(e) => setLocationQuery(e.target.value)} />
               </div>
             </label>
 
-            <button type="submit" className="inline-flex h-full min-h-[58px] items-center justify-center rounded-lg bg-blue-800 px-7 text-[0.64rem] font-black uppercase tracking-[0.14em] text-white shadow-[0_16px_28px_rgba(10,55,90,0.18)] transition-all hover:bg-blue-700 hover:-translate-y-0.5 lg:w-[10.5rem]">
+            <button type="submit" className="inline-flex h-full min-h-[58px] items-center justify-center rounded-lg bg-[#0A375A] px-7 text-[0.64rem] font-black uppercase tracking-[0.14em] text-white shadow-[0_16px_28px_rgba(10,55,90,0.18)] transition-all hover:bg-[#0A375A] hover:-translate-y-0.5 lg:w-[10.5rem]">
               {lang === 'es' ? 'Buscar' : 'Search'}
             </button>
           </form>
 
-          <div className="mt-4 flex flex-col gap-3 border-t border-blue-900/10 pt-4 lg:flex-row lg:items-center">
+          <div className="mt-4 flex flex-col gap-3 border-t border-[#0A375A]/10 pt-4 lg:flex-row lg:items-center">
             <div className="flex items-center gap-1.5 relative overflow-hidden group/cats lg:flex-1">
               <button type="button" onClick={() => scrollCategories('left')} className="home-scroll-button" aria-label="Scroll Left">
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
@@ -306,7 +306,7 @@ export default function HomePage() {
         <div className="mb-7 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.2em] text-primary-600">{lang === 'es' ? 'Destacados' : 'Highlights'}</p>
-            <h2 className="mt-2 text-3xl font-black text-blue-950 sm:text-4xl">{lang === 'es' ? 'Eventos cerca de ti' : 'Events near you'}</h2>
+            <h2 className="mt-2 text-3xl font-black text-[#0A375A] sm:text-4xl">{lang === 'es' ? 'Eventos cerca de ti' : 'Events near you'}</h2>
           </div>
           <p className="text-sm font-semibold text-gray-500">{sortedEvents.length} {lang === 'es' ? 'eventos disponibles' : 'available events'}</p>
         </div>

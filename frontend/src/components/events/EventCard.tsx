@@ -38,7 +38,7 @@ export default function EventCard({ event }: EventCardProps) {
   return (
     <article className="event-signature-card group">
       <Link href={eventHref} className="block">
-        <div className="relative aspect-[3/4] overflow-hidden bg-blue-950">
+        <div className="relative aspect-[3/4] overflow-hidden bg-[#0A375A]">
           {event.imageUrl && !imageLoaded && (
             <div className="absolute inset-0 z-10 h-full w-full animate-shimmer" />
           )}
@@ -65,7 +65,7 @@ export default function EventCard({ event }: EventCardProps) {
             <span className="text-6xl">{categoryInfo.icon}</span>
           </div>
 
-          <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-lg bg-white/92 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-[0.08em] text-blue-900 shadow-sm backdrop-blur-md">
+          <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-lg bg-white/92 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-[0.08em] text-[#0A375A] shadow-sm backdrop-blur-md">
             <span className="h-1.5 w-1.5 rounded-full bg-primary-500" />
             {catLabel}
           </div>
@@ -78,11 +78,11 @@ export default function EventCard({ event }: EventCardProps) {
         </div>
 
         <div className="space-y-3 p-4 pb-3">
-          <h3 className="line-clamp-2 min-h-[3rem] text-base font-black leading-tight text-blue-950">
+          <h3 className="line-clamp-2 min-h-[3rem] text-base font-black leading-tight text-[#0A375A]">
             {event.title}
           </h3>
 
-          <div className="flex items-center gap-1.5 text-sm font-semibold text-blue-700">
+          <div className="flex items-center gap-1.5 text-sm font-semibold text-[#0A375A]">
             <HiOutlineCalendar className="h-4 w-4 shrink-0" />
             <span>{eventDay} {lang === 'es' ? 'a las' : 'at'} {eventTime}{eventTzAbbr && <span className="ml-1 font-medium text-gray-500">({eventTzAbbr})</span>}</span>
           </div>
@@ -100,7 +100,7 @@ export default function EventCard({ event }: EventCardProps) {
       </Link>
 
       <div className="mx-4 flex flex-col gap-3 border-t border-gray-100 pb-4 pt-3">
-        <div className="flex min-w-0 items-center gap-1.5 text-blue-900">
+        <div className="flex min-w-0 items-center gap-1.5 text-[#0A375A]">
           <HiOutlineTag className="h-4 w-4 shrink-0 text-primary-500" />
           <span className="text-sm font-black leading-tight">
             {lang === 'es' ? 'Desde' : 'From'} {Number(event.minPrice || 0).toFixed(2)} {event.currency || 'USD'}
@@ -113,7 +113,7 @@ export default function EventCard({ event }: EventCardProps) {
             eventPath={eventHref}
             label={lang === 'es' ? 'Comparte con tus amigos' : 'Share with friends'}
             compact
-            className="!h-12 !w-12 !rounded-lg !border-blue-800 !bg-blue-800 !text-white !shadow-none hover:!bg-blue-700"
+            className="!h-12 !w-12 !rounded-lg !border-[#0A375A] !bg-[#0A375A] !text-white !shadow-none hover:!bg-[#0A375A]"
           />
 
           <Link
