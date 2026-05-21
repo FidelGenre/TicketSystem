@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import api, { getImageUrl } from '@/lib/api';
@@ -1314,8 +1315,8 @@ export default function EventDetailPage() {
                     })}
                   </div>
 
-                  {/* Buyer Detail Modal — same style as admin user modal */}
-                  {selectedGroup && (
+                  {/* Buyer Detail Modal — rendered via portal to escape overflow clipping */}
+                  {selectedGroup && createPortal(
                     <div className="fixed inset-0 z-50 overflow-hidden flex items-center justify-center p-4">
                       {/* Backdrop */}
                       <div 
@@ -1409,7 +1410,7 @@ export default function EventDetailPage() {
                         </div>
                       </div>
                     </div>
-                  )}
+                  , document.body)}
                 </>
               );
             })() : (
