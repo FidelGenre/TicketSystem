@@ -27,6 +27,9 @@ export default function SocialMatchPanel({ lang }: Props) {
   const [events, setEvents] = useState<Event[]>([]);
   const [preferences, setPreferences] = useState<SocialMatchPreference[]>([]);
   const [summaries, setSummaries] = useState<SocialMatchSummary[]>([]);
+  const [connections, setConnections] = useState<SocialMatchConnection[]>([]);
+  const [suggestions, setSuggestions] = useState<SocialMatchSuggestion[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState('');
 
   const selectedPreference = useMemo(() => {
@@ -55,6 +58,14 @@ export default function SocialMatchPanel({ lang }: Props) {
     saving: lang === 'es' ? 'Guardando...' : 'Saving...',
     saved: lang === 'es' ? 'Social Match actualizado' : 'Social Match updated',
     error: lang === 'es' ? 'No se pudo guardar Social Match' : 'Could not save Social Match',
+    connect: lang === 'es' ? 'Solicitar conexión' : 'Request connection',
+    sent: lang === 'es' ? 'Solicitud enviada' : 'Request sent',
+    requests: lang === 'es' ? 'Solicitudes de conexión' : 'Connection requests',
+    suggestions: lang === 'es' ? 'Perfiles sugeridos' : 'Suggested profiles',
+    noSuggestions: lang === 'es' ? 'Aún no hay perfiles compatibles para este evento.' : 'No compatible profiles for this event yet.',
+    accept: lang === 'es' ? 'Aceptar' : 'Accept',
+    decline: lang === 'es' ? 'Rechazar' : 'Decline',
+    cancel: lang === 'es' ? 'Cancelar' : 'Cancel',
   };
 
   useEffect(() => { loadSocialMatch(); }, []);
@@ -66,11 +77,34 @@ export default function SocialMatchPanel({ lang }: Props) {
       setEvents(data.eligibleEvents || []);
       setPreferences(data.preferences || []);
       setSummaries(data.summaries || []);
+      setConnections(data.connections || []);
       setSelectedEventId((current) => current || data.eligibleEvents?.[0]?.id || '');
     } catch (error) {
       console.error(error);
     } finally {
       setLoading(false);
+    }
+  };
+
+
+  useEffect(() => {
+    if (selectedEventId && selectedPreference?.isActive) {
+      loadSuggestions(selectedEventId);
+    } else {
+      setSuggestions([]);
+    }
+  }, [selectedEventId, selectedPreference?.isActive]);
+
+  const loadSuggestions = async (eventId: string) => {
+    try {
+      setLoadingSuggestions(true);
+      const data = await getSocialMatchSuggestions(eventId);
+      setSuggestions(data.suggestions || []);
+    } catch (error) {
+      console.error(error);
+      setSuggestions([]);
+    } finally {
+      setLoadingSuggestions(false);
     }
   };
 
@@ -103,6 +137,11 @@ export default function SocialMatchPanel({ lang }: Props) {
         const next = current.filter((item) => item.eventId !== selectedEventId);
         return result.summary ? [...next, result.summary] : next;
       });
+      if (result.preference?.isActive) {
+        await loadSuggestions(selectedEventId);
+      } else {
+        setSuggestions([]);
+      }
       toast.success(copy.saved);
     } catch (error) {
       console.error(error);

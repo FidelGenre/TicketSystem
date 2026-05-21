@@ -42,3 +42,38 @@ export async function saveSocialMatchPreference(eventId: string, payload: Partia
   const { data } = await api.put(`/social-match/events/${eventId}/preferences`, payload);
   return data;
 }
+
+export type SocialMatchSuggestion = {
+  userId: string;
+  displayName: string;
+  sharedInterests: string[];
+  industryMatch: boolean;
+  canShareLocationLater: boolean;
+  score: number;
+};
+
+export type SocialMatchConnection = {
+  id: string;
+  eventId: string;
+  eventTitle: string;
+  status: 'pending' | 'accepted' | 'declined' | 'cancelled';
+  direction: 'incoming' | 'outgoing';
+  otherUserName: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function getSocialMatchSuggestions(eventId: string) {
+  const { data } = await api.get(`/social-match/events/${eventId}/suggestions`);
+  return data;
+}
+
+export async function requestSocialMatchConnection(eventId: string, receiverId: string) {
+  const { data } = await api.post('/social-match/connections', { eventId, receiverId });
+  return data;
+}
+
+export async function updateSocialMatchConnection(connectionId: string, status: 'accepted' | 'declined' | 'cancelled') {
+  const { data } = await api.put(`/social-match/connections/${connectionId}`, { status });
+  return data;
+}

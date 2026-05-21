@@ -1,7 +1,15 @@
 import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Not, Repository } from 'typeorm';
-import { Event, SocialMatchInterest, SocialMatchPreference, Ticket, TicketStatus } from '../database/entities';
+import {
+  Event,
+  SocialMatchConnection,
+  SocialMatchConnectionStatus,
+  SocialMatchInterest,
+  SocialMatchPreference,
+  Ticket,
+  TicketStatus,
+} from '../database/entities';
 
 type UpdateSocialMatchDto = {
   isActive?: boolean;
@@ -19,28 +27,53 @@ const allowedInterests = new Set(Object.values(SocialMatchInterest));
 @Injectable()
 export class SocialMatchService {
   constructor(
-    @InjectRepository(SocialMatchPreference) private readonly preferenceRepo: Repository<SocialMatchPreference>,
-    @InjectRepository(Ticket) private readonly ticketRepo: Repository<Ticket>,
-    @InjectRepository(Event) private readonly eventRepo: Repository<Event>,
+    @InjectRepository(SocialMatchPreference)
+    private readonly preferenceRepo: Repository<SocialMatchPreference>,
+    @InjectRepository(SocialMatchConnection)
+    private readonly connectionRepo: Repository<SocialMatchConnection>,
+    @InjectRepository(Ticket)
+    private readonly ticketRepo: Repository<Ticket>,
+    @InjectRepository(Event)
+    private readonly eventRepo: Repository<Event>,
   ) {}
 
   async getMySocialMatch(userId: string) {
     const eligibleEvents = await this.getEligibleEvents(userId);
     const eventIds = eligibleEvents.map((event) => event.id);
-    const preferences = eventIds.length ? await this.preferenceRepo.find({ where: { userId, eventId: In(eventIds) } }) : [];
-    const summaries = await Promise.all(preferences.filter((p) => p.isActive).map((p) => this.buildSummary(p)));
-    return { eligibleEvents, preferences, summaries, interests: Object.values(SocialMatchInterest) };
+    const preferences = eventIds.length
+      ? await this.preferenceRepo.find({ where: { userId, eventId: In(eventIds) } })
+      : [];
+
+    const summaries = await Promise.all(
+      preferences.filter((preference) => preference.isActive).map((preference) => this.buildSummary(preference)),
+    );
+
+    const connections = await this.getConnections(userId);
+
+    return {
+      eligibleEvents,
+      preferences,
+      summaries,
+      connections,
+      interests: Object.values(SocialMatchInterest),
+    };
   }
 
   async updatePreference(userId: string, eventId: string, dto: UpdateSocialMatchDto) {
     const canUseEvent = await this.userHasTicketForEvent(userId, eventId);
-    if (!canUseEvent) throw new ForbiddenException('Social Match solo puede activarse en eventos donde tienes una entrada.');
+    if (!canUseEvent) {
+      throw new ForbiddenException('Social Match solo puede activarse en eventos donde tienes una entrada.');
+    }
 
     const interests = this.normalizeInterests(dto.interests || []);
-    if (dto.isActive && interests.length === 0) throw new BadRequestException('Selecciona al menos un interés para activar Social Match.');
+    if (dto.isActive && interests.length === 0) {
+      throw new BadRequestException('Selecciona al menos un interés para activar Social Match.');
+    }
 
     let preference = await this.preferenceRepo.findOne({ where: { userId, eventId } });
-    if (!preference) preference = this.preferenceRepo.create({ userId, eventId });
+    if (!preference) {
+      preference = this.preferenceRepo.create({ userId, eventId });
+    }
 
     preference.isActive = Boolean(dto.isActive);
     preference.interests = interests;
@@ -54,6 +87,125 @@ export class SocialMatchService {
     const saved = await this.preferenceRepo.save(preference);
     const summary = saved.isActive ? await this.buildSummary(saved) : null;
     return { preference: saved, summary };
+  }
+
+  async getSuggestions(userId: string, eventId: string) {
+    const myPreference = await this.preferenceRepo.findOne({ where: { userId, eventId, isActive: true } });
+    if (!myPreference || myPreference.invisibleMode) return { suggestions: [] };
+
+    const canUseEvent = await this.userHasTicketForEvent(userId, eventId);
+    if (!canUseEvent) {
+      throw new ForbiddenException('Social Match solo puede usarse en eventos donde tienes una entrada.');
+    }
+
+    const existingConnections = await this.connectionRepo.find({
+      where: [
+        { eventId, requesterId: userId },
+        { eventId, receiverId: userId },
+      ],
+    });
+    const connectedUserIds = new Set(
+      existingConnections.flatMap((connection) => [connection.requesterId, connection.receiverId]),
+    );
+
+    const candidates = await this.preferenceRepo.find({
+      where: { eventId, isActive: true, invisibleMode: false, userId: Not(userId) },
+      relations: ['user'],
+    });
+
+    const myInterests = myPreference.interests || [];
+    const suggestions = candidates
+      .filter((candidate) => !connectedUserIds.has(candidate.userId))
+      .map((candidate) => {
+        const sharedInterests = (candidate.interests || []).filter((interest) => myInterests.includes(interest));
+        const industryMatch = Boolean(
+          myPreference.industry &&
+          candidate.industry &&
+          candidate.industry.toLowerCase() === myPreference.industry.toLowerCase(),
+        );
+        const score = sharedInterests.length + (industryMatch ? 2 : 0) + (candidate.shareLocation && myPreference.shareLocation ? 1 : 0);
+
+        return {
+          userId: candidate.userId,
+          displayName: candidate.privateMode
+            ? 'Asistente compatible'
+            : `${candidate.user?.firstName || 'Asistente'} ${candidate.user?.lastName?.[0] || ''}.`.trim(),
+          sharedInterests,
+          industryMatch,
+          canShareLocationLater: candidate.shareLocation && myPreference.shareLocation,
+          score,
+        };
+      })
+      .filter((suggestion) => suggestion.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5);
+
+    return { suggestions };
+  }
+
+  async requestConnection(userId: string, eventId: string, receiverId: string) {
+    if (!receiverId || receiverId === userId) {
+      throw new BadRequestException('Selecciona una conexión válida.');
+    }
+
+    await this.ensureActivePreference(userId, eventId);
+    await this.ensureActivePreference(receiverId, eventId);
+
+    const existing = await this.connectionRepo.findOne({
+      where: [
+        { eventId, requesterId: userId, receiverId },
+        { eventId, requesterId: receiverId, receiverId: userId },
+      ],
+    });
+
+    if (existing) {
+      if (
+        existing.status === SocialMatchConnectionStatus.DECLINED ||
+        existing.status === SocialMatchConnectionStatus.CANCELLED
+      ) {
+        existing.requesterId = userId;
+        existing.receiverId = receiverId;
+        existing.status = SocialMatchConnectionStatus.PENDING;
+        return this.connectionRepo.save(existing);
+      }
+      return existing;
+    }
+
+    return this.connectionRepo.save(
+      this.connectionRepo.create({
+        eventId,
+        requesterId: userId,
+        receiverId,
+        status: SocialMatchConnectionStatus.PENDING,
+      }),
+    );
+  }
+
+  async updateConnection(
+    userId: string,
+    connectionId: string,
+    status: SocialMatchConnectionStatus.ACCEPTED | SocialMatchConnectionStatus.DECLINED | SocialMatchConnectionStatus.CANCELLED,
+  ) {
+    const connection = await this.connectionRepo.findOne({
+      where: { id: connectionId },
+      relations: ['event', 'requester', 'receiver'],
+    });
+    if (!connection) throw new BadRequestException('Solicitud no encontrada.');
+
+    if (status === SocialMatchConnectionStatus.CANCELLED) {
+      if (connection.requesterId !== userId) {
+        throw new ForbiddenException('Solo quien envió la solicitud puede cancelarla.');
+      }
+      connection.status = SocialMatchConnectionStatus.CANCELLED;
+      return this.connectionRepo.save(connection);
+    }
+
+    if (connection.receiverId !== userId) {
+      throw new ForbiddenException('Solo quien recibe la solicitud puede responderla.');
+    }
+
+    connection.status = status;
+    return this.connectionRepo.save(connection);
   }
 
   private async getEligibleEvents(userId: string) {
@@ -80,6 +232,39 @@ export class SocialMatchService {
     return Boolean(ticket);
   }
 
+  private async ensureActivePreference(userId: string, eventId: string) {
+    const preference = await this.preferenceRepo.findOne({ where: { userId, eventId, isActive: true } });
+    if (!preference || preference.invisibleMode) {
+      throw new ForbiddenException('Ambas personas deben tener Social Match activo para conectar.');
+    }
+    return preference;
+  }
+
+  private async getConnections(userId: string) {
+    const connections = await this.connectionRepo.find({
+      where: [
+        { requesterId: userId },
+        { receiverId: userId },
+      ],
+      relations: ['event', 'requester', 'receiver'],
+      order: { updatedAt: 'DESC' },
+    });
+
+    return connections.map((connection) => {
+      const otherUser = connection.requesterId === userId ? connection.receiver : connection.requester;
+      return {
+        id: connection.id,
+        eventId: connection.eventId,
+        eventTitle: connection.event?.title || 'Evento',
+        status: connection.status,
+        direction: connection.requesterId === userId ? 'outgoing' : 'incoming',
+        otherUserName: otherUser ? `${otherUser.firstName} ${otherUser.lastName?.[0] || ''}.`.trim() : 'Asistente',
+        createdAt: connection.createdAt,
+        updatedAt: connection.updatedAt,
+      };
+    });
+  }
+
   private normalizeInterests(interests: SocialMatchInterest[]) {
     return [...new Set(interests)].filter((interest) => allowedInterests.has(interest));
   }
@@ -92,20 +277,30 @@ export class SocialMatchService {
   private async buildSummary(preference: SocialMatchPreference) {
     const interests = preference.interests || [];
     const compatible = await this.preferenceRepo.find({
-      where: { eventId: preference.eventId, isActive: true, invisibleMode: false, userId: Not(preference.userId) },
+      where: {
+        eventId: preference.eventId,
+        isActive: true,
+        invisibleMode: false,
+        userId: Not(preference.userId),
+      },
     });
     const event = await this.eventRepo.findOne({ where: { id: preference.eventId } });
-    const shared = compatible.filter((item) => (item.interests || []).some((interest) => interests.includes(interest)));
-    const industry = compatible.filter((item) => Boolean(preference.industry && item.industry && item.industry.toLowerCase() === preference.industry.toLowerCase()));
-    const location = compatible.filter((item) => item.shareLocation && preference.shareLocation);
+
+    const sharedInterestMatches = compatible.filter((item) =>
+      (item.interests || []).some((interest) => interests.includes(interest)),
+    );
+    const industryMatches = compatible.filter((item) =>
+      Boolean(preference.industry && item.industry && item.industry.toLowerCase() === preference.industry.toLowerCase()),
+    );
+    const locationReadyMatches = compatible.filter((item) => item.shareLocation && preference.shareLocation);
 
     return {
       eventId: preference.eventId,
       eventTitle: event?.title || 'Evento',
-      compatibleCount: shared.length,
-      industryCount: industry.length,
-      locationReadyCount: location.length,
-      messages: this.buildMessages(shared.length, industry.length, location.length),
+      compatibleCount: sharedInterestMatches.length,
+      industryCount: industryMatches.length,
+      locationReadyCount: locationReadyMatches.length,
+      messages: this.buildMessages(sharedInterestMatches.length, industryMatches.length, locationReadyMatches.length),
     };
   }
 
