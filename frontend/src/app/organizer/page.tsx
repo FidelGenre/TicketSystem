@@ -105,12 +105,12 @@ export default function OrganizerDashboard() {
   }
 
   return (
-    <div className="p-6 lg:p-8 space-y-6 animate-fade-in">
+    <div className="premium-shell p-6 lg:p-8 space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="font-bold text-2xl text-gray-900">{t('orgWelcome')}, {user?.firstName} 👋</h1>
-          <p className="text-gray-500 text-sm mt-1">{t('orgManageEvents')}</p>
+          <h1 className="premium-page-title font-black text-2xl">{t('orgWelcome')}, {user?.firstName} 👋</h1>
+          <p className="premium-muted text-sm mt-1 font-medium">{t('orgManageEvents')}</p>
         </div>
         <Link href="/organizer/events/create" className="btn-primary text-sm inline-flex items-center gap-2 self-start">
           <HiOutlinePlusCircle className="w-5 h-5" />
@@ -121,7 +121,7 @@ export default function OrganizerDashboard() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((card, i) => (
-          <div key={i} className="bg-white rounded-xl p-5 border border-gray-200 hover:shadow-md transition-shadow">
+          <div key={i} className="premium-stat-card p-5 transition-all">
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-medium text-gray-500">{card.label}</span>
               <div className={`w-10 h-10 rounded-lg ${card.bg} flex items-center justify-center`}>
@@ -134,7 +134,7 @@ export default function OrganizerDashboard() {
       </div>
 
       {/* Recent Events */}
-      <div className="bg-white rounded-xl border border-gray-200">
+      <div className="premium-section-card">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="font-bold text-lg text-gray-900">{t('orgRecentEvents')}</h2>
           <Link href="/organizer/events" className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1">

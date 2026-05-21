@@ -59,22 +59,22 @@ export default function AdminDashboard() {
   const mainCards = [
     { label: t('adminTotalRevenue'), value: `$${stats.totalRevenue.toFixed(2)}`, icon: HiOutlineCurrencyDollar, bg: 'bg-green-50', iconColor: 'text-green-600', iconBg: 'bg-green-100' },
     { label: t('adminTotalUsers'), value: stats.totalUsers.toString(), icon: HiOutlineUsers, bg: 'bg-[rgba(10,55,90,0.06)]', iconColor: 'text-[#0A375A]', iconBg: 'bg-[rgba(10,55,90,0.10)]' },
-    { label: t('adminTotalEvents'), value: stats.totalEvents.toString(), icon: HiOutlineCalendar, bg: 'bg-orange-50', iconColor: 'text-[#F97316]', iconBg: 'bg-orange-100' },
+    { label: t('adminTotalEvents'), value: stats.totalEvents.toString(), icon: HiOutlineCalendar, bg: 'bg-orange-50', iconColor: 'text-[#F97316]', iconBg: 'bg-orange-50' },
     { label: t('adminTotalOrders'), value: stats.totalOrders.toString(), icon: HiOutlineShoppingCart, bg: 'bg-[rgba(10,55,90,0.05)]', iconColor: 'text-[#0A375A]', iconBg: 'bg-[rgba(10,55,90,0.10)]' },
   ];
 
   return (
-    <div className="p-6 lg:p-8 space-y-6 animate-fade-in">
+    <div className="premium-shell p-6 lg:p-8 space-y-6 animate-fade-in">
       {/* Header */}
       <div>
-        <h1 className="font-bold text-2xl text-gray-900">{t('adminDashboard')}</h1>
-        <p className="text-sm text-gray-500 mt-1">{lang === 'es' ? 'Vista general de la plataforma' : 'Platform overview'}</p>
+        <h1 className="premium-page-title font-black text-2xl">{t('adminDashboard')}</h1>
+        <p className="premium-muted text-sm mt-1 font-medium">{lang === 'es' ? 'Vista general de la plataforma' : 'Platform overview'}</p>
       </div>
 
       {/* Main Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {mainCards.map((card, i) => (
-          <div key={i} className="bg-white rounded-xl p-5 border border-gray-200 hover:shadow-md transition-shadow">
+          <div key={i} className="premium-stat-card p-5 transition-all">
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-medium text-gray-500">{card.label}</span>
               <div className={`w-10 h-10 rounded-lg ${card.iconBg} flex items-center justify-center`}>
@@ -89,7 +89,7 @@ export default function AdminDashboard() {
       {/* Secondary Stats Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* User Breakdown */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="premium-section-card p-6 transition-all">
           <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
             <HiOutlineUserGroup className="w-5 h-5 text-gray-400" />
             {t('adminUserManagement')}
@@ -111,7 +111,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Events & Tickets */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="premium-section-card p-6 transition-all">
           <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
             <HiOutlineTicket className="w-5 h-5 text-gray-400" />
             {t('adminEventManagement')}

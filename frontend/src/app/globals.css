@@ -1349,3 +1349,105 @@ html {
   border-color: #F97316;
   box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.16);
 }
+
+
+/* ===== LP Ticket Premium Visual Pass ===== */
+.home-signature {
+  background:
+    radial-gradient(circle at 14% 0%, rgba(249, 115, 22, 0.08), transparent 28%),
+    radial-gradient(circle at 86% 10%, rgba(10, 55, 90, 0.08), transparent 30%),
+    linear-gradient(180deg, #ffffff 0%, #f8fafc 58%, #ffffff 100%);
+}
+
+.home-hero-frame {
+  border: 1px solid rgba(10, 55, 90, 0.14) !important;
+  box-shadow: 0 28px 80px rgba(10, 55, 90, 0.18) !important;
+}
+
+.home-hero-overlay {
+  background:
+    linear-gradient(90deg, rgba(10, 55, 90, 0.78) 0%, rgba(10, 55, 90, 0.38) 44%, rgba(10, 55, 90, 0.08) 100%),
+    linear-gradient(180deg, transparent 0%, rgba(10, 55, 90, 0.64) 100%) !important;
+}
+
+.home-discovery-panel {
+  border: 1px solid rgba(10, 55, 90, 0.12) !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  box-shadow: 0 24px 70px rgba(10, 55, 90, 0.12) !important;
+  backdrop-filter: blur(18px);
+}
+
+.home-search-field {
+  border: 1px solid rgba(10, 55, 90, 0.14) !important;
+  background: #ffffff !important;
+  border-radius: 12px !important;
+}
+
+.home-search-field:focus-within {
+  border-color: rgba(249, 115, 22, 0.55) !important;
+  box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.12) !important;
+}
+
+.category-pill {
+  border-radius: 8px !important;
+  border-color: rgba(10, 55, 90, 0.14) !important;
+  color: #0A375A !important;
+  background: #ffffff !important;
+}
+
+.category-pill.active {
+  color: #0A375A !important;
+  border-color: rgba(249, 115, 22, 0.34) !important;
+  background:
+    linear-gradient(135deg, rgba(10, 55, 90, 0.10), rgba(249, 115, 22, 0.14)) !important;
+  box-shadow: 0 12px 28px rgba(10, 55, 90, 0.10) !important;
+}
+
+.home-sort-button {
+  border-radius: 8px !important;
+  border: 1px solid rgba(10, 55, 90, 0.14) !important;
+  background: #ffffff !important;
+  color: #0A375A !important;
+}
+
+.event-signature-card {
+  border: 1px solid rgba(10, 55, 90, 0.12) !important;
+  border-radius: 14px !important;
+  background: #ffffff !important;
+  box-shadow: 0 16px 45px rgba(10, 55, 90, 0.09) !important;
+}
+
+.event-signature-card:hover {
+  border-color: rgba(249, 115, 22, 0.34) !important;
+  box-shadow: 0 28px 70px rgba(10, 55, 90, 0.16) !important;
+}
+
+.premium-shell {
+  background:
+    radial-gradient(circle at top left, rgba(249, 115, 22, 0.08), transparent 30%),
+    linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.premium-stat-card,
+.premium-section-card {
+  border: 1px solid rgba(10, 55, 90, 0.12) !important;
+  border-radius: 14px !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow: 0 16px 45px rgba(10, 55, 90, 0.08) !important;
+}
+
+.premium-stat-card:hover,
+.premium-section-card:hover {
+  border-color: rgba(249, 115, 22, 0.30) !important;
+  box-shadow: 0 22px 60px rgba(10, 55, 90, 0.13) !important;
+  transform: translateY(-1px);
+}
+
+.premium-page-title {
+  color: #0A375A !important;
+  letter-spacing: -0.02em;
+}
+
+.premium-muted {
+  color: #64748b !important;
+}

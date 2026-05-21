@@ -59,7 +59,7 @@ export default function EventCard({ event }: EventCardProps) {
           ) : null}
 
           <div
-            className="absolute inset-0 flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-800 via-blue-700 to-primary-500"
+            className="absolute inset-0 flex h-full w-full items-center justify-center bg-gradient-to-br from-[#0A375A] via-[#0A375A] to-[#F97316]"
             style={{ display: event.imageUrl ? 'none' : 'flex' }}
           >
             <span className="text-6xl">{categoryInfo.icon}</span>
