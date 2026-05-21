@@ -21,7 +21,7 @@ export default function LegalPage({ title, lastUpdated, content }: LegalPageProp
       // Header detection (e.g., "1. Introduction")
       if (/^\d+\.\s/.test(trimmed)) {
         return (
-          <h2 key={i} className="text-xl font-bold text-gray-900 mt-8 mb-4 border-b border-gray-100 pb-2">
+          <h2 key={i} className="text-xl font-black text-[#0A375A] mt-8 mb-4 border-b border-[rgba(10,55,90,0.10)] pb-2">
             {trimmed}
           </h2>
         );
@@ -50,11 +50,11 @@ export default function LegalPage({ title, lastUpdated, content }: LegalPageProp
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="public-premium-shell min-h-screen py-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="public-premium-card overflow-hidden">
           {/* Header */}
-          <div className="bg-primary-600 px-8 py-8 text-white text-center">
+          <div className="bg-[#0A375A] px-8 py-8 text-white text-center">
             <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight mb-2">
               {title}
             </h1>
@@ -64,7 +64,7 @@ export default function LegalPage({ title, lastUpdated, content }: LegalPageProp
           </div>
 
           {/* Content with Scrollbar */}
-          <div className="px-8 py-10 sm:px-12 prose prose-blue max-w-none max-h-[600px] overflow-y-auto custom-scrollbar">
+          <div className="px-8 py-10 sm:px-12 prose max-w-none max-h-[600px] overflow-y-auto custom-scrollbar">
             {renderContent()}
           </div>
 

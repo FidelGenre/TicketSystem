@@ -75,7 +75,7 @@ function LoginContent() {
   };
 
   return (
-    <div className="flex items-start justify-center px-4 py-10 bg-gray-50 min-h-[calc(100vh-80px)]">
+    <div className="public-premium-shell flex items-start justify-center px-4 py-10 min-h-[calc(100vh-80px)]">
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-6">
           <Link href="/">
@@ -83,7 +83,7 @@ function LoginContent() {
           </Link>
         </div>
         <div className="text-center mb-6">
-          <h1 className="font-bold text-2xl text-gray-900 mt-3">{t('loginTitle')}</h1>
+          <h1 className="public-premium-title font-black text-2xl mt-3">{t('loginTitle')}</h1>
           <p className="text-gray-500 text-sm mt-1">{t('loginSubtitle')}</p>
         </div>
 
@@ -91,7 +91,7 @@ function LoginContent() {
           onSubmit={handleSubmit} 
           method="POST"
           action="#"
-          className="bg-white rounded-3xl shadow-[0_10px_40px_rgba(0,0,0,0.03)] border border-gray-100 p-6 sm:p-8 space-y-5"
+          className="auth-premium-card p-6 sm:p-8 space-y-5"
         >
           {error && (
             <div className="p-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm text-center font-medium">{error}</div>
@@ -108,7 +108,7 @@ function LoginContent() {
                 autoComplete="email"
                 value={email} 
                 onChange={(e) => setEmail(e.target.value)} 
-                className="input !pl-11" 
+                className="input public-premium-input !pl-11" 
                 placeholder={t('emailPlaceholder' as any)} 
                 required 
               />
@@ -118,7 +118,7 @@ function LoginContent() {
           <div>
             <div className="flex justify-between items-center mb-1.5">
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">{t('password')}</label>
-              <Link href="/forgot-password" className="text-xs text-blue-600 hover:underline font-medium">{t('forgotPassword')}</Link>
+              <Link href="/forgot-password" className="text-xs text-[#0A375A] hover:text-[#F97316] hover:underline font-bold">{t('forgotPassword')}</Link>
             </div>
             <div className="relative">
               <HiOutlineLockClosed className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-400 z-10" />
@@ -129,7 +129,7 @@ function LoginContent() {
                 autoComplete="current-password"
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
-                className="input !pl-11 !pr-11" 
+                className="input public-premium-input !pl-11 !pr-11" 
                 placeholder="••••••••" 
                 required 
               />
@@ -147,7 +147,7 @@ function LoginContent() {
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
+                className="h-4 w-4 text-[#F97316] focus:ring-[#F97316] border-gray-300 rounded cursor-pointer"
               />
               <label htmlFor="remember-me" className="ml-2 block text-[13px] text-gray-600 cursor-pointer font-medium">
                 {lang === 'es' ? 'Recordarme' : 'Remember me'}
@@ -155,7 +155,7 @@ function LoginContent() {
             </div>
           </div>
 
-          <button type="submit" disabled={loading} className="btn-primary w-full py-3.5 rounded-xl font-bold text-sm tracking-wide shadow-lg shadow-primary-500/10">
+          <button type="submit" disabled={loading} className="btn-primary w-full py-3.5 rounded-lg font-black text-sm tracking-wide shadow-lg shadow-orange-500/20">
             {loading ? t('loginLoading') : t('loginBtn')}
           </button>
 
@@ -172,7 +172,7 @@ function LoginContent() {
               type="button"
               onClick={() => handleSocialLogin('google')}
               disabled={loading}
-              className="flex items-center justify-center gap-2 px-4 py-3 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors focus:outline-none text-xs font-semibold text-gray-700"
+              className="flex items-center justify-center gap-2 px-4 py-3 border border-[rgba(10,55,90,0.12)] rounded-lg hover:bg-[rgba(10,55,90,0.05)] transition-colors focus:outline-none text-xs font-bold text-[#0A375A]"
             >
               <FaGoogle className="w-4 h-4 text-red-500" />
               Google
@@ -181,7 +181,7 @@ function LoginContent() {
               type="button"
               onClick={() => handleSocialLogin('facebook')}
               disabled={loading}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-[#1877F2] text-white rounded-xl hover:bg-[#166FE5] transition-colors focus:outline-none text-xs font-semibold"
+              className="flex items-center justify-center gap-2 px-4 py-3 bg-[#0A375A] text-white rounded-lg hover:bg-[#082d49] transition-colors focus:outline-none text-xs font-bold"
             >
               <FaFacebook className="w-4 h-4" />
               Facebook

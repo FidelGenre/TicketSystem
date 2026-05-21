@@ -102,15 +102,15 @@ export default function SupportPage() {
   });
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="public-premium-shell min-h-screen">
       {/* Hero Header */}
-      <section className="bg-white border-b border-gray-100 py-16 text-center">
-        <div className="max-w-4xl mx-auto px-4 space-y-4">
+      <section className="py-16 text-center">
+        <div className="public-premium-hero max-w-4xl mx-auto px-4 py-10 space-y-4">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary-50 text-primary-600 rounded-full text-xs font-bold tracking-wider uppercase">
             <HiOutlineSupport className="w-4 h-4" />
             {lang === 'es' ? 'Centro de Ayuda' : 'Help & Support'}
           </span>
-          <h1 className="text-3xl sm:text-5xl font-extrabold text-gray-900 tracking-tight leading-none">
+          <h1 className="public-premium-title text-3xl sm:text-5xl font-black tracking-tight leading-none">
             {lang === 'es' ? '¿Cómo podemos ayudarte?' : 'How can we help you?'}
           </h1>
           <p className="text-gray-500 max-w-xl mx-auto text-sm sm:text-base">
@@ -128,7 +128,7 @@ export default function SupportPage() {
               placeholder={lang === 'es' ? 'Buscar respuestas...' : 'Search for questions...'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-5 py-3.5 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 bg-gray-50/50"
+              className="public-premium-input w-full px-5 py-3.5 text-sm"
             />
           </div>
         </div>
@@ -153,13 +153,13 @@ export default function SupportPage() {
                 <button
                   key={cat.id}
                   onClick={() => { setSelectedCategory(cat.id as any); setOpenFAQIdx(null); }}
-                  className={`p-4 rounded-2xl border text-center flex flex-col items-center justify-center gap-2 transition-all ${
+                  className={`p-4 rounded-lg border text-center flex flex-col items-center justify-center gap-2 transition-all ${
                     isActive 
-                      ? 'bg-white border-primary-500 text-primary-600 shadow-[0_10px_25px_rgba(0,0,0,0.03)] font-bold' 
-                      : 'bg-white border-gray-100 hover:border-gray-200 text-gray-500'
+                      ? 'bg-white border-[#F97316] text-[#0A375A] shadow-[0_12px_30px_rgba(10,55,90,0.08)] font-bold' 
+                      : 'bg-white border-[rgba(10,55,90,0.12)] hover:border-[rgba(249,115,22,0.30)] text-gray-500'
                   }`}
                 >
-                  <Icon className={`w-6 h-6 ${isActive ? 'text-primary-600' : 'text-gray-400'}`} />
+                  <Icon className={`w-6 h-6 ${isActive ? 'text-[#F97316]' : 'text-gray-400'}`} />
                   <span className="text-xs">{cat.label}</span>
                 </button>
               );
@@ -172,7 +172,7 @@ export default function SupportPage() {
               filteredFAQs.map((faq, idx) => {
                 const isOpen = openFAQIdx === idx;
                 return (
-                  <div key={idx} className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.01)]">
+                  <div key={idx} className="public-premium-card overflow-hidden">
                     <button
                       onClick={() => setOpenFAQIdx(isOpen ? null : idx)}
                       className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50/50 transition-colors"
@@ -203,9 +203,9 @@ export default function SupportPage() {
         </div>
 
         {/* Right Column: Contact Ticket Form */}
-        <div className="bg-white rounded-3xl border border-gray-100 p-6 sm:p-8 shadow-[0_10px_40px_rgba(0,0,0,0.02)] space-y-6 h-fit">
+        <div className="public-premium-card p-6 sm:p-8 space-y-6 h-fit">
           <div>
-            <h3 className="font-bold text-lg text-gray-900">{lang === 'es' ? '¿Tienes otra consulta?' : 'Have another question?'}</h3>
+            <h3 className="font-black text-lg text-[#0A375A]">{lang === 'es' ? '¿Tienes otra consulta?' : 'Have another question?'}</h3>
             <p className="text-xs text-gray-500 mt-1">{lang === 'es' ? 'Completa el formulario de abajo y nuestro equipo te responderá en menos de 24 horas.' : 'Fill out the form below and our team will get back to you within 24 hours.'}</p>
           </div>
 
@@ -228,7 +228,7 @@ export default function SupportPage() {
                     value={contactForm.name}
                     onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
                     placeholder="John Doe"
-                    className="w-full pl-11 pr-4 py-2.5 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    className="w-full pl-11 pr-4 py-2.5 border border-gray-200 rounded-lg text-xs public-premium-input"
                   />
                 </div>
               </div>
@@ -243,7 +243,7 @@ export default function SupportPage() {
                     value={contactForm.email}
                     onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
                     placeholder="john@example.com"
-                    className="w-full pl-11 pr-4 py-2.5 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    className="w-full pl-11 pr-4 py-2.5 border border-gray-200 rounded-lg text-xs public-premium-input"
                   />
                 </div>
               </div>
@@ -256,7 +256,7 @@ export default function SupportPage() {
                   value={contactForm.subject}
                   onChange={(e) => setContactForm({ ...contactForm, subject: e.target.value })}
                   placeholder={lang === 'es' ? 'Ej: Error en pago' : 'e.g. Payment Issue'}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-xs public-premium-input"
                 />
               </div>
 
@@ -268,14 +268,14 @@ export default function SupportPage() {
                   value={contactForm.message}
                   onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
                   placeholder={lang === 'es' ? 'Explícanos tu caso...' : 'Explain your issue...'}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 resize-none"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg text-xs public-premium-input resize-none"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={submitting}
-                className="btn-primary w-full py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5"
+                className="btn-primary w-full py-3 rounded-lg font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-orange-500/20"
               >
                 <HiOutlineSupport className="w-4 h-4" />
                 {submitting ? (lang === 'es' ? 'Enviando...' : 'Sending...') : (lang === 'es' ? 'Enviar Mensaje' : 'Send Message')}

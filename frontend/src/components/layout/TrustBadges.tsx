@@ -40,9 +40,9 @@ export default function TrustBadges({ compact = false }: TrustBadgesProps) {
         return (
           <div
             key={item.title}
-            className="flex items-center gap-3 rounded-xl border border-[rgba(10,55,90,0.10)] bg-white/90 px-4 py-3 shadow-sm"
+            className="trust-premium-badge flex items-center gap-3 px-4 py-3 transition-all"
           >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[rgba(249,115,22,0.12)] text-[#0A375A]">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[rgba(249,115,22,0.12)] text-[#0A375A]">
               <Icon className="h-5 w-5" />
             </span>
             <span className="min-w-0">

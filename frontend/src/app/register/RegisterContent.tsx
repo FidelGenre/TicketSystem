@@ -79,7 +79,7 @@ export default function RegisterContent() {
   };
 
   return (
-    <div className="flex items-start justify-center px-4 py-8 bg-gray-50 min-h-[calc(100vh-80px)]">
+    <div className="public-premium-shell flex items-start justify-center px-4 py-8 min-h-[calc(100vh-80px)]">
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-6">
           <Link href="/">
@@ -87,37 +87,37 @@ export default function RegisterContent() {
           </Link>
         </div>
         <div className="text-center mb-8">
-          <h1 className="font-bold text-2xl text-gray-900 mt-4 tracking-tight">{t('registerTitle')}</h1>
+          <h1 className="public-premium-title font-black text-2xl mt-4 tracking-tight">{t('registerTitle')}</h1>
           <p className="text-gray-500 text-sm mt-1">
             {t('registerSubtitle')}
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 p-8 space-y-5">
+        <form onSubmit={handleSubmit} className="auth-premium-card p-8 space-y-5">
           {error && <div className="p-3 rounded-lg bg-red-50 border border-red-100 text-red-600 text-sm text-center animate-shake">{error}</div>}
 
           {/* First + Last Name */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">{t('firstName')}</label>
-              <input type="text" value={form.firstName} onChange={update('firstName')} className="input" placeholder={t('firstNamePlaceholder' as any)} required />
+              <input type="text" value={form.firstName} onChange={update('firstName')} className="input public-premium-input" placeholder={t('firstNamePlaceholder' as any)} required />
             </div>
             <div>
               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">{t('lastName')}</label>
-              <input type="text" value={form.lastName} onChange={update('lastName')} className="input" placeholder={t('lastNamePlaceholder' as any)} required />
+              <input type="text" value={form.lastName} onChange={update('lastName')} className="input public-premium-input" placeholder={t('lastNamePlaceholder' as any)} required />
             </div>
           </div>
 
           {/* Phone */}
           <div>
             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">{t('phone')}</label>
-            <input type="tel" value={form.phone} onChange={update('phone')} className="input" placeholder={t('phonePlaceholder' as any)} required />
+            <input type="tel" value={form.phone} onChange={update('phone')} className="input public-premium-input" placeholder={t('phonePlaceholder' as any)} required />
           </div>
 
           {/* Email */}
           <div>
             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">{t('email')}</label>
-            <input type="email" value={form.email} onChange={update('email')} className="input" placeholder={t('emailPlaceholder' as any)} required />
+            <input type="email" value={form.email} onChange={update('email')} className="input public-premium-input" placeholder={t('emailPlaceholder' as any)} required />
           </div>
 
           {/* Address */}
@@ -126,7 +126,7 @@ export default function RegisterContent() {
             <textarea 
               value={form.address} 
               onChange={(e: any) => update('address')(e)} 
-              className="input min-h-[80px] py-2 resize-none" 
+              className="input public-premium-input min-h-[80px] py-2 resize-none" 
               placeholder={t('addressPlaceholder' as any)} 
               required 
             />
@@ -137,7 +137,7 @@ export default function RegisterContent() {
             <div>
               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">{t('password')}</label>
               <div className="relative">
-                <input type={showPassword ? 'text' : 'password'} value={form.password} onChange={update('password')} className="input pr-10" placeholder="••••••••" minLength={6} required />
+                <input type={showPassword ? 'text' : 'password'} value={form.password} onChange={update('password')} className="input public-premium-input pr-10" placeholder="••••••••" minLength={6} required />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                   {showPassword ? <HiOutlineEyeOff className="w-4 h-4" /> : <HiOutlineEye className="w-4 h-4" />}
                 </button>
@@ -146,7 +146,7 @@ export default function RegisterContent() {
             <div>
               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">{t('confirmPassword')}</label>
               <div className="relative">
-                <input type={showConfirmPassword ? 'text' : 'password'} value={form.confirmPassword} onChange={update('confirmPassword')} className="input pr-10" placeholder="••••••••" required />
+                <input type={showConfirmPassword ? 'text' : 'password'} value={form.confirmPassword} onChange={update('confirmPassword')} className="input public-premium-input pr-10" placeholder="••••••••" required />
                 <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                   {showConfirmPassword ? <HiOutlineEyeOff className="w-4 h-4" /> : <HiOutlineEye className="w-4 h-4" />}
                 </button>
@@ -165,14 +165,14 @@ export default function RegisterContent() {
                 type="text"
                 value={captchaInput}
                 onChange={(e) => setCaptchaInput(e.target.value)}
-                className="input text-center tracking-widest font-bold uppercase"
+                className="input public-premium-input text-center tracking-widest font-bold uppercase"
                 placeholder={t('enterCode' as any)}
                 required
               />
             </div>
           </div>
 
-          <button type="submit" disabled={loading} className="btn-primary w-full py-4 rounded-xl text-sm font-bold shadow-lg shadow-primary-500/20 active:scale-[0.98] transition-transform">
+          <button type="submit" disabled={loading} className="btn-primary w-full py-4 rounded-lg text-sm font-black shadow-lg shadow-orange-500/20 active:scale-[0.98] transition-transform">
             {loading ? t('creating') : t('createAccount')}
           </button>
 
