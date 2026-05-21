@@ -27,6 +27,9 @@ type RecentScan = {
   time: string;
 };
 
+const SCANNER_STATS_STORAGE_KEY = 'lpticket_scanner_stats';
+const SCANNER_RECENT_STORAGE_KEY = 'lpticket_scanner_recent_scans';
+
 export default function TicketScannerPage() {
   const { lang } = useLang();
   const { isAuthenticated } = useAuthStore();
@@ -46,6 +49,40 @@ export default function TicketScannerPage() {
     ticket?: any;
     code: string;
   } | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    try {
+      const storedStats = localStorage.getItem(SCANNER_STATS_STORAGE_KEY);
+      if (storedStats) {
+        const parsedStats = JSON.parse(storedStats);
+        setLiveStats({
+          total: Number(parsedStats.total || 0),
+          approved: Number(parsedStats.approved || 0),
+          denied: Number(parsedStats.denied || 0),
+        });
+      }
+
+      const storedRecentScans = localStorage.getItem(SCANNER_RECENT_STORAGE_KEY);
+      if (storedRecentScans) {
+        const parsedRecentScans = JSON.parse(storedRecentScans);
+        if (Array.isArray(parsedRecentScans)) {
+          setRecentScans(parsedRecentScans.slice(0, 6));
+        }
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(SCANNER_STATS_STORAGE_KEY, JSON.stringify(liveStats));
+  }, [liveStats]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(SCANNER_RECENT_STORAGE_KEY, JSON.stringify(recentScans));
+  }, [recentScans]);
 
   useEffect(() => {
     return () => {
@@ -252,6 +289,10 @@ export default function TicketScannerPage() {
   const resetStats = () => {
     setLiveStats({ total: 0, approved: 0, denied: 0 });
     setRecentScans([]);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(SCANNER_STATS_STORAGE_KEY);
+      localStorage.removeItem(SCANNER_RECENT_STORAGE_KEY);
+    }
   };
 
   const shellClass = 'min-h-screen bg-white text-slate-900';
