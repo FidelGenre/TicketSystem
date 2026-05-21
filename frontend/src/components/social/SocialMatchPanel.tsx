@@ -45,7 +45,7 @@ export default function SocialMatchPanel({ lang }: Props) {
   }, [preferences, selectedEventId]);
 
   const selectedSummary = summaries.find((item) => item.eventId === selectedEventId);
-  const privacyOptions: { key: keyof SocialMatchPreference; label: string; Icon: IconType }[] = [
+  const privacyOptions = [
     { key: 'privateMode', label: lang === 'es' ? 'Modo privado' : 'Private mode', Icon: HiOutlineUserGroup },
     { key: 'invisibleMode', label: lang === 'es' ? 'Modo invisible' : 'Invisible mode', Icon: HiOutlineEyeOff },
     { key: 'shareInstagram', label: lang === 'es' ? 'Compartir Instagram solo si ambos aceptan' : 'Share Instagram only if both accept', Icon: HiOutlineSparkles },
