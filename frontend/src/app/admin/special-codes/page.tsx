@@ -246,7 +246,26 @@ export default function AdminSpecialCodesPage() {
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <label className="inline-flex items-center gap-3 text-sm font-bold text-gray-700">
+          
+              <label className="space-y-2 block">
+                <span className="text-xs font-black uppercase tracking-[0.16em] text-gray-500">
+                  {lang === 'es' ? 'Evento' : 'Event'}
+                </span>
+                <select
+                  value={form.eventId}
+                  onChange={(e) => setForm({ ...form, eventId: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-200 public-premium-input text-sm"
+                >
+                  <option value="">{lang === 'es' ? 'Todos los eventos' : 'All events'}</option>
+                  {events.map((event) => (
+                    <option key={event.id} value={event.id}>
+                      {event.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+<label className="inline-flex items-center gap-3 text-sm font-bold text-gray-700">
             <input type="checkbox" checked={form.isActive} onChange={(e) => setForm((c) => ({ ...c, isActive: e.target.checked }))} className="w-5 h-5 accent-primary-500" />
             {lang === 'es' ? 'Activo' : 'Active'}
           </label>
