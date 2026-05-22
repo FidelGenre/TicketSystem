@@ -1,13 +1,14 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, IsNull, Repository } from 'typeorm';
-import { Event, Order, OrderStatus, SpecialCode, User } from '../database/entities';
+import { Event, Order, OrderStatus, SpecialCode, SpecialCodePayout, User } from '../database/entities';
 
 type CreateSpecialCodeDto = {
   code: string;
   ownerUserId: string;
   eventId?: string | null;
   isActive?: boolean;
+  commissionFixed?: number;
 };
 
 type UpdateSpecialCodeDto = Partial<CreateSpecialCodeDto>;
@@ -23,6 +24,8 @@ export class SpecialCodesService {
     private readonly eventRepo: Repository<Event>,
     @InjectRepository(Order)
     private readonly orderRepo: Repository<Order>,
+    @InjectRepository(SpecialCodePayout)
+    private readonly payoutRepo: Repository<SpecialCodePayout>,
   ) {}
 
   normalizeCode(code: string) {
@@ -50,6 +53,7 @@ export class SpecialCodesService {
         ownerUserId: dto.ownerUserId,
         eventId: dto.eventId || null,
         isActive: dto.isActive ?? true,
+        commissionFixed: dto.commissionFixed ?? 0,
       }),
     );
   }
@@ -80,6 +84,10 @@ export class SpecialCodesService {
 
     if (dto.isActive !== undefined) {
       specialCode.isActive = dto.isActive;
+    }
+
+    if (dto.commissionFixed !== undefined) {
+      specialCode.commissionFixed = dto.commissionFixed;
     }
 
     return this.specialCodeRepo.save(specialCode);
@@ -114,5 +122,91 @@ export class SpecialCodesService {
       relations: ['event', 'user'],
       order: { paidAt: 'DESC', createdAt: 'DESC' },
     });
+  }
+
+  async getCommissionSummary() {
+    const codes = await this.specialCodeRepo.find({ relations: ['owner', 'event'] });
+    const orders = await this.orderRepo.find({
+      where: { status: OrderStatus.PAID, specialCode: Not(IsNull()) },
+      relations: ['event'],
+    });
+    const payouts = await this.payoutRepo.find({ relations: ['owner'], order: { paidAt: 'DESC' } });
+
+    // Group by ownerUserId
+    const ownerMap = new Map<string, {
+      ownerUserId: string;
+      ownerName: string;
+      ownerEmail: string;
+      codes: { code: string; commissionFixed: number; eventTitle: string | null }[];
+      totalTickets: number;
+      totalEarned: number;
+      totalPaid: number;
+      payouts: { id: string; amount: number; note: string | null; paidAt: Date }[];
+    }>();
+
+    for (const code of codes) {
+      if (!ownerMap.has(code.ownerUserId)) {
+        ownerMap.set(code.ownerUserId, {
+          ownerUserId: code.ownerUserId,
+          ownerName: code.owner ? `${code.owner.firstName} ${code.owner.lastName}` : code.ownerUserId,
+          ownerEmail: code.owner?.email || '',
+          codes: [],
+          totalTickets: 0,
+          totalEarned: 0,
+          totalPaid: 0,
+          payouts: [],
+        });
+      }
+      ownerMap.get(code.ownerUserId)!.codes.push({
+        code: code.code,
+        commissionFixed: Number(code.commissionFixed || 0),
+        eventTitle: code.event?.title || null,
+      });
+    }
+
+    // Calculate earnings from orders
+    for (const order of orders) {
+      const code = codes.find((c) => c.code === order.specialCode);
+      if (!code) continue;
+      const entry = ownerMap.get(code.ownerUserId);
+      if (!entry) continue;
+      const commission = Number(code.commissionFixed || 0);
+      entry.totalTickets += order.ticketCount || 1;
+      entry.totalEarned += commission * (order.ticketCount || 1);
+    }
+
+    // Add payouts
+    for (const payout of payouts) {
+      const entry = ownerMap.get(payout.ownerUserId);
+      if (!entry) continue;
+      entry.totalPaid += Number(payout.amount);
+      entry.payouts.push({
+        id: payout.id,
+        amount: Number(payout.amount),
+        note: payout.note,
+        paidAt: payout.paidAt,
+      });
+    }
+
+    return Array.from(ownerMap.values()).map((entry) => ({
+      ...entry,
+      balance: Math.round((entry.totalEarned - entry.totalPaid) * 100) / 100,
+      totalEarned: Math.round(entry.totalEarned * 100) / 100,
+      totalPaid: Math.round(entry.totalPaid * 100) / 100,
+    }));
+  }
+
+  async recordPayout(ownerUserId: string, amount: number, note?: string) {
+    const owner = await this.userRepo.findOne({ where: { id: ownerUserId } });
+    if (!owner) throw new NotFoundException('Usuario no encontrado.');
+    if (!amount || amount <= 0) throw new BadRequestException('El monto debe ser mayor a 0.');
+
+    return this.payoutRepo.save(
+      this.payoutRepo.create({
+        ownerUserId,
+        amount,
+        note: note?.trim() || null,
+      }),
+    );
   }
 }

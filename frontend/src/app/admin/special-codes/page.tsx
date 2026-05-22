@@ -8,6 +8,7 @@ import { Event, User } from '@/types';
 import {
   HiOutlineCalendar,
   HiOutlineCheckCircle,
+  HiOutlineCurrencyDollar,
   HiOutlinePencil,
   HiOutlinePlus,
   HiOutlineRefresh,
@@ -24,24 +25,33 @@ type SpecialCode = {
   ownerUserId: string;
   eventId: string | null;
   isActive: boolean;
+  commissionFixed: number;
   createdAt: string;
   updatedAt: string;
   owner?: User;
   event?: Event | null;
 };
 
-const emptyForm = {
-  code: '',
-  ownerUserId: '',
-  eventId: '',
-  isActive: true,
+type CommissionEntry = {
+  ownerUserId: string;
+  ownerName: string;
+  ownerEmail: string;
+  codes: { code: string; commissionFixed: number; eventTitle: string | null }[];
+  totalTickets: number;
+  totalEarned: number;
+  totalPaid: number;
+  balance: number;
+  payouts: { id: string; amount: number; note: string | null; paidAt: string }[];
 };
+
+const emptyForm = { code: '', ownerUserId: '', eventId: '', isActive: true, commissionFixed: 0 };
 
 export default function AdminSpecialCodesPage() {
   const { lang } = useLang();
   const [codes, setCodes] = useState<SpecialCode[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
+  const [commissions, setCommissions] = useState<CommissionEntry[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [editingCode, setEditingCode] = useState<SpecialCode | null>(null);
   const [editForm, setEditForm] = useState(emptyForm);
@@ -49,167 +59,123 @@ export default function AdminSpecialCodesPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [updating, setUpdating] = useState(false);
-
-  const copy = {
-    title: lang === 'es' ? 'Códigos especiales' : 'Special codes',
-    subtitle: lang === 'es'
-      ? 'Crea y administra códigos rastreables para influencers, socios y equipos.'
-      : 'Create and manage trackable codes for influencers, partners and teams.',
-    create: lang === 'es' ? 'Crear código' : 'Create code',
-    code: lang === 'es' ? 'Código' : 'Code',
-    owner: lang === 'es' ? 'Dueño del código' : 'Code owner',
-    event: lang === 'es' ? 'Evento' : 'Event',
-    allEvents: lang === 'es' ? 'Todos los eventos' : 'All events',
-    active: lang === 'es' ? 'Activo' : 'Active',
-    inactive: lang === 'es' ? 'Inactivo' : 'Inactive',
-    noCodes: lang === 'es' ? 'Todavía no hay códigos especiales.' : 'No special codes yet.',
-    search: lang === 'es' ? 'Buscar código, usuario o evento...' : 'Search code, user or event...',
-    created: lang === 'es' ? 'Creado' : 'Created',
-    required: lang === 'es' ? 'El código y el dueño son obligatorios.' : 'Code and owner are required.',
-    saved: lang === 'es' ? 'Código especial creado.' : 'Special code created.',
-    updated: lang === 'es' ? 'Estado actualizado.' : 'Status updated.',
-    edit: lang === 'es' ? 'Editar' : 'Edit',
-    save: lang === 'es' ? 'Guardar cambios' : 'Save changes',
-    cancel: lang === 'es' ? 'Cancelar' : 'Cancel',
-    error: lang === 'es' ? 'No se pudo cargar la información.' : 'Could not load information.',
-  };
+  const [payoutModal, setPayoutModal] = useState<CommissionEntry | null>(null);
+  const [payoutAmount, setPayoutAmount] = useState('');
+  const [payoutNote, setPayoutNote] = useState('');
+  const [payoutSaving, setPayoutSaving] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [codesRes, usersRes, eventsRes] = await Promise.all([
+      const [codesRes, usersRes, eventsRes, commissionsRes] = await Promise.all([
         api.get('/special-codes'),
         api.get('/admin/users', { params: { limit: 200 } }),
         api.get('/admin/events', { params: { limit: 200 } }),
+        api.get('/special-codes/admin/commission-summary'),
       ]);
-
       setCodes(codesRes.data || []);
       setUsers(usersRes.data?.users || []);
       setEvents(eventsRes.data?.events || []);
+      setCommissions(commissionsRes.data || []);
     } catch (err: any) {
-      toast.error(err.response?.data?.message || copy.error);
+      toast.error(err.response?.data?.message || (lang === 'es' ? 'No se pudo cargar la información.' : 'Could not load information.'));
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
   const filteredCodes = useMemo(() => {
     const term = search.trim().toLowerCase();
     if (!term) return codes;
-
     return codes.filter((item) => {
       const ownerName = `${item.owner?.firstName || ''} ${item.owner?.lastName || ''} ${item.owner?.email || ''}`.toLowerCase();
-      const eventTitle = (item.event?.title || '').toLowerCase();
-      return item.code.toLowerCase().includes(term) || ownerName.includes(term) || eventTitle.includes(term);
+      return item.code.toLowerCase().includes(term) || ownerName.includes(term) || (item.event?.title || '').toLowerCase().includes(term);
     });
   }, [codes, search]);
 
-  const activeCount = codes.filter((item) => item.isActive).length;
-  const globalCount = codes.filter((item) => !item.eventId).length;
+  const activeCount = codes.filter((c) => c.isActive).length;
+  const globalCount = codes.filter((c) => !c.eventId).length;
 
-  const handleCreate = async (event: FormEvent) => {
-    event.preventDefault();
+  const handleCreate = async (e: FormEvent) => {
+    e.preventDefault();
     const code = form.code.trim().toUpperCase();
-
-    if (!code || !form.ownerUserId) {
-      toast.error(copy.required);
-      return;
-    }
-
+    if (!code || !form.ownerUserId) { toast.error(lang === 'es' ? 'El código y el dueño son obligatorios.' : 'Code and owner are required.'); return; }
     setSaving(true);
     try {
-      await api.post('/special-codes', {
-        code,
-        ownerUserId: form.ownerUserId,
-        eventId: form.eventId || null,
-        isActive: form.isActive,
-      });
-
-      toast.success(copy.saved);
+      await api.post('/special-codes', { code, ownerUserId: form.ownerUserId, eventId: form.eventId || null, isActive: form.isActive, commissionFixed: Number(form.commissionFixed) || 0 });
+      toast.success(lang === 'es' ? 'Código especial creado.' : 'Special code created.');
       setForm(emptyForm);
       await loadData();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || copy.error);
-    } finally {
-      setSaving(false);
-    }
+      toast.error(err.response?.data?.message || (lang === 'es' ? 'Error al crear.' : 'Error creating.'));
+    } finally { setSaving(false); }
   };
 
   const handleToggleActive = async (item: SpecialCode) => {
     try {
       await api.patch(`/special-codes/${item.id}`, { isActive: !item.isActive });
-      setCodes((current) =>
-        current.map((code) => code.id === item.id ? { ...code, isActive: !item.isActive } : code),
-      );
-      toast.success(copy.updated);
+      setCodes((c) => c.map((x) => x.id === item.id ? { ...x, isActive: !item.isActive } : x));
+      toast.success(lang === 'es' ? 'Estado actualizado.' : 'Status updated.');
     } catch (err: any) {
-      toast.error(err.response?.data?.message || copy.error);
+      toast.error(err.response?.data?.message || (lang === 'es' ? 'Error.' : 'Error.'));
     }
   };
 
   const startEdit = (item: SpecialCode) => {
     setEditingCode(item);
-    setEditForm({
-      code: item.code,
-      ownerUserId: item.ownerUserId,
-      eventId: item.eventId || '',
-      isActive: item.isActive,
-    });
+    setEditForm({ code: item.code, ownerUserId: item.ownerUserId, eventId: item.eventId || '', isActive: item.isActive, commissionFixed: Number(item.commissionFixed) || 0 });
   };
 
   const handleSaveEdit = async () => {
     if (!editingCode) return;
     const code = editForm.code.trim().toUpperCase();
-
-    if (!code || !editForm.ownerUserId) {
-      toast.error(copy.required);
-      return;
-    }
-
+    if (!code || !editForm.ownerUserId) { toast.error(lang === 'es' ? 'El código y el dueño son obligatorios.' : 'Code and owner are required.'); return; }
     setUpdating(true);
     try {
-      await api.patch(`/special-codes/${editingCode.id}`, {
-        code,
-        ownerUserId: editForm.ownerUserId,
-        eventId: editForm.eventId || null,
-        isActive: editForm.isActive,
-      });
+      await api.patch(`/special-codes/${editingCode.id}`, { code, ownerUserId: editForm.ownerUserId, eventId: editForm.eventId || null, isActive: editForm.isActive, commissionFixed: Number(editForm.commissionFixed) || 0 });
       setEditingCode(null);
       await loadData();
-      toast.success(copy.updated);
+      toast.success(lang === 'es' ? 'Código actualizado.' : 'Code updated.');
     } catch (err: any) {
-      toast.error(err.response?.data?.message || copy.error);
-    } finally {
-      setUpdating(false);
-    }
+      toast.error(err.response?.data?.message || (lang === 'es' ? 'Error.' : 'Error.'));
+    } finally { setUpdating(false); }
   };
 
-  const normalizeCodeInput = (value: string) => {
-    return value.toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+  const handleRecordPayout = async () => {
+    if (!payoutModal) return;
+    const amount = parseFloat(payoutAmount);
+    if (!amount || amount <= 0) { toast.error(lang === 'es' ? 'Ingresa un monto válido.' : 'Enter a valid amount.'); return; }
+    setPayoutSaving(true);
+    try {
+      await api.post('/special-codes/admin/payouts', { ownerUserId: payoutModal.ownerUserId, amount, note: payoutNote || undefined });
+      toast.success(lang === 'es' ? 'Pago registrado.' : 'Payment recorded.');
+      setPayoutModal(null); setPayoutAmount(''); setPayoutNote('');
+      await loadData();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || (lang === 'es' ? 'Error al registrar.' : 'Error recording.'));
+    } finally { setPayoutSaving(false); }
   };
+
+  const normalizeCodeInput = (v: string) => v.toUpperCase().replace(/[^A-Z0-9_-]/g, '');
 
   return (
     <div className="p-6 lg:p-8 space-y-6 animate-fade-in">
+      {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.22em] text-primary-500">LP Ticket</p>
-          <h1 className="font-bold text-2xl text-gray-900 mt-2">{copy.title}</h1>
-          <p className="text-sm text-gray-500 mt-1 max-w-2xl">{copy.subtitle}</p>
+          <h1 className="font-bold text-2xl text-gray-900 mt-2">{lang === 'es' ? 'Códigos especiales' : 'Special codes'}</h1>
+          <p className="text-sm text-gray-500 mt-1 max-w-2xl">{lang === 'es' ? 'Crea y administra códigos rastreables con comisiones para influencers y socios.' : 'Create and manage trackable codes with commissions for influencers and partners.'}</p>
         </div>
-        <button
-          onClick={loadData}
-          disabled={loading}
-          className="btn-secondary inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-bold"
-        >
+        <button onClick={loadData} disabled={loading} className="btn-secondary inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-bold">
           <HiOutlineRefresh className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
           {lang === 'es' ? 'Actualizar' : 'Refresh'}
         </button>
       </div>
 
+      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="public-premium-card p-5">
           <div className="flex items-center justify-between">
@@ -220,96 +186,73 @@ export default function AdminSpecialCodesPage() {
         </div>
         <div className="public-premium-card p-5">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-gray-400">{copy.active}</p>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-gray-400">{lang === 'es' ? 'Activos' : 'Active'}</p>
             <HiOutlineCheckCircle className="w-6 h-6 text-green-500" />
           </div>
           <p className="text-3xl font-black text-[#0A375A] mt-3">{activeCount}</p>
         </div>
         <div className="public-premium-card p-5">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-gray-400">{copy.allEvents}</p>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-gray-400">{lang === 'es' ? 'Globales' : 'Global'}</p>
             <HiOutlineCalendar className="w-6 h-6 text-primary-500" />
           </div>
           <p className="text-3xl font-black text-[#0A375A] mt-3">{globalCount}</p>
         </div>
       </div>
 
+      {/* Create form */}
       <form onSubmit={handleCreate} className="public-premium-card p-5 md:p-6 space-y-4">
         <div className="flex items-center gap-3">
           <div className="public-premium-icon w-11 h-11 flex items-center justify-center">
             <HiOutlinePlus className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-lg font-black text-gray-900">{copy.create}</h2>
-            <p className="text-sm text-gray-500">
-              {lang === 'es' ? 'No aplica descuentos. Solo prepara el rastreo para ventas futuras.' : 'No discounts are applied. This only prepares tracking for future sales.'}
-            </p>
+            <h2 className="text-lg font-black text-gray-900">{lang === 'es' ? 'Crear código' : 'Create code'}</h2>
+            <p className="text-sm text-gray-500">{lang === 'es' ? 'La comisión se paga manualmente fuera del sistema.' : 'Commission is paid manually outside the system.'}</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
           <label className="space-y-2">
-            <span className="text-xs font-black uppercase tracking-[0.16em] text-gray-500">{copy.code}</span>
-            <input
-              value={form.code}
-              onChange={(event) => setForm((current) => ({ ...current, code: normalizeCodeInput(event.target.value) }))}
-              placeholder="MARIA"
-              className="w-full px-4 py-3 border border-gray-200 public-premium-input text-sm font-bold"
-            />
+            <span className="text-xs font-black uppercase tracking-[0.16em] text-gray-500">{lang === 'es' ? 'Código' : 'Code'}</span>
+            <input value={form.code} onChange={(e) => setForm((c) => ({ ...c, code: normalizeCodeInput(e.target.value) }))} placeholder="MARIA" className="w-full px-4 py-3 border border-gray-200 public-premium-input text-sm font-bold" />
           </label>
 
           <label className="space-y-2 lg:col-span-2">
-            <span className="text-xs font-black uppercase tracking-[0.16em] text-gray-500">{copy.owner}</span>
-            <select
-              value={form.ownerUserId}
-              onChange={(event) => setForm((current) => ({ ...current, ownerUserId: event.target.value }))}
-              className="w-full px-4 py-3 border border-gray-200 public-premium-input text-sm"
-            >
+            <span className="text-xs font-black uppercase tracking-[0.16em] text-gray-500">{lang === 'es' ? 'Dueño del código' : 'Code owner'}</span>
+            <select value={form.ownerUserId} onChange={(e) => setForm((c) => ({ ...c, ownerUserId: e.target.value }))} className="w-full px-4 py-3 border border-gray-200 public-premium-input text-sm">
               <option value="">{lang === 'es' ? 'Seleccionar usuario' : 'Select user'}</option>
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.firstName} {user.lastName} - {user.email}
-                </option>
-              ))}
+              {users.map((u) => <option key={u.id} value={u.id}>{u.firstName} {u.lastName} - {u.email}</option>)}
             </select>
           </label>
 
           <label className="space-y-2">
-            <span className="text-xs font-black uppercase tracking-[0.16em] text-gray-500">{copy.event}</span>
-            <select
-              value={form.eventId}
-              onChange={(event) => setForm((current) => ({ ...current, eventId: event.target.value }))}
-              className="w-full px-4 py-3 border border-gray-200 public-premium-input text-sm"
-            >
-              <option value="">{copy.allEvents}</option>
-              {events.map((event) => (
-                <option key={event.id} value={event.id}>{event.title}</option>
-              ))}
+            <span className="text-xs font-black uppercase tracking-[0.16em] text-gray-500">{lang === 'es' ? 'Evento' : 'Event'}</span>
+            <select value={form.eventId} onChange={(e) => setForm((c) => ({ ...c, eventId: e.target.value }))} className="w-full px-4 py-3 border border-gray-200 public-premium-input text-sm">
+              <option value="">{lang === 'es' ? 'Todos los eventos' : 'All events'}</option>
+              {events.map((e) => <option key={e.id} value={e.id}>{e.title}</option>)}
             </select>
+          </label>
+
+          <label className="space-y-2">
+            <span className="text-xs font-black uppercase tracking-[0.16em] text-gray-500">{lang === 'es' ? 'Comisión por entrada ($)' : 'Commission per ticket ($)'}</span>
+            <input type="number" min="0" step="0.01" value={form.commissionFixed} onChange={(e) => setForm((c) => ({ ...c, commissionFixed: parseFloat(e.target.value) || 0 }))} placeholder="0.00" className="w-full px-4 py-3 border border-gray-200 public-premium-input text-sm" />
           </label>
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <label className="inline-flex items-center gap-3 text-sm font-bold text-gray-700">
-            <input
-              type="checkbox"
-              checked={form.isActive}
-              onChange={(event) => setForm((current) => ({ ...current, isActive: event.target.checked }))}
-              className="w-5 h-5 accent-primary-500"
-            />
-            {copy.active}
+            <input type="checkbox" checked={form.isActive} onChange={(e) => setForm((c) => ({ ...c, isActive: e.target.checked }))} className="w-5 h-5 accent-primary-500" />
+            {lang === 'es' ? 'Activo' : 'Active'}
           </label>
-          <button
-            type="submit"
-            disabled={saving}
-            className="btn-primary inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg text-sm font-black disabled:opacity-60"
-          >
+          <button type="submit" disabled={saving} className="btn-primary inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg text-sm font-black disabled:opacity-60">
             <HiOutlinePlus className="w-5 h-5" />
-            {saving ? (lang === 'es' ? 'Guardando...' : 'Saving...') : copy.create}
+            {saving ? (lang === 'es' ? 'Guardando...' : 'Saving...') : (lang === 'es' ? 'Crear código' : 'Create code')}
           </button>
         </div>
       </form>
 
+      {/* Codes list */}
       <div className="public-premium-card overflow-hidden">
         <div className="p-5 border-b border-gray-100 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
@@ -318,73 +261,44 @@ export default function AdminSpecialCodesPage() {
           </div>
           <div className="relative w-full lg:w-80">
             <HiOutlineSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder={copy.search}
-              className="w-full pl-11 pr-4 py-3 border border-gray-200 public-premium-input text-sm"
-            />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={lang === 'es' ? 'Buscar...' : 'Search...'} className="w-full pl-11 pr-4 py-3 border border-gray-200 public-premium-input text-sm" />
           </div>
         </div>
 
         {loading ? (
-          <div className="p-5 space-y-3">
-            {[...Array(4)].map((_, index) => (
-              <div key={index} className="h-20 skeleton rounded-xl" />
-            ))}
-          </div>
+          <div className="p-5 space-y-3">{[...Array(4)].map((_, i) => <div key={i} className="h-20 skeleton rounded-xl" />)}</div>
         ) : filteredCodes.length === 0 ? (
-          <div className="p-10 text-center">
-            <HiOutlineTag className="w-10 h-10 text-gray-300 mx-auto" />
-            <p className="text-sm text-gray-500 mt-3">{copy.noCodes}</p>
-          </div>
+          <div className="p-10 text-center"><HiOutlineTag className="w-10 h-10 text-gray-300 mx-auto" /><p className="text-sm text-gray-500 mt-3">{lang === 'es' ? 'Todavía no hay códigos.' : 'No codes yet.'}</p></div>
         ) : (
           <div className="divide-y divide-gray-100">
             {filteredCodes.map((item) => (
               <div key={item.id} className="p-5 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 flex-1">
                   <div>
-                    <p className="text-xs font-black uppercase tracking-[0.16em] text-gray-400">{copy.code}</p>
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-gray-400">{lang === 'es' ? 'Código' : 'Code'}</p>
                     <p className="text-xl font-black text-[#0A375A] mt-1">{item.code}</p>
                   </div>
-                  <div>
-                    <p className="text-xs font-black uppercase tracking-[0.16em] text-gray-400">{copy.owner}</p>
-                    <p className="text-sm font-bold text-gray-900 mt-1 flex items-center gap-2">
-                      <HiOutlineUser className="w-4 h-4 text-gray-400" />
-                      {item.owner ? `${item.owner.firstName} ${item.owner.lastName}` : item.ownerUserId}
-                    </p>
-                    {item.owner?.email && <p className="text-xs text-gray-500 mt-1">{item.owner.email}</p>}
+                  <div className="col-span-2">
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-gray-400">{lang === 'es' ? 'Dueño' : 'Owner'}</p>
+                    <p className="text-sm font-bold text-gray-900 mt-1 flex items-center gap-2"><HiOutlineUser className="w-4 h-4 text-gray-400" />{item.owner ? `${item.owner.firstName} ${item.owner.lastName}` : item.ownerUserId}</p>
+                    {item.owner?.email && <p className="text-xs text-gray-500 mt-0.5">{item.owner.email}</p>}
                   </div>
                   <div>
-                    <p className="text-xs font-black uppercase tracking-[0.16em] text-gray-400">{copy.event}</p>
-                    <p className="text-sm font-bold text-gray-900 mt-1">{item.event?.title || copy.allEvents}</p>
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-gray-400">{lang === 'es' ? 'Evento' : 'Event'}</p>
+                    <p className="text-sm font-bold text-gray-900 mt-1">{item.event?.title || (lang === 'es' ? 'Todos' : 'All')}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-black uppercase tracking-[0.16em] text-gray-400">{copy.created}</p>
-                    <p className="text-sm font-bold text-gray-900 mt-1">
-                      {new Date(item.createdAt).toLocaleDateString(lang === 'es' ? 'es-US' : 'en-US')}
-                    </p>
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-gray-400">{lang === 'es' ? 'Comisión/entrada' : 'Commission/ticket'}</p>
+                    <p className="text-sm font-black text-[#F97316] mt-1">${Number(item.commissionFixed || 0).toFixed(2)}</p>
                   </div>
                 </div>
-
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <button
-                    onClick={() => startEdit(item)}
-                    className="btn-secondary inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-black"
-                  >
-                    <HiOutlinePencil className="w-5 h-5" />
-                    {copy.edit}
+                  <button onClick={() => startEdit(item)} className="btn-secondary inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-black">
+                    <HiOutlinePencil className="w-5 h-5" />{lang === 'es' ? 'Editar' : 'Edit'}
                   </button>
-                  <button
-                    onClick={() => handleToggleActive(item)}
-                    className={`inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-black transition-all ${
-                      item.isActive
-                        ? 'bg-green-50 text-green-700 hover:bg-green-100'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
+                  <button onClick={() => handleToggleActive(item)} className={`inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-black transition-all ${item.isActive ? 'bg-green-50 text-green-700 hover:bg-green-100' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
                     {item.isActive ? <HiOutlineCheckCircle className="w-5 h-5" /> : <HiOutlineXCircle className="w-5 h-5" />}
-                    {item.isActive ? copy.active : copy.inactive}
+                    {item.isActive ? (lang === 'es' ? 'Activo' : 'Active') : (lang === 'es' ? 'Inactivo' : 'Inactive')}
                   </button>
                 </div>
               </div>
@@ -392,6 +306,79 @@ export default function AdminSpecialCodesPage() {
           </div>
         )}
       </div>
+
+      {/* Commission summary panel */}
+      {commissions.length > 0 && (
+        <div className="public-premium-card overflow-hidden">
+          <div className="p-5 border-b border-gray-100 flex items-center gap-3">
+            <div className="public-premium-icon w-10 h-10 flex items-center justify-center">
+              <HiOutlineCurrencyDollar className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-black text-gray-900">{lang === 'es' ? 'Comisiones pendientes' : 'Commission payouts'}</h2>
+              <p className="text-sm text-gray-500">{lang === 'es' ? 'Calculado por entradas vendidas. Los pagos son manuales.' : 'Calculated from tickets sold. Payments are manual.'}</p>
+            </div>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {commissions.map((entry) => (
+              <div key={entry.ownerUserId} className="p-5 space-y-3">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div>
+                    <p className="font-black text-gray-900">{entry.ownerName}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{entry.ownerEmail}</p>
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {entry.codes.map((c) => (
+                        <span key={c.code} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-xs font-bold text-gray-600">
+                          {c.code} · ${c.commissionFixed.toFixed(2)}{c.eventTitle ? ` · ${c.eventTitle}` : ''}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-6 text-right">
+                    <div>
+                      <p className="text-xs font-black uppercase text-gray-400">{lang === 'es' ? 'Entradas' : 'Tickets'}</p>
+                      <p className="text-lg font-black text-gray-900 mt-0.5">{entry.totalTickets}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-black uppercase text-gray-400">{lang === 'es' ? 'Ganado' : 'Earned'}</p>
+                      <p className="text-lg font-black text-[#0A375A] mt-0.5">${entry.totalEarned.toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-black uppercase text-gray-400">{lang === 'es' ? 'Pagado' : 'Paid'}</p>
+                      <p className="text-lg font-black text-green-600 mt-0.5">${entry.totalPaid.toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-black uppercase text-gray-400">{lang === 'es' ? 'Saldo' : 'Balance'}</p>
+                      <p className={`text-lg font-black mt-0.5 ${entry.balance > 0 ? 'text-[#F97316]' : 'text-gray-400'}`}>${entry.balance.toFixed(2)}</p>
+                    </div>
+                    <button
+                      onClick={() => { setPayoutModal(entry); setPayoutAmount(entry.balance > 0 ? entry.balance.toFixed(2) : ''); setPayoutNote(''); }}
+                      className="btn-primary inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-black self-center"
+                    >
+                      <HiOutlineCurrencyDollar className="w-4 h-4" />
+                      {lang === 'es' ? 'Registrar pago' : 'Record payment'}
+                    </button>
+                  </div>
+                </div>
+
+                {entry.payouts.length > 0 && (
+                  <div className="bg-gray-50 rounded-xl p-3 space-y-1.5">
+                    <p className="text-xs font-black uppercase tracking-wider text-gray-400 mb-2">{lang === 'es' ? 'Historial de pagos' : 'Payment history'}</p>
+                    {entry.payouts.map((p) => (
+                      <div key={p.id} className="flex items-center justify-between text-xs">
+                        <span className="text-gray-500">{new Date(p.paidAt).toLocaleDateString(lang === 'es' ? 'es-US' : 'en-US')} {p.note ? `· ${p.note}` : ''}</span>
+                        <span className="font-black text-green-700">${Number(p.amount).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Edit modal */}
       {editingCode && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/55 backdrop-blur-sm" onClick={() => setEditingCode(null)} />
@@ -399,81 +386,50 @@ export default function AdminSpecialCodesPage() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-primary-500">LP Ticket</p>
-                <h2 className="text-xl font-black text-[#0A375A] mt-1">{copy.edit} {editingCode.code}</h2>
+                <h2 className="text-xl font-black text-[#0A375A] mt-1">{lang === 'es' ? 'Editar' : 'Edit'} {editingCode.code}</h2>
               </div>
-              <button
-                onClick={() => setEditingCode(null)}
-                className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-gray-50"
-              >
+              <button onClick={() => setEditingCode(null)} className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50">
                 <HiOutlineX className="w-5 h-5" />
               </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <label className="space-y-2">
-                <span className="text-xs font-black uppercase tracking-[0.16em] text-gray-500">{copy.code}</span>
-                <input
-                  value={editForm.code}
-                  onChange={(event) => setEditForm((current) => ({ ...current, code: normalizeCodeInput(event.target.value) }))}
-                  className="w-full px-4 py-3 border border-gray-200 public-premium-input text-sm font-bold"
-                />
+                <span className="text-xs font-black uppercase tracking-[0.16em] text-gray-500">{lang === 'es' ? 'Código' : 'Code'}</span>
+                <input value={editForm.code} onChange={(e) => setEditForm((c) => ({ ...c, code: normalizeCodeInput(e.target.value) }))} className="w-full px-4 py-3 border border-gray-200 public-premium-input text-sm font-bold" />
               </label>
 
               <label className="space-y-2">
-                <span className="text-xs font-black uppercase tracking-[0.16em] text-gray-500">{copy.event}</span>
-                <select
-                  value={editForm.eventId}
-                  onChange={(event) => setEditForm((current) => ({ ...current, eventId: event.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-200 public-premium-input text-sm"
-                >
-                  <option value="">{copy.allEvents}</option>
-                  {events.map((event) => (
-                    <option key={event.id} value={event.id}>{event.title}</option>
-                  ))}
+                <span className="text-xs font-black uppercase tracking-[0.16em] text-gray-500">{lang === 'es' ? 'Comisión por entrada ($)' : 'Commission per ticket ($)'}</span>
+                <input type="number" min="0" step="0.01" value={editForm.commissionFixed} onChange={(e) => setEditForm((c) => ({ ...c, commissionFixed: parseFloat(e.target.value) || 0 }))} className="w-full px-4 py-3 border border-gray-200 public-premium-input text-sm" />
+              </label>
+
+              <label className="space-y-2">
+                <span className="text-xs font-black uppercase tracking-[0.16em] text-gray-500">{lang === 'es' ? 'Evento' : 'Event'}</span>
+                <select value={editForm.eventId} onChange={(e) => setEditForm((c) => ({ ...c, eventId: e.target.value }))} className="w-full px-4 py-3 border border-gray-200 public-premium-input text-sm">
+                  <option value="">{lang === 'es' ? 'Todos los eventos' : 'All events'}</option>
+                  {events.map((ev) => <option key={ev.id} value={ev.id}>{ev.title}</option>)}
                 </select>
               </label>
 
-              <label className="space-y-2 md:col-span-2">
-                <span className="text-xs font-black uppercase tracking-[0.16em] text-gray-500">{copy.owner}</span>
-                <select
-                  value={editForm.ownerUserId}
-                  onChange={(event) => setEditForm((current) => ({ ...current, ownerUserId: event.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-200 public-premium-input text-sm"
-                >
+              <label className="space-y-2">
+                <span className="text-xs font-black uppercase tracking-[0.16em] text-gray-500">{lang === 'es' ? 'Dueño' : 'Owner'}</span>
+                <select value={editForm.ownerUserId} onChange={(e) => setEditForm((c) => ({ ...c, ownerUserId: e.target.value }))} className="w-full px-4 py-3 border border-gray-200 public-premium-input text-sm">
                   <option value="">{lang === 'es' ? 'Seleccionar usuario' : 'Select user'}</option>
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.firstName} {user.lastName} - {user.email}
-                    </option>
-                  ))}
+                  {users.map((u) => <option key={u.id} value={u.id}>{u.firstName} {u.lastName} - {u.email}</option>)}
                 </select>
               </label>
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-2">
               <label className="inline-flex items-center gap-3 text-sm font-bold text-gray-700">
-                <input
-                  type="checkbox"
-                  checked={editForm.isActive}
-                  onChange={(event) => setEditForm((current) => ({ ...current, isActive: event.target.checked }))}
-                  className="w-5 h-5 accent-primary-500"
-                />
-                {copy.active}
+                <input type="checkbox" checked={editForm.isActive} onChange={(e) => setEditForm((c) => ({ ...c, isActive: e.target.checked }))} className="w-5 h-5 accent-primary-500" />
+                {lang === 'es' ? 'Activo' : 'Active'}
               </label>
-
-              <div className="flex flex-col sm:flex-row gap-2">
-                <button
-                  onClick={() => setEditingCode(null)}
-                  className="btn-secondary inline-flex items-center justify-center px-5 py-3 rounded-lg text-sm font-black"
-                >
-                  {copy.cancel}
-                </button>
-                <button
-                  onClick={handleSaveEdit}
-                  disabled={updating}
-                  className="btn-primary inline-flex items-center justify-center px-5 py-3 rounded-lg text-sm font-black disabled:opacity-60"
-                >
-                  {updating ? (lang === 'es' ? 'Guardando...' : 'Saving...') : copy.save}
+              <div className="flex gap-2">
+                <button onClick={() => setEditingCode(null)} className="btn-secondary inline-flex items-center justify-center px-5 py-3 rounded-lg text-sm font-black">{lang === 'es' ? 'Cancelar' : 'Cancel'}</button>
+                <button onClick={handleSaveEdit} disabled={updating} className="btn-primary inline-flex items-center justify-center px-5 py-3 rounded-lg text-sm font-black disabled:opacity-60">
+                  {updating ? (lang === 'es' ? 'Guardando...' : 'Saving...') : (lang === 'es' ? 'Guardar cambios' : 'Save changes')}
                 </button>
               </div>
             </div>
@@ -481,6 +437,56 @@ export default function AdminSpecialCodesPage() {
         </div>
       )}
 
+      {/* Payout modal */}
+      {payoutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/55 backdrop-blur-sm" onClick={() => setPayoutModal(null)} />
+          <div className="relative w-full max-w-md public-premium-card p-5 md:p-6 space-y-4 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-primary-500">LP Ticket</p>
+                <h2 className="text-xl font-black text-[#0A375A] mt-1">{lang === 'es' ? 'Registrar pago' : 'Record payment'}</h2>
+                <p className="text-sm text-gray-500 mt-0.5">{payoutModal.ownerName}</p>
+              </div>
+              <button onClick={() => setPayoutModal(null)} className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50">
+                <HiOutlineX className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 grid grid-cols-3 gap-3 text-center">
+              <div>
+                <p className="text-xs font-black text-gray-400 uppercase">{lang === 'es' ? 'Ganado' : 'Earned'}</p>
+                <p className="text-lg font-black text-[#0A375A]">${payoutModal.totalEarned.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-xs font-black text-gray-400 uppercase">{lang === 'es' ? 'Pagado' : 'Paid'}</p>
+                <p className="text-lg font-black text-green-600">${payoutModal.totalPaid.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-xs font-black text-gray-400 uppercase">{lang === 'es' ? 'Saldo' : 'Balance'}</p>
+                <p className={`text-lg font-black ${payoutModal.balance > 0 ? 'text-[#F97316]' : 'text-gray-400'}`}>${payoutModal.balance.toFixed(2)}</p>
+              </div>
+            </div>
+
+            <label className="space-y-2 block">
+              <span className="text-xs font-black uppercase tracking-[0.16em] text-gray-500">{lang === 'es' ? 'Monto a registrar ($)' : 'Amount to record ($)'}</span>
+              <input type="number" min="0.01" step="0.01" value={payoutAmount} onChange={(e) => setPayoutAmount(e.target.value)} placeholder="0.00" className="w-full px-4 py-3 border border-gray-200 public-premium-input text-sm font-bold" />
+            </label>
+
+            <label className="space-y-2 block">
+              <span className="text-xs font-black uppercase tracking-[0.16em] text-gray-500">{lang === 'es' ? 'Nota (opcional)' : 'Note (optional)'}</span>
+              <input value={payoutNote} onChange={(e) => setPayoutNote(e.target.value)} placeholder={lang === 'es' ? 'Transferencia bancaria, efectivo...' : 'Bank transfer, cash...'} className="w-full px-4 py-3 border border-gray-200 public-premium-input text-sm" />
+            </label>
+
+            <div className="flex gap-2 pt-1">
+              <button onClick={() => setPayoutModal(null)} className="btn-secondary flex-1 py-3 rounded-lg text-sm font-black">{lang === 'es' ? 'Cancelar' : 'Cancel'}</button>
+              <button onClick={handleRecordPayout} disabled={payoutSaving} className="btn-primary flex-1 py-3 rounded-lg text-sm font-black disabled:opacity-60">
+                {payoutSaving ? (lang === 'es' ? 'Guardando...' : 'Saving...') : (lang === 'es' ? 'Confirmar pago' : 'Confirm payment')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

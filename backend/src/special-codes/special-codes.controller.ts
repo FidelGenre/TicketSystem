@@ -30,6 +30,20 @@ export class SpecialCodesController {
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN)
+  @Get('admin/commission-summary')
+  getCommissionSummary() {
+    return this.specialCodesService.getCommissionSummary();
+  }
+
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Post('admin/payouts')
+  recordPayout(@Body() dto: { ownerUserId: string; amount: number; note?: string }) {
+    return this.specialCodesService.recordPayout(dto.ownerUserId, dto.amount, dto.note);
+  }
+
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Get()
   getAllCodes() {
     return this.specialCodesService.getAllCodes();
@@ -38,7 +52,7 @@ export class SpecialCodesController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN)
   @Post()
-  createCode(@Body() dto: { code: string; ownerUserId: string; eventId?: string | null; isActive?: boolean }) {
+  createCode(@Body() dto: { code: string; ownerUserId: string; eventId?: string | null; isActive?: boolean; commissionFixed?: number }) {
     return this.specialCodesService.createCode(dto);
   }
 
@@ -47,7 +61,7 @@ export class SpecialCodesController {
   @Patch(':id')
   updateCode(
     @Param('id') id: string,
-    @Body() dto: { code?: string; ownerUserId?: string; eventId?: string | null; isActive?: boolean },
+    @Body() dto: { code?: string; ownerUserId?: string; eventId?: string | null; isActive?: boolean; commissionFixed?: number },
   ) {
     return this.specialCodesService.updateCode(id, dto);
   }

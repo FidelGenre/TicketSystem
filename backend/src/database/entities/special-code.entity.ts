@@ -35,6 +35,10 @@ export class SpecialCode {
   @Column({ default: true })
   isActive: boolean;
 
+  /** Fixed commission in the event's currency paid to the owner per ticket sold */
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  commissionFixed: number;
+
   @CreateDateColumn()
   createdAt: Date;
 

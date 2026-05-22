@@ -11,3 +11,4 @@ export { SocialMatchPreference, SocialMatchInterest } from './social-match-prefe
 export { SocialMatchConnection, SocialMatchConnectionStatus } from './social-match-connection.entity';
 export { SocialMatchMessage } from './social-match-message.entity';
 export { SpecialCode } from './special-code.entity';
+export { SpecialCodePayout } from './special-code-payout.entity';
