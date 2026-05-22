@@ -1,7 +1,9 @@
 import { Body, Controller, Get, Param, Post, Put, Request, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { SocialMatchConnectionStatus, SocialMatchInterest } from '../database/entities';
+import { SocialMatchConnectionStatus, SocialMatchInterest, UserRole } from '../database/entities';
 import { SocialMatchService } from './social-match.service';
+import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
 
 type UpdateSocialMatchDto = {
   isActive?: boolean;
@@ -64,5 +66,12 @@ export class SocialMatchController {
     @Body() dto: UpdateSocialMatchDto,
   ) {
     return this.socialMatchService.updatePreference(req.user.id, eventId, dto);
+  }
+
+  @Post('seed-test-data')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  seedTestData(@Request() req: any) {
+    return this.socialMatchService.seedTestData(req.user.id);
   }
 }

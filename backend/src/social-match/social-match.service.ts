@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Not, Repository } from 'typeorm';
 import {
   Event,
+  Order,
   SocialMatchConnection,
   SocialMatchConnectionStatus,
   SocialMatchInterest,
@@ -10,6 +11,7 @@ import {
   SocialMatchPreference,
   Ticket,
   TicketStatus,
+  User,
 } from '../database/entities';
 
 type UpdateSocialMatchDto = {
@@ -38,6 +40,10 @@ export class SocialMatchService {
     private readonly ticketRepo: Repository<Ticket>,
     @InjectRepository(Event)
     private readonly eventRepo: Repository<Event>,
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
+    @InjectRepository(Order)
+    private readonly orderRepo: Repository<Order>,
   ) {}
 
   async getMySocialMatch(userId: string) {
@@ -329,5 +335,58 @@ export class SocialMatchService {
     if (locationReadyCount > 0) messages.push(`${locationReadyCount} conexiones podrían compartir ubicación si ambos aceptan`);
     if (messages.length === 0) messages.push('Activado. Te avisaremos cuando aparezcan perfiles compatibles.');
     return messages;
+  }
+
+  async seedTestData(adminUserId: string) {
+    // Find the first eligible event for the admin
+    const eligibleEvents = await this.getEligibleEvents(adminUserId);
+    if (!eligibleEvents.length) return { error: 'Admin has no eligible events with tickets' };
+    const event = eligibleEvents[0];
+    const eventId = event.id;
+
+    // Get a section from the event
+    const adminTicket = await this.ticketRepo.findOne({ where: { userId: adminUserId, eventId, status: TicketStatus.ACTIVE } });
+    const sectionId = adminTicket?.sectionId;
+
+    const testUsers = [
+      { firstName: 'Mateo', lastName: 'Lopez', email: 'mateo.sm.test@lpticket.com', username: 'mateo_sm_test', interests: [SocialMatchInterest.BUSINESS, SocialMatchInterest.MUSIC_PARTY, SocialMatchInterest.MAKE_FRIENDS], industry: 'Marketing' },
+      { firstName: 'Valentina', lastName: 'Ruiz', email: 'vale.sm.test@lpticket.com', username: 'vale_sm_test', interests: [SocialMatchInterest.BUSINESS, SocialMatchInterest.COLLABORATIONS, SocialMatchInterest.VIP_EXPERIENCE], industry: 'Tech' },
+    ];
+
+    const created: string[] = [];
+    for (const tu of testUsers) {
+      let user = await this.userRepo.findOne({ where: { email: tu.email } });
+      if (!user) {
+        user = await this.userRepo.save(this.userRepo.create({ ...tu, password: '$2b$10$vI8aWBnW3fID.ZQ4/zo1G.q1lRps.9cGLcZEiGDMVr5yUP1KUOYTa', isActive: true }));
+      }
+
+      // Create ticket if needed
+      const hasTicket = await this.ticketRepo.findOne({ where: { userId: user.id, eventId, status: TicketStatus.ACTIVE } });
+      if (!hasTicket && sectionId) {
+        const order = await this.orderRepo.save(this.orderRepo.create({ userId: user.id, eventId, subtotal: 0, total: 0, ticketCount: 1, status: 'paid' as any }));
+        const code = 'SMTEST' + Math.random().toString(36).substring(2, 8).toUpperCase();
+        await this.ticketRepo.save(this.ticketRepo.create({ orderId: order.id, userId: user.id, eventId, sectionId, rowLabel: 'GA', seatNumber: 1, ticketCode: code, status: TicketStatus.ACTIVE, price: 0 }));
+      }
+
+      // Create SM preference
+      let pref = await this.preferenceRepo.findOne({ where: { userId: user.id, eventId } });
+      if (!pref) pref = this.preferenceRepo.create({ userId: user.id, eventId });
+      pref.isActive = true;
+      pref.interests = tu.interests;
+      pref.industry = tu.industry;
+      pref.privateMode = false;
+      pref.invisibleMode = false;
+      pref.shareInstagram = true;
+      pref.shareLocation = true;
+      await this.preferenceRepo.save(pref);
+
+      // Remove existing connections with admin
+      await this.connectionRepo.delete({ requesterId: adminUserId, receiverId: user.id });
+      await this.connectionRepo.delete({ requesterId: user.id, receiverId: adminUserId });
+
+      created.push(`${tu.firstName} ${tu.lastName} (${user.id})`);
+    }
+
+    return { success: true, eventId, eventTitle: event.title, createdProfiles: created };
   }
 }
