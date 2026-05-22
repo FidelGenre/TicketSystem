@@ -558,11 +558,6 @@ export class OrdersService {
               venueAddress: fullOrder.event.venueAddress,
               eventDate: fullOrder.event.eventDate?.toString(),
               eventTimezone: fullOrder.event.eventTimezone,
-              currency: fullOrder.event.currency || 'USD',
-              subtotal: Number(fullOrder.subtotal || 0),
-              lpFee: Number(fullOrder.lpFee || 0),
-              processingFee: Number(fullOrder.processingFee || 0),
-              total: Number(fullOrder.total || 0),
             },
           );
         }
@@ -579,7 +574,7 @@ export class OrdersService {
     const skip = (page - 1) * limit;
     const [orders, total] = await this.orderRepo.findAndCount({
       where: { userId },
-      relations: ['event', 'order'],
+      relations: ['event'],
       order: { paidAt: 'DESC', createdAt: 'DESC' },
       skip,
       take: limit,
@@ -631,7 +626,7 @@ export class OrdersService {
   async getTicketByCode(code: string) {
     const ticket = await this.ticketRepo.findOne({
       where: { ticketCode: code },
-      relations: ['event', 'user', 'order'],
+      relations: ['event', 'user'],
     });
     if (!ticket) throw new NotFoundException('Ticket not found');
     return ticket;
@@ -834,11 +829,6 @@ export class OrdersService {
         venueAddress: event.venueAddress,
         eventDate: event.eventDate?.toString(),
         eventTimezone: event.eventTimezone,
-        currency: event.currency || 'USD',
-        subtotal: 0,
-        lpFee: 0,
-        processingFee: 0,
-        total: 0,
       });
     } catch (e) {
       console.error('Error sending free ticket email:', e);

@@ -144,12 +144,10 @@ export interface Order {
   eventId: string;
   event?: Event;
   subtotal: number;
-  lpFee: number;
-  processingFee: number;
+  serviceFee: number;
   total: number;
   status: OrderStatus;
   ticketCount: number;
-  paidAt?: string;
   createdAt: string;
 }
 
@@ -165,7 +163,6 @@ export interface Ticket {
   orderId: string;
   eventId: string;
   event?: Event;
-  order?: Order;
   userId: string;
   user?: User;
   seatId?: string;
