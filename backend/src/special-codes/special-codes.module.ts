@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Event, SpecialCode, User } from '../database/entities';
+import { Event, Order, SpecialCode, User } from '../database/entities';
 import { SpecialCodesController } from './special-codes.controller';
 import { SpecialCodesService } from './special-codes.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([SpecialCode, User, Event])],
+  imports: [TypeOrmModule.forFeature([SpecialCode, User, Event, Order])],
   controllers: [SpecialCodesController],
   providers: [SpecialCodesService],
   exports: [SpecialCodesService],

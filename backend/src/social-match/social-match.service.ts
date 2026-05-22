@@ -357,8 +357,9 @@ export class SocialMatchService {
     for (const tu of testUsers) {
       let user = await this.userRepo.findOne({ where: { email: tu.email } });
       if (!user) {
-        user = await this.userRepo.save(this.userRepo.create({ ...tu, password: '$2b$10$vI8aWBnW3fID.ZQ4/zo1G.q1lRps.9cGLcZEiGDMVr5yUP1KUOYTa', isActive: true }));
+        user = await this.userRepo.save(this.userRepo.create({ ...tu, passwordHash: '$2b$10$vI8aWBnW3fID.ZQ4/zo1G.q1lRps.9cGLcZEiGDMVr5yUP1KUOYTa', isActive: true }));
       }
+      if (!user) continue;
 
       // Create ticket if needed
       const hasTicket = await this.ticketRepo.findOne({ where: { userId: user.id, eventId, status: TicketStatus.ACTIVE } });

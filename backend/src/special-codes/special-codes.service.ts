@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Event, SpecialCode, User } from '../database/entities';
+import { Event, Order, OrderStatus, SpecialCode, User } from '../database/entities';
 
 type CreateSpecialCodeDto = {
   code: string;
@@ -21,6 +21,8 @@ export class SpecialCodesService {
     private readonly userRepo: Repository<User>,
     @InjectRepository(Event)
     private readonly eventRepo: Repository<Event>,
+    @InjectRepository(Order)
+    private readonly orderRepo: Repository<Order>,
   ) {}
 
   normalizeCode(code: string) {
@@ -95,6 +97,23 @@ export class SpecialCodesService {
       where: { ownerUserId },
       relations: ['event'],
       order: { createdAt: 'DESC' },
+    });
+  }
+
+  getMyCodeSales(ownerUserId: string) {
+    return this.orderRepo.find({
+      where: { specialCodeOwnerId: ownerUserId, status: OrderStatus.PAID },
+      relations: ['event', 'user'],
+      order: { paidAt: 'DESC', createdAt: 'DESC' },
+    });
+  }
+
+  async getAllCodeSales() {
+    const { Not, IsNull } = await import('typeorm');
+    return this.orderRepo.find({
+      where: { status: OrderStatus.PAID, specialCode: Not(IsNull()) },
+      relations: ['event', 'user'],
+      order: { paidAt: 'DESC', createdAt: 'DESC' },
     });
   }
 }

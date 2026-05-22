@@ -5,7 +5,7 @@ import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const Stripe = require('stripe');
-import { Order, OrderStatus, Ticket, TicketStatus, Seat, SeatStatus, Event, VenueSection } from '../database/entities';
+import { Order, OrderStatus, Ticket, TicketStatus, Seat, SeatStatus, Event, VenueSection, SpecialCode } from '../database/entities';
 import { nanoid } from 'nanoid';
 import * as QRCode from 'qrcode';
 import { MailService } from '../common/services/mail.service';
@@ -37,6 +37,8 @@ export class OrdersService {
     private readonly eventRepo: Repository<Event>,
     @InjectRepository(VenueSection)
     private readonly sectionRepo: Repository<VenueSection>,
+    @InjectRepository(SpecialCode)
+    private readonly specialCodeRepo: Repository<SpecialCode>,
     private readonly configService: ConfigService,
     private readonly mailService: MailService,
   ) {
@@ -93,9 +95,25 @@ export class OrdersService {
     seatIds: string[],
     sectionId?: string,
     quantity?: number,
+    rawSpecialCode?: string,
   ) {
     const event = await this.eventRepo.findOne({ where: { id: eventId } });
     if (!event) throw new NotFoundException('Event not found');
+
+    // Validate special code if provided
+    let resolvedCode: string | null = null;
+    let resolvedCodeId: string | null = null;
+    let resolvedCodeOwnerId: string | null = null;
+    if (rawSpecialCode && rawSpecialCode.trim()) {
+      const normalizedCode = rawSpecialCode.trim().toUpperCase().replace(/\s+/g, '');
+      const sc = await this.specialCodeRepo.findOne({ where: { code: normalizedCode } });
+      if (!sc) throw new BadRequestException('Código especial no válido.');
+      if (!sc.isActive) throw new BadRequestException('Este código especial no está activo.');
+      if (sc.eventId && sc.eventId !== eventId) throw new BadRequestException('Este código especial no aplica para este evento.');
+      resolvedCode = normalizedCode;
+      resolvedCodeId = sc.id;
+      resolvedCodeOwnerId = sc.ownerUserId;
+    }
 
     const maxLimit = event.maxTicketsPerTransaction || 10;
     if (seatIds && seatIds.length > maxLimit) {
@@ -309,6 +327,9 @@ export class OrdersService {
       status: OrderStatus.PENDING,
       ticketCount: cleanSeatsInfo.length,
       seatsData: JSON.stringify(cleanSeatsInfo),
+      specialCode: resolvedCode,
+      specialCodeId: resolvedCodeId,
+      specialCodeOwnerId: resolvedCodeOwnerId,
     });
     const savedOrder = await this.orderRepo.save(order);
 

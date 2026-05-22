@@ -89,6 +89,18 @@ export class Order {
   @Column({ type: 'timestamp', nullable: true })
   paidAt: Date | null;
 
+  /** Special influencer/referral code used at checkout */
+  @Column({ nullable: true, length: 40 })
+  specialCode: string | null;
+
+  /** ID of the SpecialCode record used */
+  @Column({ type: 'uuid', nullable: true })
+  specialCodeId: string | null;
+
+  /** ID of the user who owns the special code */
+  @Column({ type: 'uuid', nullable: true })
+  specialCodeOwnerId: string | null;
+
   @CreateDateColumn()
   createdAt: Date;
 }

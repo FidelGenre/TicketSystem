@@ -15,6 +15,19 @@ export class SpecialCodesController {
     return this.specialCodesService.getMyCodes(req.user.id);
   }
 
+  @UseGuards(AuthGuard('jwt'))
+  @Get('my-sales')
+  getMyCodeSales(@Request() req: any) {
+    return this.specialCodesService.getMyCodeSales(req.user.id);
+  }
+
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Get('admin-sales')
+  getAllCodeSales() {
+    return this.specialCodesService.getAllCodeSales();
+  }
+
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN)
   @Get()

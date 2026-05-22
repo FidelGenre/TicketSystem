@@ -100,6 +100,8 @@ export default function PurchasePage() {
   const [invoiceLoading, setInvoiceLoading] = useState(false);
   const [buying, setBuying] = useState(false);
   const [hasLoadedSaved, setHasLoadedSaved] = useState(false);
+  const [specialCode, setSpecialCode] = useState('');
+  const [specialCodeError, setSpecialCodeError] = useState('');
 
   /**
    * Redirect to login if not authenticated.
@@ -305,7 +307,7 @@ export default function PurchasePage() {
    */
   const handleConfirmInfo = async () => {
     if (!personalInfo.firstName || !personalInfo.lastName || !personalInfo.email) return;
-    
+    setSpecialCodeError('');
     setInvoiceLoading(true);
     try {
       const params: any = { eventId: event!.id };
@@ -339,6 +341,7 @@ export default function PurchasePage() {
       } else {
         payload.seatIds = selectedSeats.map((s) => s.id);
       }
+      if (specialCode.trim()) payload.specialCode = specialCode.trim().toUpperCase();
 
       const { data } = await api.post('/orders/checkout', payload);
       localStorage.setItem('pendingCheckoutEventId', event!.id);
@@ -618,6 +621,20 @@ export default function PurchasePage() {
                   <label className="block text-xs font-medium text-gray-600 mb-1">{lang === 'es' ? 'Teléfono:' : 'Phone:'}</label>
                   <input className="input purchase-premium-input text-sm" value={personalInfo.phone}
                     onChange={(e) => setPersonalInfo((p) => ({ ...p, phone: e.target.value }))} />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    {lang === 'es' ? 'Código especial (opcional):' : 'Special code (optional):'}
+                  </label>
+                  <input
+                    className="input purchase-premium-input text-sm uppercase"
+                    placeholder={lang === 'es' ? 'Ej: INFLUENCER2025' : 'E.g. INFLUENCER2025'}
+                    value={specialCode}
+                    onChange={(e) => { setSpecialCode(e.target.value.toUpperCase()); setSpecialCodeError(''); }}
+                  />
+                  {specialCodeError && (
+                    <p className="text-xs text-red-500 mt-1">{specialCodeError}</p>
+                  )}
                 </div>
               </div>
 
