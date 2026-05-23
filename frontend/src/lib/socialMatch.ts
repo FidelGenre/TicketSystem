@@ -124,3 +124,9 @@ export async function sendSocialMatchMessage(connectionId: string, message: stri
   const { data } = await api.post(`/social-match/connections/${connectionId}/messages`, { message });
   return data;
 }
+
+
+export async function deleteSocialMatchChat(connectionId: string) {
+  const { data } = await api.delete(`/social-match/connections/${connectionId}/chat`);
+  return data;
+}

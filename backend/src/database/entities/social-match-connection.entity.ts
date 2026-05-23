@@ -42,6 +42,12 @@ export class SocialMatchConnection {
   @CreateDateColumn()
   createdAt: Date;
 
+  @Column({ type: 'timestamp', nullable: true })
+  requesterChatHiddenAt: Date | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  receiverChatHiddenAt: Date | null;
+
   @UpdateDateColumn()
   updatedAt: Date;
 }

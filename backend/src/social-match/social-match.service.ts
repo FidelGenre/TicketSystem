@@ -221,6 +221,19 @@ export class SocialMatchService {
     return this.connectionRepo.save(connection);
   }
 
+  async hideChat(userId: string, connectionId: string) {
+    const connection = await this.ensureAcceptedConnectionMember(userId, connectionId);
+
+    if (connection.requesterId === userId) {
+      connection.requesterChatHiddenAt = new Date();
+    } else {
+      connection.receiverChatHiddenAt = new Date();
+    }
+
+    await this.connectionRepo.save(connection);
+    return { success: true };
+  }
+
   async getMessages(userId: string, connectionId: string) {
     await this.ensureAcceptedConnectionMember(userId, connectionId);
     const messages = await this.messageRepo.find({
@@ -248,6 +261,17 @@ export class SocialMatchService {
     const message = typeof rawMessage === 'string' ? rawMessage.trim() : '';
     if (!message) throw new BadRequestException('El mensaje no puede estar vacío.');
     if (message.length > 1000) throw new BadRequestException('El mensaje es demasiado largo.');
+
+    const connection = await this.ensureAcceptedConnectionMember(userId, connectionId);
+
+    if (connection.requesterId === userId) {
+      connection.requesterChatHiddenAt = null;
+      connection.receiverChatHiddenAt = null;
+    } else {
+      connection.receiverChatHiddenAt = null;
+      connection.requesterChatHiddenAt = null;
+    }
+    await this.connectionRepo.save(connection);
 
     const saved = await this.messageRepo.save(this.messageRepo.create({
       connectionId,
@@ -321,7 +345,14 @@ export class SocialMatchService {
       ? await this.preferenceRepo.find({ where: otherPrefConditions })
       : [];
 
-    return connections.map((connection) => {
+    return connections
+      .filter((connection) => {
+        if (connection.status !== SocialMatchConnectionStatus.ACCEPTED) return true;
+        if (connection.requesterId === userId) return !connection.requesterChatHiddenAt;
+        if (connection.receiverId === userId) return !connection.receiverChatHiddenAt;
+        return true;
+      })
+      .map((connection) => {
       const otherUser = connection.requesterId === userId ? connection.receiver : connection.requester;
       const isAccepted = connection.status === SocialMatchConnectionStatus.ACCEPTED;
 

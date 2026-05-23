@@ -51,6 +51,11 @@ export class SocialMatchController {
     return this.socialMatchService.updateConnection(req.user.id, connectionId, dto.status);
   }
 
+  @Delete('connections/:connectionId/chat')
+  deleteConnectionChat(@Request() req: any, @Param('connectionId') connectionId: string) {
+    return this.socialMatchService.hideChat(req.user.id, connectionId);
+  }
+
   @Get('connections/:connectionId/messages')
   getMessages(@Request() req: any, @Param('connectionId') connectionId: string) {
     return this.socialMatchService.getMessages(req.user.id, connectionId);
