@@ -98,7 +98,11 @@ export class SocialMatchService {
         { eventId, receiverId: userId },
       ],
     });
-    const connectedUserIds = new Set(existingConnections.flatMap((connection) => [connection.requesterId, connection.receiverId]));
+    // Only hide users with active (pending/accepted) connections; cancelled/declined can reappear
+    const activeConnections = existingConnections.filter(
+      (c) => c.status === SocialMatchConnectionStatus.PENDING || c.status === SocialMatchConnectionStatus.ACCEPTED,
+    );
+    const connectedUserIds = new Set(activeConnections.flatMap((connection) => [connection.requesterId, connection.receiverId]));
 
     // Get ALL other ticket holders for this event
     const tickets = await this.ticketRepo.find({
