@@ -178,6 +178,10 @@ export class EventsService {
    */
   async update(id: string, dto: UpdateEventDto, userId: string) {
     const event = await this.findById(id);
+    if (dto.category !== undefined) {
+      dto.category = typeof dto.category === 'string' ? dto.category.trim() : dto.category;
+      if (!dto.category) delete dto.category;
+    }
     const user = await this.eventRepo.manager.findOne(User, { where: { id: userId } });
     
     // Check ownership or admin privileges

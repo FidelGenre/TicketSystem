@@ -211,6 +211,12 @@ export default function CreateEventPage() {
     setCreating(true);
 
     try {
+      if (!form.category) {
+        setError(lang === 'es' ? 'Selecciona una categoría para el evento' : 'Select an event category');
+        setCreating(false);
+        return;
+      }
+
       // Clean up empty optional fields
       const payload: any = { ...form, hasSeatMap: true };
       payload.maxTicketsPerTransaction = form.maxTicketsPerTransaction ? parseInt(form.maxTicketsPerTransaction, 10) : 10;
@@ -319,7 +325,7 @@ export default function CreateEventPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">{t('orgCategory')} *</label>
-                    <select value={form.category} onChange={(e) => updateForm('category', e.target.value)} className="input py-3">
+                    <select value={form.category} onChange={(e) => updateForm('category', e.target.value)} className="input py-3" required>
                       <option value="" disabled>{lang === 'es' ? '-- Selecciona una categoría --' : '-- Select a category --'}</option>
                       {categories.map((cat) => (
                         <option key={cat.id} value={cat.slug}>{cat.icon} {lang === 'en' ? cat.labelEn : cat.labelEs}</option>

@@ -697,7 +697,7 @@ export default function EventDetailPage() {
         eventDate: formatDateInput(ev.eventDate, ev.eventTimezone || 'UTC'),
         eventTime: formatTimeInput(ev.eventDate, ev.eventTimezone || 'UTC'),
         eventTimezone: ev.eventTimezone || 'UTC',
-        category: ev.category || '',
+        category: ev.pendingCategory || ev.category || '',
         hasSeatMap: ev.hasSeatMap || false,
         bannerPosition: ev.bannerPosition || 'center',
         maxTicketsPerTransaction: ev.maxTicketsPerTransaction || 10,
