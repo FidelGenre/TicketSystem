@@ -1893,74 +1893,78 @@ export default function EventDetailPage() {
 
 
           {complimentaryOrders.length > 0 && (
-            <div className="rounded-[28px] border border-orange-200/80 bg-gradient-to-br from-white via-orange-50/30 to-white p-5 sm:p-6 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#0A375A] text-sm font-black text-white shadow-lg shadow-slate-900/10">
+            <div className="rounded-[26px] border border-orange-200/80 bg-white p-5 sm:p-6 shadow-[0_22px_55px_rgba(15,23,42,0.08)]">
+              <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+                <div className="flex min-w-0 items-start gap-4">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#0A375A] text-base font-black text-white shadow-lg shadow-[#0A375A]/20">
                     LP
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-[11px] font-black uppercase tracking-[0.28em] text-[#F97316]">
                       {lang === 'es' ? 'Cortesías enviadas' : 'Sent complimentary tickets'}
                     </p>
-                    <h3 className="mt-1 text-xl font-black text-gray-950">
+                    <h3 className="mt-1 text-2xl font-black leading-tight text-gray-950">
                       {lang === 'es' ? 'Entradas de invitación' : 'Invitation tickets'}
                     </h3>
-                    <p className="mt-1 max-w-2xl text-sm font-medium text-gray-500">
+                    <p className="mt-2 max-w-3xl text-sm font-medium leading-6 text-gray-500">
                       {lang === 'es'
-                        ? 'Abre el recibo general o entra directo a cada boleto digital enviado.'
-                        : 'Open the main receipt or go directly to each sent digital ticket.'}
+                        ? 'Consulta el recibo general y abre cada boleto digital enviado como cortesía.'
+                        : 'Review the main receipt and open each digital ticket sent as a complimentary invitation.'}
                     </p>
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-orange-100 bg-white px-4 py-3 text-right shadow-sm">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+                <div className="grid min-w-[220px] grid-cols-1 rounded-2xl border border-orange-100 bg-orange-50/40 px-5 py-4 shadow-sm">
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-400">
                     {lang === 'es' ? 'Total cortesías' : 'Total comps'}
                   </p>
-                  <p className="text-2xl font-black text-[#0A375A]">
+                  <p className="mt-1 text-4xl font-black leading-none text-[#0A375A]">
                     {complimentaryOrders.reduce((sum: number, order: any) => sum + Number(order.ticketCount || 0), 0)}
                   </p>
                 </div>
               </div>
 
-              <div className="mt-5 grid gap-4">
+              <div className="mt-6 grid gap-4">
                 {complimentaryOrders.map((order: any) => (
-                  <div key={order.id} className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
-                    <div className="flex flex-col gap-4 p-4 sm:p-5 xl:flex-row xl:items-center xl:justify-between">
+                  <div key={order.id} className="rounded-[22px] border border-gray-200 bg-gradient-to-br from-white to-slate-50/70 p-4 sm:p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
+                    <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(460px,auto)] xl:items-center">
                       <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="truncate text-lg font-black capitalize text-gray-950">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <p className="min-w-0 truncate text-xl font-black capitalize text-gray-950">
                             {order.user?.firstName} {order.user?.lastName}
                           </p>
-                          <span className="rounded-full bg-orange-100 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-orange-700">
+                          <span className="shrink-0 rounded-full bg-orange-100 px-3 py-1 text-xs font-black text-orange-700">
                             $0.00
                           </span>
                         </div>
-                        <p className="mt-0.5 text-sm font-semibold text-gray-500">{order.user?.email}</p>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-black text-[#0A375A]">
+
+                        <p className="mt-2 max-w-full truncate text-sm font-semibold text-gray-500">
+                          {order.user?.email}
+                        </p>
+
+                        <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+                          <span className="inline-flex h-10 min-w-[150px] items-center justify-center rounded-xl border border-gray-200 bg-white px-4 text-xs font-black text-[#0A375A]">
                             {order.ticketCount} {lang === 'es' ? 'entradas' : 'tickets'}
                           </span>
-                          <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-black text-gray-500">
+                          <span className="inline-flex h-10 min-w-[150px] items-center justify-center rounded-xl border border-gray-200 bg-white px-4 text-xs font-black text-gray-500">
                             {format(parseSafeDate(order.paidAt || order.createdAt), 'dd MMM yyyy')}
                           </span>
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap gap-2 xl:justify-end">
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-3 xl:justify-items-stretch">
                         <Link
                           href={`/orders/${order.id}/receipt`}
-                          className="inline-flex min-h-11 items-center justify-center rounded-xl border border-orange-200 bg-white px-5 text-sm font-black text-[#F97316] shadow-sm transition-all hover:border-[#F97316] hover:bg-orange-50"
+                          className="inline-flex h-12 w-full items-center justify-center rounded-xl border border-[#F97316] bg-white px-4 text-sm font-black text-[#F97316] shadow-sm transition-all hover:bg-orange-50"
                         >
-                          {lang === 'es' ? 'Ver recibo' : 'View receipt'}
+                          {lang === 'es' ? 'Recibo' : 'Receipt'}
                         </Link>
 
                         {(order.tickets || []).map((ticket: any, index: number) => (
                           <Link
                             key={ticket.id || ticket.ticketCode}
                             href={`/verify/${ticket.ticketCode}`}
-                            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#0A375A] px-5 text-sm font-black text-white shadow-sm transition-all hover:bg-[#082b47]"
+                            className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-[#0A375A] px-4 text-sm font-black text-white shadow-sm transition-all hover:bg-[#082b47]"
                           >
                             {lang === 'es' ? `Entrada ${index + 1}` : `Ticket ${index + 1}`}
                           </Link>
