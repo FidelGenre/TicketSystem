@@ -242,7 +242,17 @@ type EventCode = {
   code: string;
   commissionFixed: number;
   isActive: boolean;
+  ticketCount?: number;
+  totalGenerated?: number;
   owner?: { firstName: string; lastName: string; email: string };
+  orders?: {
+    id: string;
+    ticketCount: number;
+    total: number;
+    paidAt: string;
+    commissionGenerated: number;
+    buyer?: { firstName: string; lastName: string; email: string } | null;
+  }[];
 };
 
 function CreatorRewardsBlock({

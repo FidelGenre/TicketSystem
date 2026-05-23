@@ -103,7 +103,7 @@ export class SpecialCodesService {
   async getCodesByEvent(eventId: string) {
     const codes = await this.specialCodeRepo.find({
       where: { eventId },
-      relations: ['owner'],
+      relations: ['owner', 'event'],
       order: { createdAt: 'ASC' },
     });
 
@@ -115,7 +115,8 @@ export class SpecialCodesService {
 
     return codes.map((code) => {
       const codeOrders = orders.filter((order) => String(order.specialCode || '').toUpperCase() === code.code);
-      const commission = Number(code.commissionFixed || 0);
+      const eventCommission = code.event ? Number(code.event.creatorCommission || 0) : 0;
+      const commission = Number(code.commissionFixed || 0) > 0 ? Number(code.commissionFixed || 0) : eventCommission;
       const ticketCount = codeOrders.reduce((sum, order) => sum + Number(order.ticketCount || 1), 0);
 
       return {
