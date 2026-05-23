@@ -52,7 +52,7 @@ export class User {
   @Column({ nullable: true, length: 50 })
   address: string;
 
-  @Column({ nullable: true, length: 255 })
+  @Column({ nullable: true, type: 'text' })
   avatarUrl: string;
 
   @Column({
