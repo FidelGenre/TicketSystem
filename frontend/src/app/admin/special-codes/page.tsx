@@ -47,6 +47,8 @@ type CodeSale = {
 };
 
 type CommissionEntry = {
+  eventId: string;
+  eventTitle: string;
   ownerUserId: string;
   ownerName: string;
   ownerEmail: string;
@@ -237,7 +239,7 @@ export default function AdminSpecialCodesPage() {
     if (!amount || amount <= 0) { toast.error(lang === 'es' ? 'Ingresa un monto válido.' : 'Enter a valid amount.'); return; }
     setPayoutSaving(true);
     try {
-      await api.post('/special-codes/admin/payouts', { ownerUserId: payoutModal.ownerUserId, amount, note: payoutNote || undefined });
+      await api.post('/special-codes/admin/payouts', { eventId: payoutModal.eventId, ownerUserId: payoutModal.ownerUserId, amount, note: payoutNote || undefined });
       toast.success(lang === 'es' ? 'Pago registrado.' : 'Payment recorded.');
       setPayoutModal(null); setPayoutAmount(''); setPayoutNote('');
       await loadData();
@@ -597,21 +599,22 @@ export default function AdminSpecialCodesPage() {
               <HiOutlineCurrencyDollar className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-gray-900">{lang === 'es' ? 'Comisiones pendientes' : 'Commission payouts'}</h2>
-              <p className="text-sm text-gray-500">{lang === 'es' ? 'Calculado por entradas vendidas. Los pagos son manuales.' : 'Calculated from tickets sold. Payments are manual.'}</p>
+              <h2 className="text-lg font-black text-gray-900">{lang === 'es' ? 'Pagos por evento' : 'Event payouts'}</h2>
+              <p className="text-sm text-gray-500">{lang === 'es' ? 'Calculado por creador dentro de cada evento. Los pagos son manuales.' : 'Calculated by creator inside each event. Payments are manual.'}</p>
             </div>
           </div>
           <div className="divide-y divide-gray-100">
             {commissions.map((entry) => (
-              <div key={entry.ownerUserId} className="p-5 space-y-3">
+              <div key={`${entry.eventId}-${entry.ownerUserId}`} className="p-5 space-y-3">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div>
                     <p className="font-black text-gray-900">{entry.ownerName}</p>
+                    <p className="text-sm font-bold text-[#0A375A] mt-0.5">{entry.eventTitle}</p>
                     <p className="text-xs text-gray-400 mt-0.5">{entry.ownerEmail}</p>
                     <div className="flex flex-wrap gap-1.5 mt-2">
                       {entry.codes.map((c) => (
                         <span key={c.code} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-xs font-bold text-gray-600">
-                          {c.code} · ${c.commissionFixed.toFixed(2)}{c.eventTitle ? ` · ${c.eventTitle}` : ''}
+                          {c.code} · ${c.commissionFixed.toFixed(2)}
                         </span>
                       ))}
                     </div>
@@ -780,7 +783,7 @@ export default function AdminSpecialCodesPage() {
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-primary-500">LP Ticket</p>
                 <h2 className="text-xl font-black text-[#0A375A] mt-1">{lang === 'es' ? 'Registrar pago' : 'Record payment'}</h2>
-                <p className="text-sm text-gray-500 mt-0.5">{payoutModal.ownerName}</p>
+                <p className="text-sm text-gray-500 mt-0.5">{payoutModal.ownerName} · {payoutModal.eventTitle}</p>
               </div>
               <button onClick={() => setPayoutModal(null)} className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50">
                 <HiOutlineX className="w-5 h-5" />

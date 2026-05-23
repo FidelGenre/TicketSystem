@@ -179,15 +179,27 @@ export class SpecialCodesService {
       where: { status: OrderStatus.PAID, specialCode: Not(IsNull()) },
       relations: ['event'],
     });
-    // Helper: determine effective commission for a code
-    const effectiveCommission = (code: typeof codes[number]) => {
-      const eventCommission = code.event ? Number(code.event.creatorCommission || 0) : 0;
-      return eventCommission > 0 ? eventCommission : Number(code.commissionFixed || 0);
-    };
-    const payouts = await this.payoutRepo.find({ relations: ['owner'], order: { paidAt: 'DESC' } });
+    const payouts = await this.payoutRepo.find({ relations: ['owner', 'event'], order: { paidAt: 'DESC' } });
 
-    // Group by ownerUserId
-    const ownerMap = new Map<string, {
+    const findCodeForOrder = (order: typeof orders[number]) => {
+      const orderCode = String(order.specialCode || '').toUpperCase();
+      return codes.find((code) => {
+        const sameId = order.specialCodeId && code.id === order.specialCodeId;
+        const sameCode = code.code === orderCode;
+        const sameEvent = !code.eventId || code.eventId === order.eventId;
+        return sameId || (sameCode && sameEvent);
+      });
+    };
+
+    const effectiveCommission = (code: typeof codes[number], event?: Event | null) => {
+      const codeCommission = Number(code.commissionFixed || 0);
+      if (codeCommission > 0) return codeCommission;
+      return Number((event || code.event)?.creatorCommission || 0);
+    };
+
+    const summaryMap = new Map<string, {
+      eventId: string;
+      eventTitle: string;
       ownerUserId: string;
       ownerName: string;
       ownerEmail: string;
@@ -198,9 +210,12 @@ export class SpecialCodesService {
       payouts: { id: string; amount: number; note: string | null; paidAt: Date }[];
     }>();
 
-    for (const code of codes) {
-      if (!ownerMap.has(code.ownerUserId)) {
-        ownerMap.set(code.ownerUserId, {
+    const ensureEntry = (eventId: string, eventTitle: string, code: typeof codes[number]) => {
+      const key = `${eventId}:${code.ownerUserId}`;
+      if (!summaryMap.has(key)) {
+        summaryMap.set(key, {
+          eventId,
+          eventTitle,
           ownerUserId: code.ownerUserId,
           ownerName: code.owner ? `${code.owner.firstName} ${code.owner.lastName}` : code.ownerUserId,
           ownerEmail: code.owner?.email || '',
@@ -211,29 +226,34 @@ export class SpecialCodesService {
           payouts: [],
         });
       }
-      const commission = effectiveCommission(code);
-      ownerMap.get(code.ownerUserId)!.codes.push({
-        code: code.code,
-        commissionFixed: commission,
-        eventTitle: code.event?.title || null,
-      });
-    }
+      return summaryMap.get(key)!;
+    };
 
-    // Calculate earnings from orders
     for (const order of orders) {
-      const code = codes.find((c) => c.code === order.specialCode);
-      if (!code) continue;
-      const entry = ownerMap.get(code.ownerUserId);
-      if (!entry) continue;
-      const commission = effectiveCommission(code);
-      entry.totalTickets += order.ticketCount || 1;
-      entry.totalEarned += commission * (order.ticketCount || 1);
+      const code = findCodeForOrder(order);
+      if (!code || !order.eventId) continue;
+      const eventTitle = order.event?.title || code.event?.title || 'Evento';
+      const commission = effectiveCommission(code, order.event);
+      const ticketCount = Number(order.ticketCount || 1);
+      const entry = ensureEntry(order.eventId, eventTitle, code);
+      entry.totalTickets += ticketCount;
+      entry.totalEarned += commission * ticketCount;
+
+      if (!entry.codes.some((item) => item.code === code.code)) {
+        entry.codes.push({
+          code: code.code,
+          commissionFixed: commission,
+          eventTitle,
+        });
+      }
     }
 
-    // Add payouts
     for (const payout of payouts) {
-      const entry = ownerMap.get(payout.ownerUserId);
-      if (!entry) continue;
+      if (!payout.eventId) continue;
+      const relatedCode = codes.find((code) => code.ownerUserId === payout.ownerUserId && (!code.eventId || code.eventId === payout.eventId));
+      if (!relatedCode) continue;
+      const eventTitle = payout.event?.title || relatedCode.event?.title || 'Evento';
+      const entry = ensureEntry(payout.eventId, eventTitle, relatedCode);
       entry.totalPaid += Number(payout.amount);
       entry.payouts.push({
         id: payout.id,
@@ -243,21 +263,31 @@ export class SpecialCodesService {
       });
     }
 
-    return Array.from(ownerMap.values()).map((entry) => ({
-      ...entry,
-      balance: Math.round((entry.totalEarned - entry.totalPaid) * 100) / 100,
-      totalEarned: Math.round(entry.totalEarned * 100) / 100,
-      totalPaid: Math.round(entry.totalPaid * 100) / 100,
-    }));
+    return Array.from(summaryMap.values())
+      .map((entry) => ({
+        ...entry,
+        balance: Math.round((entry.totalEarned - entry.totalPaid) * 100) / 100,
+        totalEarned: Math.round(entry.totalEarned * 100) / 100,
+        totalPaid: Math.round(entry.totalPaid * 100) / 100,
+      }))
+      .sort((a, b) => b.balance - a.balance || a.eventTitle.localeCompare(b.eventTitle));
   }
 
-  async recordPayout(ownerUserId: string, amount: number, note?: string) {
+  async recordPayout(eventId: string, ownerUserId: string, amount: number, note?: string) {
     const owner = await this.userRepo.findOne({ where: { id: ownerUserId } });
     if (!owner) throw new NotFoundException('Usuario no encontrado.');
+    const event = await this.eventRepo.findOne({ where: { id: eventId } });
+    if (!event) throw new NotFoundException('Evento no encontrado.');
     if (!amount || amount <= 0) throw new BadRequestException('El monto debe ser mayor a 0.');
+
+    const summary = await this.getCommissionSummary();
+    const entry = summary.find((item) => item.eventId === eventId && item.ownerUserId === ownerUserId);
+    if (!entry || entry.balance <= 0) throw new BadRequestException('No hay saldo pendiente para este creador en este evento.');
+    if (amount > entry.balance + 0.001) throw new BadRequestException('El pago no puede ser mayor al saldo pendiente.');
 
     return this.payoutRepo.save(
       this.payoutRepo.create({
+        eventId,
         ownerUserId,
         amount,
         note: note?.trim() || null,

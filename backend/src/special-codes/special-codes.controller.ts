@@ -55,8 +55,8 @@ export class SpecialCodesController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN)
   @Post('admin/payouts')
-  recordPayout(@Body() dto: { ownerUserId: string; amount: number; note?: string }) {
-    return this.specialCodesService.recordPayout(dto.ownerUserId, dto.amount, dto.note);
+  recordPayout(@Body() dto: { eventId: string; ownerUserId: string; amount: number; note?: string }) {
+    return this.specialCodesService.recordPayout(dto.eventId, dto.ownerUserId, dto.amount, dto.note);
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)

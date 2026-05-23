@@ -7,6 +7,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { User } from './user.entity';
+import { Event } from './event.entity';
 
 @Entity('special_code_payouts')
 export class SpecialCodePayout {
@@ -19,6 +20,13 @@ export class SpecialCodePayout {
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'ownerUserId' })
   owner: User;
+
+  @Column({ type: 'uuid', nullable: true })
+  eventId: string | null;
+
+  @ManyToOne(() => Event, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'eventId' })
+  event: Event;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   amount: number;
