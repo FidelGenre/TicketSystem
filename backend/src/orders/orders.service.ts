@@ -672,16 +672,27 @@ export class OrdersService {
       return t !== 'stage' && t !== 'decor';
     });
 
-    // Per section: take the maximum of actual DB seat count, capacity field, and rows×seatsPerRow.
-    // This covers: generated seats (DB count), GA sections (capacity field), and
-    // sections whose config changed after generation (rows*seatsPerRow may differ from DB count).
+    // Per section, the meaningful capacity depends on the section type:
+    //  - seated / vip / table: real seats live in DB (one record per seat). Use max(seatCount, rows×seatsPerRow)
+    //    so we still match the grid if seats were never regenerated after a layout change.
+    //  - standing (GA): no seat records ever exist; the organizer's UI only exposes the capacity field.
+    //    rows/seatsPerRow are leftover defaults from creation (5×10) — ignore them entirely.
     let totalCapacity = 0;
     const sectionBreakdown: any[] = [];
     for (const section of activeSections) {
+      const type = String(section.sectionType).toLowerCase();
       const seatCount = await this.seatRepo.count({ where: { sectionId: section.id } });
       const capField = Number(section.capacity) || 0;
       const rowsCalc = (Number(section.rows) || 0) * (Number(section.seatsPerRow) || 0);
-      const contribution = Math.max(seatCount, capField, rowsCalc);
+
+      let contribution = 0;
+      if (type === 'standing') {
+        contribution = capField;
+      } else {
+        // seated / vip / table
+        contribution = Math.max(seatCount, rowsCalc);
+      }
+
       totalCapacity += contribution;
       sectionBreakdown.push({ name: section.name, type: section.sectionType, seatCount, capField, rowsCalc, contribution });
     }
