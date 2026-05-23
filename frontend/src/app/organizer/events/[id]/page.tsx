@@ -982,8 +982,22 @@ export default function EventDetailPage() {
   const pendingTickets = attendees.filter((a) => a.status === 'active').length;
   const cancelledTickets = attendees.filter((a) => a.status === 'cancelled').length;
   const totalEventCapacity = sections.reduce((sum, section) => {
-    const sectionCapacity = Number(section.capacity) || Number(section.seats?.length) || (Number(section.rows || 0) * Number(section.seatsPerRow || 0));
-    return sum + sectionCapacity;
+    const sectionType = String(section.sectionType || '').toLowerCase();
+
+    if (sectionType === 'stage' || sectionType === 'decor') {
+      return sum;
+    }
+
+    if (sectionType === 'standing') {
+      return sum + (Number(section.capacity) || 0);
+    }
+
+    const realSeatCount = Array.isArray(section.seats) ? section.seats.length : 0;
+    if (realSeatCount > 0) {
+      return sum + realSeatCount;
+    }
+
+    return sum + (Number(section.rows || 0) * Number(section.seatsPerRow || 0));
   }, 0);
   const remainingEventCapacity = Math.max(totalEventCapacity - totalTickets, 0);
   const averageOrder = totalOrders > 0 ? totalRevenue / totalOrders : 0;
