@@ -380,7 +380,7 @@ export default function AdminSpecialCodesPage() {
         </div>
 
         {loading ? (
-          <div className="p-5 space-y-3">{[...Array(4)].map((_, i) => <div key={i} className="h-20 skeleton rounded-xl" />)}</div>
+          <div className="p-5 space-y-4">{[...Array(4)].map((_, i) => <div key={i} className="h-20 skeleton rounded-xl" />)}</div>
         ) : filteredCodes.length === 0 ? (
           <div className="p-10 text-center"><HiOutlineTag className="w-10 h-10 text-gray-300 mx-auto" /><p className="text-sm text-gray-500 mt-3">{lang === 'es' ? 'Todavía no hay códigos.' : 'No codes yet.'}</p></div>
         ) : (
@@ -605,12 +605,12 @@ export default function AdminSpecialCodesPage() {
           </div>
           <div className="divide-y divide-gray-100">
             {commissions.map((entry) => (
-              <div key={`${entry.eventId}-${entry.ownerUserId}`} className="p-5 space-y-3">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div key={`${entry.eventId}-${entry.ownerUserId}`} className="p-5 space-y-4">
+                <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_auto] gap-4 xl:items-center">
                   <div>
                     <p className="font-black text-gray-900">{entry.ownerName}</p>
-                    <p className="text-sm font-bold text-[#0A375A] mt-0.5">{entry.eventTitle}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{entry.ownerEmail}</p>
+                    <p className="text-sm font-bold text-[#0A375A] mt-0.5 truncate">{entry.eventTitle}</p>
+                    <p className="text-xs text-gray-400 mt-0.5 truncate">{entry.ownerEmail}</p>
                     <div className="flex flex-wrap gap-1.5 mt-2">
                       {entry.codes.map((c) => (
                         <span key={c.code} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-xs font-bold text-gray-600">
@@ -619,7 +619,7 @@ export default function AdminSpecialCodesPage() {
                       ))}
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-6 text-right">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-[repeat(4,88px)_auto] gap-3 sm:gap-4 xl:gap-5 text-left sm:text-right xl:items-center">
                     <div>
                       <p className="text-xs font-black uppercase text-gray-400">{lang === 'es' ? 'Entradas' : 'Tickets'}</p>
                       <p className="text-lg font-black text-gray-900 mt-0.5">{entry.totalTickets}</p>
@@ -638,7 +638,7 @@ export default function AdminSpecialCodesPage() {
                     </div>
                     <button
                       onClick={() => { setPayoutModal(entry); setPayoutAmount(entry.balance > 0 ? entry.balance.toFixed(2) : ''); setPayoutNote(''); }}
-                      className="btn-primary inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-black self-center"
+                      className="btn-primary inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-black col-span-2 sm:col-span-4 xl:col-span-1 w-full xl:w-auto whitespace-nowrap"
                     >
                       <HiOutlineCurrencyDollar className="w-4 h-4" />
                       {lang === 'es' ? 'Registrar pago' : 'Record payment'}
@@ -647,10 +647,10 @@ export default function AdminSpecialCodesPage() {
                 </div>
 
                 {entry.payouts.length > 0 && (
-                  <div className="bg-gray-50 rounded-xl p-3 space-y-1.5">
+                  <div className="bg-gray-50 rounded-xl p-3 space-y-1.5 overflow-hidden">
                     <p className="text-xs font-black uppercase tracking-wider text-gray-400 mb-2">{lang === 'es' ? 'Historial de pagos' : 'Payment history'}</p>
                     {entry.payouts.map((p) => (
-                      <div key={p.id} className="flex items-center justify-between text-xs">
+                      <div key={p.id} className="flex items-center justify-between gap-3 text-xs">
                         <span className="text-gray-500">{new Date(p.paidAt).toLocaleDateString(lang === 'es' ? 'es-US' : 'en-US')} {p.note ? `· ${p.note}` : ''}</span>
                         <span className="font-black text-green-700">${Number(p.amount).toFixed(2)}</span>
                       </div>

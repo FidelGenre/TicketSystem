@@ -173,7 +173,7 @@ export default function MySpecialCodesPanel({ lang }: Props) {
             </div>
             <div>
               <p className="text-xs font-black uppercase tracking-[0.2em] text-primary-500">LP Ticket</p>
-              <h2 className="text-xl font-black text-[#0A375A] mt-1">{copy.title}</h2>
+              <h2 className="text-xl font-black text-[#0A375A] mt-1 leading-tight">{copy.title}</h2>
               <p className="text-sm text-gray-500 mt-1 max-w-2xl">{copy.subtitle}</p>
             </div>
           </div>
@@ -187,39 +187,39 @@ export default function MySpecialCodesPanel({ lang }: Props) {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-3 p-5 md:p-6 border-b border-gray-100">
-          <div className="rounded-lg border border-gray-100 bg-white p-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 p-5 md:p-6 border-b border-gray-100">
+          <div className="rounded-lg border border-gray-100 bg-white p-3 sm:p-4 min-h-[108px]">
             <div className="flex items-center justify-between">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-gray-400">{copy.total}</p>
               <HiOutlineTag className="w-5 h-5 text-primary-500" />
             </div>
-            <p className="text-3xl font-black text-[#0A375A] mt-2">{stats.total}</p>
+            <p className="text-2xl sm:text-3xl font-black text-[#0A375A] mt-2 tabular-nums">{stats.total}</p>
           </div>
-          <div className="rounded-lg border border-gray-100 bg-white p-4">
+          <div className="rounded-lg border border-gray-100 bg-white p-3 sm:p-4 min-h-[108px]">
             <div className="flex items-center justify-between">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-gray-400">{copy.active}</p>
               <HiOutlineCheckCircle className="w-5 h-5 text-green-500" />
             </div>
-            <p className="text-3xl font-black text-[#0A375A] mt-2">{stats.active}</p>
+            <p className="text-2xl sm:text-3xl font-black text-[#0A375A] mt-2 tabular-nums">{stats.active}</p>
           </div>
-          <div className="rounded-lg border border-gray-100 bg-white p-4">
+          <div className="rounded-lg border border-gray-100 bg-white p-3 sm:p-4 min-h-[108px]">
             <div className="flex items-center justify-between">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-gray-400">{copy.eventCodes}</p>
               <HiOutlineTicket className="w-5 h-5 text-primary-500" />
             </div>
-            <p className="text-3xl font-black text-[#0A375A] mt-2">{stats.eventCodes}</p>
+            <p className="text-2xl sm:text-3xl font-black text-[#0A375A] mt-2 tabular-nums">{stats.eventCodes}</p>
           </div>
-          <div className="rounded-lg border border-gray-100 bg-white p-4">
+          <div className="rounded-lg border border-gray-100 bg-white p-3 sm:p-4 min-h-[108px]">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-gray-400">{copy.earned}</p>
-            <p className="text-2xl font-black text-[#0A375A] mt-2">${stats.totalEarned.toFixed(2)}</p>
+            <p className="text-xl sm:text-2xl font-black text-[#0A375A] mt-2 tabular-nums">${stats.totalEarned.toFixed(2)}</p>
           </div>
-          <div className="rounded-lg border border-gray-100 bg-white p-4">
+          <div className="rounded-lg border border-gray-100 bg-white p-3 sm:p-4 min-h-[108px]">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-gray-400">{copy.paid}</p>
-            <p className="text-2xl font-black text-green-600 mt-2">${stats.totalPaid.toFixed(2)}</p>
+            <p className="text-xl sm:text-2xl font-black text-green-600 mt-2 tabular-nums">${stats.totalPaid.toFixed(2)}</p>
           </div>
-          <div className="rounded-lg border border-gray-100 bg-white p-4">
+          <div className="rounded-lg border border-gray-100 bg-white p-3 sm:p-4 min-h-[108px]">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-gray-400">{copy.balance}</p>
-            <p className="text-2xl font-black text-primary-500 mt-2">${stats.balance.toFixed(2)}</p>
+            <p className="text-xl sm:text-2xl font-black text-primary-500 mt-2 tabular-nums">${stats.balance.toFixed(2)}</p>
           </div>
         </div>
 
@@ -238,10 +238,10 @@ export default function MySpecialCodesPanel({ lang }: Props) {
         ) : (
           <div className="divide-y divide-gray-100">
             {codes.map((item) => (
-              <div key={item.id} className="p-5 md:p-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div key={item.id} className="p-5 md:p-6 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center gap-4">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-3xl font-black tracking-wide text-[#0A375A]">{item.code}</p>
+                    <p className="text-2xl sm:text-3xl font-black tracking-wide text-[#0A375A] break-all">{item.code}</p>
                     <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black ${
                       item.isActive ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'
                     }`}>
@@ -249,7 +249,7 @@ export default function MySpecialCodesPanel({ lang }: Props) {
                       {item.isActive ? copy.activeLabel : copy.inactiveLabel}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-500 mt-3 flex items-center gap-2">
+                  <p className="text-sm text-gray-500 mt-3 flex items-center gap-2 min-w-0">
                     <HiOutlineCalendar className="w-4 h-4 text-gray-400" />
                     {item.event?.title || copy.allEvents}
                   </p>
@@ -257,7 +257,7 @@ export default function MySpecialCodesPanel({ lang }: Props) {
 
                 <button
                   onClick={() => handleCopy(item.code)}
-                  className="btn-primary inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg text-sm font-black"
+                  className="btn-primary inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg text-sm font-black w-full lg:w-auto whitespace-nowrap"
                 >
                   <HiOutlineClipboardCopy className="w-5 h-5" />
                   {copy.copyButton}
@@ -270,7 +270,7 @@ export default function MySpecialCodesPanel({ lang }: Props) {
 
       {codes.length > 0 && (
         <div className="dashboard-premium-card overflow-hidden">
-          <div className="p-5 md:p-6 border-b border-gray-100 flex items-center justify-between gap-3">
+          <div className="p-5 md:p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="public-premium-icon w-10 h-10 shrink-0 flex items-center justify-center">
                 <HiOutlineCurrencyDollar className="w-5 h-5" />
@@ -307,7 +307,7 @@ export default function MySpecialCodesPanel({ lang }: Props) {
             <div className="divide-y divide-gray-100">
               {payouts.map((item) => (
                 <div key={`${item.eventId}-${item.codes.map((code) => code.code).join('-')}`} className="p-5 md:p-6 space-y-4">
-                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center gap-4">
                     <div>
                       <p className="font-black text-gray-900">{item.eventTitle}</p>
                       <div className="flex flex-wrap gap-1.5 mt-2">
@@ -318,28 +318,28 @@ export default function MySpecialCodesPanel({ lang }: Props) {
                         ))}
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-right">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 text-left sm:text-right">
                       <div>
                         <p className="text-xs font-black uppercase text-gray-400">{copy.salesTickets}</p>
-                        <p className="text-lg font-black text-gray-900">{item.totalTickets}</p>
+                        <p className="text-lg font-black text-gray-900 tabular-nums">{item.totalTickets}</p>
                       </div>
                       <div>
                         <p className="text-xs font-black uppercase text-gray-400">{copy.earned}</p>
-                        <p className="text-lg font-black text-[#0A375A]">${Number(item.totalEarned || 0).toFixed(2)}</p>
+                        <p className="text-lg font-black text-[#0A375A] tabular-nums">${Number(item.totalEarned || 0).toFixed(2)}</p>
                       </div>
                       <div>
                         <p className="text-xs font-black uppercase text-gray-400">{copy.paid}</p>
-                        <p className="text-lg font-black text-green-600">${Number(item.totalPaid || 0).toFixed(2)}</p>
+                        <p className="text-lg font-black text-green-600 tabular-nums">${Number(item.totalPaid || 0).toFixed(2)}</p>
                       </div>
                       <div>
                         <p className="text-xs font-black uppercase text-gray-400">{copy.balance}</p>
-                        <p className="text-lg font-black text-primary-500">${Number(item.balance || 0).toFixed(2)}</p>
+                        <p className="text-lg font-black text-primary-500 tabular-nums">${Number(item.balance || 0).toFixed(2)}</p>
                       </div>
                     </div>
                   </div>
 
                   {item.payouts.length > 0 && (
-                    <div className="rounded-xl bg-gray-50 p-3 space-y-1.5">
+                    <div className="rounded-xl bg-gray-50 p-3 space-y-1.5 overflow-hidden">
                       <p className="text-xs font-black uppercase tracking-wider text-gray-400">{copy.paymentHistory}</p>
                       {item.payouts.map((payment) => (
                         <div key={payment.id} className="flex items-center justify-between gap-3 text-xs">
@@ -360,7 +360,7 @@ export default function MySpecialCodesPanel({ lang }: Props) {
 
       {codes.length > 0 && (
         <div className="dashboard-premium-card overflow-hidden">
-          <div className="p-5 md:p-6 border-b border-gray-100 flex items-center justify-between gap-3">
+          <div className="p-5 md:p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="public-premium-icon w-10 h-10 shrink-0 flex items-center justify-center">
                 <HiOutlineShoppingCart className="w-5 h-5" />

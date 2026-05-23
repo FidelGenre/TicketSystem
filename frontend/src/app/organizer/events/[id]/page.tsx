@@ -393,9 +393,9 @@ function CreatorRewardsBlock({
         ) : (
           <div className="divide-y divide-gray-100">
             {codes.map(code => (
-              <div key={code.id} className="px-4 py-3.5 space-y-2">
+              <div key={code.id} className="px-4 py-4 space-y-3">
                 {/* Creator info */}
-                <div className="flex items-center gap-3">
+                <div className="flex items-start gap-3">
                   <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 text-sm font-bold text-gray-500">
                     {(code.owner?.firstName?.[0] || '?').toUpperCase()}
                   </div>
@@ -405,7 +405,7 @@ function CreatorRewardsBlock({
                     </p>
                     <p className="text-[10px] text-gray-400 font-mono">{code.code}</p>
                   </div>
-                  <div className="text-right shrink-0">
+                  <div className="text-right shrink-0 min-w-[86px]">
                     <p className="text-base font-extrabold text-emerald-700">
                       ${Number(codeInputs[code.id] ?? code.commissionFixed ?? 0).toFixed(2)}
                     </p>
@@ -416,14 +416,14 @@ function CreatorRewardsBlock({
                     </p>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2 pl-12">
-                  <div className="rounded-xl bg-gray-50 px-3 py-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-0 sm:pl-12">
+                  <div className="rounded-xl bg-gray-50 px-3 py-2 min-h-[58px]">
                     <p className="text-[10px] font-black uppercase text-gray-400">
                       {lang === 'es' ? 'Entradas vendidas' : 'Tickets sold'}
                     </p>
                     <p className="text-sm font-extrabold text-gray-900">{Number(code.ticketCount || 0)}</p>
                   </div>
-                  <div className="rounded-xl bg-gray-50 px-3 py-2">
+                  <div className="rounded-xl bg-gray-50 px-3 py-2 min-h-[58px]">
                     <p className="text-[10px] font-black uppercase text-gray-400">
                       {lang === 'es' ? 'Comisión generada' : 'Generated commission'}
                     </p>
@@ -433,8 +433,8 @@ function CreatorRewardsBlock({
                   </div>
                 </div>
 
-                <details className="pl-12">
-                  <summary className="cursor-pointer list-none rounded-xl bg-gray-100 px-3 py-2 text-xs font-bold text-gray-700 transition hover:bg-gray-200">
+                <details className="pl-0 sm:pl-12">
+                  <summary className="cursor-pointer list-none rounded-xl bg-gray-100 px-3 py-2.5 text-xs font-bold text-gray-700 transition hover:bg-gray-200 text-center sm:text-left">
                     {lang === 'es' ? 'Ver compradores' : 'View buyers'} ({code.orders?.length || 0})
                   </summary>
                   <div className="mt-2 overflow-hidden rounded-xl border border-gray-100">
@@ -446,14 +446,14 @@ function CreatorRewardsBlock({
                       (code.orders || []).map((order) => {
                         const buyerName = order.buyer ? `${order.buyer.firstName || ''} ${order.buyer.lastName || ''}`.trim() : '';
                         return (
-                          <div key={order.id} className="grid grid-cols-1 gap-2 border-b border-gray-50 px-3 py-2 last:border-0 sm:grid-cols-[1fr_auto]">
+                          <div key={order.id} className="grid grid-cols-1 gap-3 border-b border-gray-50 px-3 py-3 last:border-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
                             <div>
-                              <p className="text-xs font-bold text-gray-900">
+                              <p className="text-xs font-bold text-gray-900 truncate">
                                 {buyerName || (lang === 'es' ? 'Comprador' : 'Buyer')}
                               </p>
-                              <p className="text-[11px] text-gray-500">{order.buyer?.email || '-'}</p>
+                              <p className="text-[11px] text-gray-500 truncate">{order.buyer?.email || '-'}</p>
                             </div>
-                            <div className="grid grid-cols-3 gap-3 text-right">
+                            <div className="grid grid-cols-3 gap-2 text-right sm:min-w-[210px]">
                               <div>
                                 <p className="text-[9px] font-black uppercase text-gray-400">
                                   {lang === 'es' ? 'Entradas' : 'Tickets'}
@@ -482,8 +482,8 @@ function CreatorRewardsBlock({
                   </div>
                 </details>
                 {/* Inline input */}
-                <div className="flex gap-2 items-center pl-12">
-                  <div className="relative flex-1">
+                <div className="flex flex-col sm:flex-row gap-2 sm:items-center pl-0 sm:pl-12">
+                  <div className="relative w-full sm:flex-1">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">$</span>
                     <input
                       type="number" step="0.01" min="0"
@@ -497,7 +497,7 @@ function CreatorRewardsBlock({
                     type="button"
                     disabled={codeSaving === code.id}
                     onClick={() => handleSaveCodeReward(code)}
-                    className="px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-xl transition-all active:scale-95 disabled:opacity-50 shrink-0"
+                    className="w-full sm:w-auto px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-xl transition-all active:scale-95 disabled:opacity-50 shrink-0"
                   >
                     {codeSaving === code.id
                       ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -555,7 +555,7 @@ function CreatorRewardsBlock({
                 % {lang === 'es' ? 'del precio' : 'of price'}
               </button>
             </div>
-            <div className="relative flex-1">
+            <div className="relative w-full sm:flex-1">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-bold">{mode === 'fixed' ? '$' : '%'}</span>
               <input
                 type="number" step="0.01" min="0" max={mode === 'percent' ? 100 : undefined}
@@ -592,7 +592,7 @@ function CreatorRewardsBlock({
                       <p className="text-xs font-bold text-gray-800 truncate">{sec.name}</p>
                       <p className="text-[10px] text-gray-400">{lang === 'es' ? 'Precio:' : 'Price:'} <span className="font-semibold">${Number(sec.price).toFixed(2)}</span></p>
                     </div>
-                    <div className="text-right shrink-0">
+                    <div className="text-right shrink-0 min-w-[86px]">
                       <p className="text-sm font-extrabold text-emerald-700">${earning.toFixed(2)}</p>
                       <p className="text-[10px] text-gray-400">{pct.toFixed(1)}%</p>
                     </div>
@@ -1356,7 +1356,7 @@ export default function EventDetailPage() {
           <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-4xl p-6 sm:p-8 space-y-6 animate-fade-in mt-4 sm:mt-8 mb-10">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-              <div className="flex items-center gap-3">
+              <div className="flex items-start gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center">
                   <HiOutlineBell className="w-6 h-6 text-[#F97316]" />
                 </div>
@@ -1711,7 +1711,7 @@ export default function EventDetailPage() {
                       <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl flex flex-col z-10 max-h-[85vh] overflow-hidden animate-[scaleIn_0.2s_ease-out]">
                         {/* Modal Header */}
                         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-gray-50/50">
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-start gap-3">
                             <div className="w-11 h-11 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-base shrink-0 uppercase">
                               {selectedGroup.name.charAt(0)}{selectedGroup.name.split(' ')[1]?.charAt(0) || ''}
                             </div>
