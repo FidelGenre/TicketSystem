@@ -974,6 +974,7 @@ export default function EventDetailPage() {
   const catLabel = catInfo ? (lang === 'en' ? catInfo.labelEn : catInfo.labelEs) : event.category;
 
   const salesOrders = ((sales?.orders || []) as any[]);
+  const complimentaryOrders = salesOrders.filter((order: any) => Number(order.total || 0) === 0 && Number(order.ticketCount || 0) > 0);
   const totalRevenue = Number(sales?.totalRevenue || 0);
   const totalOrders = Number(sales?.totalOrders || salesOrders.length || 0);
   const totalTickets = Number(sales?.totalTickets || attendees.length || 0);
@@ -1889,6 +1890,57 @@ export default function EventDetailPage() {
               </div>
             );
           })()}
+
+
+          {complimentaryOrders.length > 0 && (
+            <div className="rounded-2xl border border-orange-200 bg-orange-50/60 p-4 space-y-3">
+              <div>
+                <h3 className="text-xs font-black uppercase tracking-[0.22em] text-orange-700">
+                  {lang === 'es' ? 'Cortesías enviadas' : 'Sent complimentary tickets'}
+                </h3>
+                <p className="mt-1 text-xs text-orange-700/80">
+                  {lang === 'es'
+                    ? 'Aquí puedes abrir el recibo o cada entrada enviada por invitación.'
+                    : 'Open the receipt or each ticket sent as an invitation.'}
+                </p>
+              </div>
+
+              <div className="grid gap-3">
+                {complimentaryOrders.map((order: any) => (
+                  <div key={order.id} className="rounded-xl border border-orange-100 bg-white p-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <p className="text-sm font-black text-gray-900">
+                        {order.user?.firstName} {order.user?.lastName}
+                      </p>
+                      <p className="text-xs font-semibold text-gray-500">{order.user?.email}</p>
+                      <p className="mt-1 text-[11px] font-bold uppercase tracking-wider text-orange-600">
+                        {order.ticketCount} {lang === 'es' ? 'entradas de cortesía' : 'complimentary tickets'} · {format(parseSafeDate(order.paidAt || order.createdAt), 'dd MMM yyyy')}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <Link
+                        href={`/orders/${order.id}/receipt`}
+                        className="inline-flex items-center justify-center rounded-lg border border-orange-200 px-3 py-2 text-xs font-black text-orange-700 hover:bg-orange-50"
+                      >
+                        {lang === 'es' ? 'Ver recibo' : 'View receipt'}
+                      </Link>
+
+                      {(order.tickets || []).map((ticket: any, index: number) => (
+                        <Link
+                          key={ticket.id || ticket.ticketCode}
+                          href={`/verify/${ticket.ticketCode}`}
+                          className="inline-flex items-center justify-center rounded-lg bg-[#0A375A] px-3 py-2 text-xs font-black text-white hover:bg-[#082b47]"
+                        >
+                          {lang === 'es' ? `Ver entrada ${index + 1}` : `View ticket ${index + 1}`}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {selectedBlockSection ? (
             (() => {

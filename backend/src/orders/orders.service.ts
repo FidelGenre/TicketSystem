@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const Stripe = require('stripe');
@@ -716,6 +716,23 @@ export class OrdersService {
         order.paidAt = order.createdAt;
       });
     }
+    const orderIds = orders.map((order) => order.id);
+    if (orderIds.length > 0) {
+      const tickets = await this.ticketRepo.find({
+        where: { orderId: In(orderIds) },
+        order: { createdAt: 'ASC' },
+      });
+      const ticketsByOrder = new Map<string, Ticket[]>();
+      tickets.forEach((ticket) => {
+        const existingTickets = ticketsByOrder.get(ticket.orderId) || [];
+        existingTickets.push(ticket);
+        ticketsByOrder.set(ticket.orderId, existingTickets);
+      });
+      orders.forEach((order) => {
+        (order as any).tickets = ticketsByOrder.get(order.id) || [];
+      });
+    }
+
     const totalRevenue = orders.reduce((sum, o) => sum + Number(o.total), 0);
     const totalTickets = orders.reduce((sum, o) => sum + o.ticketCount, 0);
     return { orders, totalRevenue, totalTickets, totalOrders: orders.length };
