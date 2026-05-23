@@ -409,19 +409,19 @@ function DashboardPageBody() {
 
       {/* Profile */}
       {activeTab === 'profile' && user && (
-        <div className="max-w-2xl mx-auto">
-          <div className="dashboard-premium-card p-8">
-            <div className="flex flex-col items-center mb-10 text-center">
-              <div className="relative group mb-4">
-                <div className="w-24 h-24 rounded-full bg-primary-100 border-4 border-white shadow-lg flex items-center justify-center overflow-hidden">
+        <div className="max-w-4xl mx-auto">
+          <div className="dashboard-premium-card overflow-hidden border border-slate-100 bg-white shadow-[0_24px_70px_rgba(10,55,90,0.10)]">
+            <div className="relative overflow-hidden px-6 py-8 sm:px-8 sm:py-10 text-center border-b border-slate-100 bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.18),transparent_30%),linear-gradient(135deg,#062842_0%,#0A375A_52%,#123f63_100%)]">
+              <div className="relative group mb-5 inline-flex">
+                <div className="w-28 h-28 rounded-full bg-white/15 border-4 border-white shadow-2xl shadow-slate-950/25 flex items-center justify-center overflow-hidden ring-4 ring-white/15">
                   {user.avatarUrl ? (
                     <img src={getImageUrl(user.avatarUrl)} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-3xl font-bold text-primary-600 uppercase">{user.firstName[0]}{user.lastName[0]}</span>
+                    <span className="text-3xl font-black text-white uppercase">{user.firstName[0]}{user.lastName[0]}</span>
                   )}
                 </div>
-                <label className="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full shadow-md border border-gray-100 flex items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors">
-                  <HiOutlineCamera className="w-4 h-4 text-primary-600" />
+                <label className="absolute bottom-1 right-1 w-9 h-9 bg-[#F97316] rounded-full shadow-lg shadow-orange-900/25 border-2 border-white flex items-center justify-center cursor-pointer hover:bg-orange-600 transition-colors">
+                  <HiOutlineCamera className="w-4 h-4 text-white" />
                   <input 
                     type="file" 
                     className="hidden" 
@@ -440,14 +440,14 @@ function DashboardPageBody() {
                   />
                 </label>
               </div>
-              <h3 className="font-bold text-2xl text-gray-900 mb-1">{user.firstName} {user.lastName}</h3>
-              <p className="text-gray-500 text-sm tracking-wide uppercase font-medium">{t(user.role as any) || user.role}</p>
+              <h3 className="font-black text-3xl text-white mb-2 tracking-tight">{user.firstName} {user.lastName}</h3>
+              <p className="inline-flex items-center rounded-full bg-white/12 px-3 py-1 text-[11px] tracking-[0.18em] uppercase font-black text-white/80 border border-white/15">{t(user.role as any) || user.role}</p>
             </div>
 
-            <div className="space-y-6">
-              <div className="flex items-center justify-between border-b border-gray-50 pb-4">
-                <h4 className="font-bold text-sm text-gray-400 uppercase tracking-widest">{t('clientPersonalInfo')}</h4>
-                <button onClick={() => setEditMode(!editMode)} className="text-[#0A375A] hover:text-[#F97316] text-sm font-bold flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-orange-50 transition-all">
+            <div className="p-5 sm:p-8 space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50/70 px-4 py-4">
+                <h4 className="font-black text-xs text-[#0A375A] uppercase tracking-[0.18em]">{t('clientPersonalInfo')}</h4>
+                <button onClick={() => setEditMode(!editMode)} className="inline-flex items-center justify-center text-[#0A375A] hover:text-white text-sm font-black gap-1.5 px-4 py-2 rounded-full border border-orange-100 bg-white hover:bg-[#F97316] transition-all shadow-sm">
                   {editMode ? (
                     <span className="flex items-center gap-1"><HiOutlineX className="w-4 h-4" /> {t('orgCancel')}</span>
                   ) : (
@@ -457,93 +457,93 @@ function DashboardPageBody() {
               </div>
 
               {editMode ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 animate-fade-in">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in">
                   <div className="space-y-2">
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">{t('firstName')}</label>
-                    <input type="text" value={profileForm.firstName} onChange={(e) => setProfileForm({ ...profileForm, firstName: e.target.value })} className="input dashboard-premium-input bg-gray-50 focus:bg-white" />
+                    <input type="text" value={profileForm.firstName} onChange={(e) => setProfileForm({ ...profileForm, firstName: e.target.value })} className="input dashboard-premium-input bg-white border-slate-200 focus:bg-white focus:border-[#F97316] focus:ring-4 focus:ring-orange-100 rounded-2xl font-semibold" />
                   </div>
                   <div className="space-y-2">
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">{t('lastName')}</label>
-                    <input type="text" value={profileForm.lastName} onChange={(e) => setProfileForm({ ...profileForm, lastName: e.target.value })} className="input dashboard-premium-input bg-gray-50 focus:bg-white" />
+                    <input type="text" value={profileForm.lastName} onChange={(e) => setProfileForm({ ...profileForm, lastName: e.target.value })} className="input dashboard-premium-input bg-white border-slate-200 focus:bg-white focus:border-[#F97316] focus:ring-4 focus:ring-orange-100 rounded-2xl font-semibold" />
                   </div>
                   <div className="space-y-2">
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">{lang === 'es' ? 'Nombre de Usuario' : 'Username'}</label>
-                    <input type="text" value={profileForm.username} onChange={(e) => setProfileForm({ ...profileForm, username: e.target.value })} className="input dashboard-premium-input bg-gray-50 focus:bg-white" />
+                    <input type="text" value={profileForm.username} onChange={(e) => setProfileForm({ ...profileForm, username: e.target.value })} className="input dashboard-premium-input bg-white border-slate-200 focus:bg-white focus:border-[#F97316] focus:ring-4 focus:ring-orange-100 rounded-2xl font-semibold" />
                   </div>
                   <div className="space-y-2">
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">{t('email')}</label>
-                    <input type="email" value={profileForm.email} onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })} className="input dashboard-premium-input bg-gray-50 focus:bg-white" />
+                    <input type="email" value={profileForm.email} onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })} className="input dashboard-premium-input bg-white border-slate-200 focus:bg-white focus:border-[#F97316] focus:ring-4 focus:ring-orange-100 rounded-2xl font-semibold" />
                   </div>
                   <div className="space-y-2">
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">{t('phone')}</label>
-                    <input type="tel" value={profileForm.phone} onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })} className="input dashboard-premium-input bg-gray-50 focus:bg-white" />
+                    <input type="tel" value={profileForm.phone} onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })} className="input dashboard-premium-input bg-white border-slate-200 focus:bg-white focus:border-[#F97316] focus:ring-4 focus:ring-orange-100 rounded-2xl font-semibold" />
                   </div>
 
                   <div className="sm:col-span-2 space-y-2">
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">{lang === 'es' ? 'Dirección' : 'Address'}</label>
-                    <textarea value={profileForm.address} onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })} className="w-full input dashboard-premium-input bg-gray-50 focus:bg-white min-h-[80px] py-3" />
+                    <textarea value={profileForm.address} onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })} className="w-full input dashboard-premium-input bg-white border-slate-200 focus:bg-white focus:border-[#F97316] focus:ring-4 focus:ring-orange-100 rounded-2xl font-semibold min-h-[96px] py-3" />
                   </div>
                   <div className="sm:col-span-2 space-y-2">
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">{lang === 'es' ? 'Nueva Contraseña (Opcional)' : 'New Password (Optional)'}</label>
-                    <input type="password" value={profileForm.password || ''} onChange={(e) => setProfileForm({ ...profileForm, password: e.target.value })} placeholder="******" className="input dashboard-premium-input bg-gray-50 focus:bg-white" />
+                    <input type="password" value={profileForm.password || ''} onChange={(e) => setProfileForm({ ...profileForm, password: e.target.value })} placeholder="******" className="input dashboard-premium-input bg-white border-slate-200 focus:bg-white focus:border-[#F97316] focus:ring-4 focus:ring-orange-100 rounded-2xl font-semibold" />
                   </div>
-                  <div className="sm:col-span-2 pt-4">
-                    <button onClick={handleSaveProfile} className="btn-primary w-full py-3.5 rounded-lg font-bold shadow-lg shadow-primary-500/20">{t('clientSave')}</button>
+                  <div className="sm:col-span-2 pt-2">
+                    <button onClick={handleSaveProfile} className="btn-primary w-full py-4 rounded-2xl font-black shadow-xl shadow-orange-500/20">{t('clientSave')}</button>
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 py-2">
-                  <div className="group cursor-default">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2">
+                  <div className="group cursor-default rounded-2xl border border-slate-100 bg-white p-4 shadow-sm hover:border-orange-100 hover:shadow-md transition-all">
                     <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('firstName')}</span>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.16em]">{t('firstName')}</span>
                     </div>
-                    <p className="text-gray-900 font-semibold flex items-center justify-between">
+                    <p className="text-[#0A375A] font-black flex items-center justify-between gap-3 break-words">
                       {user.firstName}
                       <HiOutlinePencil className="w-3.5 h-3.5 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" onClick={() => setEditMode(true)} />
                     </p>
                   </div>
-                  <div className="group cursor-default">
+                  <div className="group cursor-default rounded-2xl border border-slate-100 bg-white p-4 shadow-sm hover:border-orange-100 hover:shadow-md transition-all">
                     <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('lastName')}</span>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.16em]">{t('lastName')}</span>
                     </div>
-                    <p className="text-gray-900 font-semibold flex items-center justify-between">
+                    <p className="text-[#0A375A] font-black flex items-center justify-between gap-3 break-words">
                       {user.lastName}
                       <HiOutlinePencil className="w-3.5 h-3.5 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" onClick={() => setEditMode(true)} />
                     </p>
                   </div>
-                  <div className="group cursor-default">
+                  <div className="group cursor-default rounded-2xl border border-slate-100 bg-white p-4 shadow-sm hover:border-orange-100 hover:shadow-md transition-all">
                     <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{lang === 'es' ? 'Nombre de Usuario' : 'Username'}</span>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.16em]">{lang === 'es' ? 'Nombre de Usuario' : 'Username'}</span>
                     </div>
-                    <p className="text-gray-900 font-semibold flex items-center justify-between">
+                    <p className="text-[#0A375A] font-black flex items-center justify-between gap-3 break-words">
                       @{user.username || '—'}
                       <HiOutlinePencil className="w-3.5 h-3.5 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" onClick={() => setEditMode(true)} />
                     </p>
                   </div>
-                  <div className="group cursor-default">
+                  <div className="group cursor-default rounded-2xl border border-slate-100 bg-white p-4 shadow-sm hover:border-orange-100 hover:shadow-md transition-all">
                     <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('email')}</span>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.16em]">{t('email')}</span>
                     </div>
-                    <p className="text-gray-900 font-semibold flex items-center justify-between">
+                    <p className="text-[#0A375A] font-black flex items-center justify-between gap-3 break-words">
                       {user.email}
                       <HiOutlinePencil className="w-3.5 h-3.5 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" onClick={() => setEditMode(true)} />
                     </p>
                   </div>
-                  <div className="group cursor-default">
+                  <div className="group cursor-default rounded-2xl border border-slate-100 bg-white p-4 shadow-sm hover:border-orange-100 hover:shadow-md transition-all">
                     <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('phone')}</span>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.16em]">{t('phone')}</span>
                     </div>
-                    <p className="text-gray-900 font-semibold flex items-center justify-between">
+                    <p className="text-[#0A375A] font-black flex items-center justify-between gap-3 break-words">
                       {user.phone || '—'}
                       <HiOutlinePencil className="w-3.5 h-3.5 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" onClick={() => setEditMode(true)} />
                     </p>
                   </div>
 
-                  <div className="group cursor-default sm:col-span-2">
+                  <div className="group cursor-default sm:col-span-2 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm hover:border-orange-100 hover:shadow-md transition-all">
                     <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{lang === 'es' ? 'Dirección' : 'Address'}</span>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.16em]">{lang === 'es' ? 'Dirección' : 'Address'}</span>
                     </div>
-                    <p className="text-gray-900 font-semibold flex items-center justify-between">
+                    <p className="text-[#0A375A] font-black flex items-center justify-between gap-3 break-words">
                       {user.address || '—'}
                       <HiOutlinePencil className="w-3.5 h-3.5 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" onClick={() => setEditMode(true)} />
                     </p>
