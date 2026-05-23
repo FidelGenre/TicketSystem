@@ -158,7 +158,9 @@ export default function AdminSpecialCodesPage() {
 
       const ownerEmail = owner.email || specialCode?.ownerEmail || '';
       const eventTitle = event.title || specialCode?.event?.title || '-';
-      const commission = Number(event.creatorCommission || specialCode?.commissionFixed || 0);
+      const ownCommission = Number(specialCode?.commissionFixed || 0);
+      const eventCommission = Number(event.creatorCommission || 0);
+      const commission = ownCommission > 0 ? ownCommission : eventCommission;
       const tickets = Number(order.ticketCount || 1);
       const key = `${order.eventId || 'no-event'}-${codeValue}-${specialCode?.ownerUserId || order.specialCodeOwnerId || 'no-owner'}`;
 
