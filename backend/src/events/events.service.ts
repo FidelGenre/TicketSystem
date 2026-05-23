@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, ILike } from 'typeorm';
-import { Event, EventStatus, EventCategory, VenueSection, Seat, SeatStatus, User, Ticket, Order } from '../database/entities';
+import { Event, EventStatus, EventCategory, VenueSection, Seat, SeatStatus, User, Ticket, Order, EventCategoryEntity } from '../database/entities';
 import { CreateEventDto, UpdateEventDto, EventQueryDto } from './dto/event.dto';
 
 /**
@@ -35,14 +35,26 @@ export class EventsService {
       + '-' + Date.now().toString(36);
   }
 
+  private async ensureValidCategorySlug(category: string | undefined | null): Promise<string> {
+    const slug = String(category || '').trim();
+    if (!slug) throw new BadRequestException('Selecciona una categoría válida para el evento');
+
+    const exists = await this.eventRepo.manager.findOne(EventCategoryEntity, { where: { slug } });
+    if (!exists) throw new BadRequestException(`La categoría "${slug}" no existe`);
+
+    return slug;
+  }
+
   /**
    * create
    * Initializes a new event in 'DRAFT' status.
    */
   async create(dto: CreateEventDto, organizerId: string) {
     const slug = this.generateSlug(dto.title);
+    const category = await this.ensureValidCategorySlug(dto.category);
     const event = this.eventRepo.create({
       ...dto,
+      category,
       slug,
       organizerId,
       currency: dto.currency || 'USD',
@@ -178,33 +190,35 @@ export class EventsService {
    */
   async update(id: string, dto: UpdateEventDto, userId: string) {
     const event = await this.findById(id);
-    if (dto.category !== undefined) {
-      dto.category = typeof dto.category === 'string' ? dto.category.trim() : dto.category;
-      if (!dto.category) delete dto.category;
+    const cleanDto: UpdateEventDto = { ...dto };
+
+    if (cleanDto.category !== undefined) {
+      cleanDto.category = await this.ensureValidCategorySlug(cleanDto.category);
     }
+
     const user = await this.eventRepo.manager.findOne(User, { where: { id: userId } });
-    
+
     // Check ownership or admin privileges
     if (event.organizerId !== userId && user?.role !== 'admin') {
       throw new ForbiddenException('No tienes permiso para editar este evento');
     }
-    
+
     // Approval flow for published events
     if (event.status === EventStatus.PUBLISHED && user?.role !== 'admin') {
       const pendingUpdate: Partial<Event> = {
-        pendingTitle: dto.title,
-        pendingDescription: dto.description,
-        pendingVenueName: dto.venueName,
-        pendingCategory: dto.category,
+        pendingTitle: cleanDto.title,
+        pendingDescription: cleanDto.description,
+        pendingVenueName: cleanDto.venueName,
+        pendingCategory: cleanDto.category,
         // Timezone is always updated immediately so the displayed time stays
         // consistent with whatever wall-clock time the organizer entered.
-        ...(dto.eventTimezone !== undefined ? { eventTimezone: dto.eventTimezone } : {}),
+        ...(cleanDto.eventTimezone !== undefined ? { eventTimezone: cleanDto.eventTimezone } : {}),
       };
 
-      if (dto.eventDate) {
+      if (cleanDto.eventDate) {
         await this.eventRepo.update(id, {
           ...pendingUpdate,
-          eventDate: new Date(dto.eventDate),
+          eventDate: new Date(cleanDto.eventDate),
           pendingEventDate: null,
           autoReminderSent: false,
         });
@@ -212,8 +226,9 @@ export class EventsService {
         await this.eventRepo.update(id, pendingUpdate);
       }
     } else {
-      await this.eventRepo.update(id, dto);
+      await this.eventRepo.update(id, cleanDto);
     }
+
     return this.findById(id);
   }
 

@@ -844,6 +844,10 @@ export default function EventDetailPage() {
 
   const handleSaveEvent = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!editForm.category) {
+      toast.error(lang === 'es' ? 'Selecciona una categoría antes de guardar' : 'Select a category before saving');
+      return;
+    }
     setSavingEdit(true);
     try {
       // 1. Save text fields
@@ -2203,6 +2207,7 @@ export default function EventDetailPage() {
                   value={editForm.category}
                   onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
                   className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-1 focus:ring-primary-500 text-sm focus:border-primary-500 focus:outline-none"
+                  required
                 >
                   <option value="" disabled>{lang === 'es' ? 'Seleccionar categoría' : 'Select category'}</option>
                   {categories.map(cat => (
