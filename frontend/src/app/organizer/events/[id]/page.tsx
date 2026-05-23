@@ -1256,7 +1256,7 @@ export default function EventDetailPage() {
                 },
                 {
                   label: lang === 'es' ? 'Capacidad total' : 'Total capacity',
-                  value: String(totalEventCapacity),
+                  value: String(totalEventCapacity + remainingEventCapacity),
                   note: `${remainingEventCapacity} ${lang === 'es' ? 'por vender o asignar' : 'left to sell or assign'}`,
                   icon: HiOutlineUsers,
                 },
