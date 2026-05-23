@@ -22,6 +22,18 @@ import {
 } from '@/lib/socialMatch';
 import { FaInstagram } from 'react-icons/fa';
 
+const LAST_READ_KEY = 'sm_last_read';
+
+function getLastRead(): Record<string, string> {
+  try { return JSON.parse(localStorage.getItem(LAST_READ_KEY) || '{}'); } catch { return {}; }
+}
+
+function markAsRead(connId: string) {
+  const data = getLastRead();
+  data[connId] = new Date().toISOString();
+  localStorage.setItem(LAST_READ_KEY, JSON.stringify(data));
+}
+
 export default function SocialMatchWidget() {
   const { lang } = useLang();
   const { isAuthenticated } = useAuthStore();
@@ -34,9 +46,14 @@ export default function SocialMatchWidget() {
   const [sending, setSending] = useState(false);
   const [viewingProfile, setViewingProfile] = useState(false);
   const [profilePhotoIdx, setProfilePhotoIdx] = useState(0);
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const activeChatConnRef = useRef<SocialMatchConnection | null>(null);
 
   const accepted = connections.filter((c) => c.status === 'accepted');
+  const totalUnread = Object.values(unreadCounts).reduce((a, b) => a + b, 0);
+
+  useEffect(() => { activeChatConnRef.current = activeChatConn; }, [activeChatConn]);
 
   useEffect(() => {
     if (isAuthenticated) loadConnections();
@@ -46,16 +63,45 @@ export default function SocialMatchWidget() {
     if (isOpen && isAuthenticated) loadConnections();
   }, [isOpen]);
 
+  // Poll active chat messages
   useEffect(() => {
     if (!activeChatConn) return;
     const interval = setInterval(async () => {
       try {
         const data = await getSocialMatchMessages(activeChatConn.id);
         setMessages(data.messages || []);
+        // Mark as read while chat is open
+        markAsRead(activeChatConn.id);
+        setUnreadCounts((prev) => ({ ...prev, [activeChatConn.id]: 0 }));
       } catch {}
     }, 5000);
     return () => clearInterval(interval);
   }, [activeChatConn]);
+
+  // Background poll for unread messages across all accepted connections
+  useEffect(() => {
+    if (!isAuthenticated || accepted.length === 0) return;
+
+    const checkAll = async () => {
+      const lastRead = getLastRead();
+      for (const conn of accepted) {
+        if (activeChatConnRef.current?.id === conn.id) continue;
+        try {
+          const data = await getSocialMatchMessages(conn.id);
+          const msgs: SocialMatchMessage[] = data.messages || [];
+          const lastReadAt = lastRead[conn.id];
+          const unread = msgs.filter(
+            (m) => !m.isMine && (!lastReadAt || m.createdAt > lastReadAt)
+          ).length;
+          setUnreadCounts((prev) => ({ ...prev, [conn.id]: unread }));
+        } catch {}
+      }
+    };
+
+    checkAll();
+    const interval = setInterval(checkAll, 30000);
+    return () => clearInterval(interval);
+  }, [accepted.length, isAuthenticated]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -73,6 +119,8 @@ export default function SocialMatchWidget() {
   };
 
   const openChat = async (conn: SocialMatchConnection) => {
+    markAsRead(conn.id);
+    setUnreadCounts((prev) => ({ ...prev, [conn.id]: 0 }));
     setActiveChatConn(conn);
     setViewingProfile(false);
     setProfilePhotoIdx(0);
@@ -167,24 +215,35 @@ export default function SocialMatchWidget() {
                   </p>
                 </div>
               ) : (
-                accepted.map((conn) => (
-                  <button
-                    key={conn.id}
-                    onClick={() => openChat(conn)}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-orange-50 transition-colors text-left group"
-                  >
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#0A375A] to-[#F97316] flex items-center justify-center text-white font-black text-sm shrink-0">
-                      {conn.otherUserName.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-sm text-gray-900 truncate">{conn.otherUserName}</p>
-                      <p className="text-xs text-gray-400 truncate">{conn.eventTitle}</p>
-                    </div>
-                    <span className="text-[10px] font-bold text-[#F97316] opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                      Chat →
-                    </span>
-                  </button>
-                ))
+                accepted.map((conn) => {
+                  const unread = unreadCounts[conn.id] || 0;
+                  return (
+                    <button
+                      key={conn.id}
+                      onClick={() => openChat(conn)}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-orange-50 transition-colors text-left group"
+                    >
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#0A375A] to-[#F97316] flex items-center justify-center text-white font-black text-sm shrink-0">
+                        {conn.otherUserName.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm truncate ${unread > 0 ? 'font-black text-gray-900' : 'font-bold text-gray-900'}`}>
+                          {conn.otherUserName}
+                        </p>
+                        <p className="text-xs text-gray-400 truncate">{conn.eventTitle}</p>
+                      </div>
+                      {unread > 0 ? (
+                        <span className="min-w-[20px] h-5 px-1 bg-orange-500 text-white rounded-full text-[10px] font-black flex items-center justify-center shrink-0">
+                          {unread > 9 ? '9+' : unread}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold text-[#F97316] opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                          Chat →
+                        </span>
+                      )}
+                    </button>
+                  );
+                })
               )}
             </div>
           )}
@@ -195,7 +254,6 @@ export default function SocialMatchWidget() {
             const idx = Math.min(profilePhotoIdx, Math.max(0, photos.length - 1));
             return (
               <div className="overflow-y-auto max-h-[420px]">
-                {/* Photo carousel */}
                 {photos.length > 0 ? (
                   <div className="relative h-52 bg-[#0A375A]">
                     <img src={photos[idx]} alt="" className="w-full h-full object-cover" />
@@ -310,7 +368,7 @@ export default function SocialMatchWidget() {
         </div>
       )}
 
-      {/* Floating trigger button — same style as cart / chatbot */}
+      {/* Floating trigger button */}
       <button
         onClick={() => setIsOpen((v) => !v)}
         className="w-14 h-14 floating-action-pill rounded-full flex items-center justify-center transition-all duration-300 relative group active:scale-90 pointer-events-auto"
@@ -320,9 +378,9 @@ export default function SocialMatchWidget() {
           ? <HiOutlineX className="w-6 h-6" />
           : <HiOutlineMail className="w-7 h-7" />
         }
-        {!isOpen && accepted.length > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 min-w-[22px] h-[22px] px-1 bg-green-500 text-white rounded-full text-[10px] font-bold flex items-center justify-center border-2 border-white shadow-lg">
-            {accepted.length > 9 ? '9+' : accepted.length}
+        {!isOpen && totalUnread > 0 && (
+          <span className="absolute -top-1.5 -right-1.5 min-w-[22px] h-[22px] px-1 bg-orange-500 text-white rounded-full text-[10px] font-bold flex items-center justify-center border-2 border-white shadow-lg">
+            {totalUnread > 9 ? '9+' : totalUnread}
           </span>
         )}
       </button>
