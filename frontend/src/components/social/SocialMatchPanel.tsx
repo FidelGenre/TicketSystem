@@ -29,6 +29,8 @@ import {
   socialMatchInterestOptions,
 } from '@/lib/socialMatch';
 import type { SocialMatchConnectionProfile } from '@/lib/socialMatch';
+import { getImageUrl } from '@/lib/api';
+import { useAuthStore } from '@/stores/auth';
 import SocialMatchSwiper from './SocialMatchSwiper';
 
 type Props = {
@@ -92,7 +94,9 @@ export default function SocialMatchPanel({ lang }: Props) {
   const [chatLoading, setChatLoading] = useState(false);
   const [chatSending, setChatSending] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [previewPhotoIndex, setPreviewPhotoIndex] = useState(0);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuthStore();
 
   const selectedPreference = useMemo(() => {
     if (!selectedEventId) return null;
@@ -439,6 +443,62 @@ export default function SocialMatchPanel({ lang }: Props) {
             )}
           </div>
         </div>
+
+        {/* My card preview */}
+        {(() => {
+          const smPhotos = selectedPreference?.photos || [];
+          const allPhotos = [
+            ...(user?.avatarUrl ? [getImageUrl(user.avatarUrl)] : []),
+            ...smPhotos,
+          ];
+          const clampedIndex = Math.min(previewPhotoIndex, Math.max(0, allPhotos.length - 1));
+          const isPrivate = selectedPreference?.privateMode ?? false;
+          const displayName = isPrivate ? 'Asistente' : `${user?.firstName || ''} ${(user?.lastName || '')[0] || ''}.`.trim();
+          return (
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
+                {lang === 'es' ? 'Así te ven los demás' : 'How others see you'}
+              </label>
+              <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm max-w-xs">
+                {allPhotos.length > 0 ? (
+                  <div className="relative h-44 bg-[#0A375A]">
+                    <img src={allPhotos[clampedIndex]} alt="" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                    {allPhotos.length > 1 && (
+                      <>
+                        <button type="button" onClick={() => setPreviewPhotoIndex((p) => Math.max(0, p - 1))} className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/30 text-white flex items-center justify-center text-lg font-bold">‹</button>
+                        <button type="button" onClick={() => setPreviewPhotoIndex((p) => Math.min(allPhotos.length - 1, p + 1))} className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/30 text-white flex items-center justify-center text-lg font-bold">›</button>
+                        <div className="absolute bottom-10 left-0 right-0 flex justify-center gap-1">
+                          {allPhotos.map((_, i) => <div key={i} className={`w-1.5 h-1.5 rounded-full ${i === clampedIndex ? 'bg-white' : 'bg-white/40'}`} />)}
+                        </div>
+                      </>
+                    )}
+                    <div className="absolute bottom-0 left-0 right-0 px-4 pb-3 text-white">
+                      <p className="font-black text-base">{displayName}</p>
+                      {selectedPreference?.industry && <p className="text-xs text-white/80">{selectedPreference.industry}</p>}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center py-6 bg-gradient-to-br from-[#0A375A] to-[#134E7A] text-white">
+                    <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-2xl font-black uppercase mb-2">
+                      {displayName.charAt(0)}
+                    </div>
+                    <p className="font-black text-base">{displayName}</p>
+                    {selectedPreference?.industry && <p className="text-xs text-white/70">{selectedPreference.industry}</p>}
+                  </div>
+                )}
+                {(selectedPreference?.interests || []).length > 0 && (
+                  <div className="px-4 py-3 bg-white flex flex-wrap gap-1.5">
+                    {(selectedPreference?.interests || []).map((id) => {
+                      const opt = socialMatchInterestOptions.find((o) => o.id === id);
+                      return <span key={id} className="px-2 py-0.5 rounded-full bg-orange-50 text-[#F97316] text-[10px] font-bold border border-orange-100">{opt ? (lang === 'es' ? opt.es : opt.en) : id}</span>;
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
 
         {selectedSummary && (
           <div className="rounded-2xl border border-[rgba(249,115,22,0.22)] bg-orange-50/60 p-4">
