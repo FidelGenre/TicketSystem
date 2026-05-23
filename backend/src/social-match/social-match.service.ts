@@ -147,6 +147,7 @@ export class SocialMatchService {
           displayName: isPrivate ? 'Asistente' : `${t.user?.firstName || 'Asistente'} ${t.user?.lastName?.[0] || ''}.`.trim(),
           avatarUrl: t.user?.avatarUrl || null,
           photos: pref?.photos || [],
+          interests: pref?.interests || [],
           sharedInterests,
           industryMatch,
           industry: pref?.industry || null,

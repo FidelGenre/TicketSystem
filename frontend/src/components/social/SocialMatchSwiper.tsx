@@ -23,6 +23,7 @@ export default function SocialMatchSwiper({ suggestions, lang, onConnect, onSkip
   const [animating, setAnimating] = useState<'left' | 'right' | null>(null);
   const [processing, setProcessing] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
+  const [brokenPhotos, setBrokenPhotos] = useState<Set<string>>(new Set());
 
   const currentCard = deck[0] || null;
   const nextCard = deck[1] || null;
@@ -55,6 +56,7 @@ export default function SocialMatchSwiper({ suggestions, lang, onConnect, onSkip
     setTimeout(() => {
       setDeck((prev) => prev.slice(1));
       setPhotoIndex(0);
+      setBrokenPhotos(new Set());
       setAnimating(null);
       setProcessing(false);
     }, 350);
@@ -107,12 +109,20 @@ export default function SocialMatchSwiper({ suggestions, lang, onConnect, onSkip
             const allPhotos = [
               ...(currentCard.avatarUrl ? [getImageUrl(currentCard.avatarUrl)] : []),
               ...(currentCard.photos || []),
-            ];
-            const clampedIndex = Math.min(photoIndex, allPhotos.length - 1);
+            ].filter((src) => !brokenPhotos.has(src));
+            const clampedIndex = Math.min(photoIndex, Math.max(0, allPhotos.length - 1));
             if (allPhotos.length > 0) {
               return (
                 <div className="relative h-[420px] bg-[#0A375A] overflow-hidden">
-                  <img src={allPhotos[clampedIndex]} alt="" className="w-full h-full object-cover" />
+                  <img
+                    src={allPhotos[clampedIndex]}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    onError={() => {
+                      setBrokenPhotos((prev) => new Set([...prev, allPhotos[clampedIndex]]));
+                      setPhotoIndex((p) => Math.max(0, p - 1));
+                    }}
+                  />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
 
                   {/* Tap zones — left half goes back, right half goes forward */}
@@ -183,52 +193,50 @@ export default function SocialMatchSwiper({ suggestions, lang, onConnect, onSkip
           })()}
 
           {/* Card body */}
-          <div className="flex-1 px-8 py-6 flex flex-col gap-5">
-            {/* Shared interests */}
-            <div>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2.5">
-                {lang === 'es' ? 'Intereses en común' : 'Shared interests'}
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {currentCard.sharedInterests.map((interest) => (
-                  <span
-                    key={interest}
-                    className="px-2.5 py-1 rounded-lg bg-orange-50 text-[#F97316] text-[10px] font-bold border border-orange-100"
-                  >
-                    {interestLabel(interest)}
-                  </span>
-                ))}
+          <div className="flex-1 px-6 py-5 flex flex-col gap-4 overflow-y-auto">
+            {/* All interests — shared ones highlighted */}
+            {(currentCard.interests || []).length > 0 && (
+              <div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+                  {lang === 'es' ? 'Intereses' : 'Interests'}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {(currentCard.interests || []).map((interest) => {
+                    const isShared = currentCard.sharedInterests.includes(interest);
+                    return (
+                      <span
+                        key={interest}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border ${
+                          isShared
+                            ? 'bg-orange-50 text-[#F97316] border-orange-200'
+                            : 'bg-gray-50 text-gray-500 border-gray-200'
+                        }`}
+                      >
+                        {isShared && '✓ '}{interestLabel(interest)}
+                      </span>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Info chips */}
-            <div className="flex flex-wrap gap-2 mt-auto">
+            <div className="flex flex-wrap gap-2">
               {currentCard.industryMatch && (
                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-[#0A375A] border border-blue-100">
                   <HiOutlineBriefcase className="w-3.5 h-3.5" />
-                  <span className="text-[10px] font-bold">
-                    {lang === 'es' ? 'Misma industria' : 'Same industry'}
-                  </span>
+                  <span className="text-[10px] font-bold">{lang === 'es' ? 'Misma industria' : 'Same industry'}</span>
                 </div>
               )}
               {currentCard.canShareLocationLater && (
                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-50 text-green-700 border border-green-100">
                   <HiOutlineLocationMarker className="w-3.5 h-3.5" />
-                  <span className="text-[10px] font-bold">
-                    {lang === 'es' ? 'Ubicación disponible' : 'Location available'}
-                  </span>
+                  <span className="text-[10px] font-bold">{lang === 'es' ? 'Ubicación disponible' : 'Location available'}</span>
                 </div>
               )}
-            </div>
-
-            {/* Score dots */}
-            <div className="flex items-center justify-center gap-1 pt-1">
-              {Array.from({ length: Math.min(5, Math.max(1, currentCard.score)) }).map((_, i) => (
-                <div key={i} className="w-2 h-2 rounded-full bg-[#F97316]" />
-              ))}
-              {Array.from({ length: Math.max(0, 5 - currentCard.score) }).map((_, i) => (
-                <div key={`e-${i}`} className="w-2 h-2 rounded-full bg-gray-200" />
-              ))}
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-50 text-[#F97316] border border-orange-100 ml-auto">
+                <span className="text-[10px] font-black">{getCompatibility(currentCard.score)}% match</span>
+              </div>
             </div>
           </div>
         </div>
