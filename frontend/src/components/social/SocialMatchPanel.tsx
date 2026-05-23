@@ -95,6 +95,7 @@ export default function SocialMatchPanel({ lang }: Props) {
   const [chatSending, setChatSending] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [previewPhotoIndex, setPreviewPhotoIndex] = useState(0);
+  const [brokenPhotos, setBrokenPhotos] = useState<Set<string>>(new Set());
   const photoInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuthStore();
 
@@ -450,7 +451,7 @@ export default function SocialMatchPanel({ lang }: Props) {
           const allPhotos = [
             ...(user?.avatarUrl ? [getImageUrl(user.avatarUrl)] : []),
             ...smPhotos,
-          ];
+          ].filter((src) => !brokenPhotos.has(src));
           const clampedIndex = Math.min(previewPhotoIndex, Math.max(0, allPhotos.length - 1));
           const isPrivate = selectedPreference?.privateMode ?? false;
           const displayName = isPrivate ? 'Asistente' : `${user?.firstName || ''} ${(user?.lastName || '')[0] || ''}.`.trim();
@@ -462,7 +463,15 @@ export default function SocialMatchPanel({ lang }: Props) {
               <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm max-w-xs">
                 {allPhotos.length > 0 ? (
                   <div className="relative h-[560px] bg-[#0A375A]">
-                    <img src={allPhotos[clampedIndex]} alt="" className="w-full h-full object-cover" />
+                    <img
+                      src={allPhotos[clampedIndex]}
+                      alt=""
+                      className="w-full h-full object-cover"
+                      onError={() => {
+                        setBrokenPhotos((prev) => new Set([...prev, allPhotos[clampedIndex]]));
+                        setPreviewPhotoIndex((p) => Math.max(0, p - 1));
+                      }}
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                     {allPhotos.length > 1 && (
                       <>
