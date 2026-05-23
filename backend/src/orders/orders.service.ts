@@ -672,19 +672,20 @@ export class OrdersService {
       return t !== 'stage' && t !== 'decor';
     });
 
-    // Per section: if seats exist in DB use the real count (reflects map edits like deleted seats).
-    // If no seats in DB (GA/standing or not yet generated) fall back to max(capacity, rows×seatsPerRow).
+    // Per section: take the maximum of actual DB seat count, capacity field, and rows×seatsPerRow.
+    // This covers: generated seats (DB count), GA sections (capacity field), and
+    // sections whose config changed after generation (rows*seatsPerRow may differ from DB count).
     let totalCapacity = 0;
+    const sectionBreakdown: any[] = [];
     for (const section of activeSections) {
       const seatCount = await this.seatRepo.count({ where: { sectionId: section.id } });
-      if (seatCount > 0) {
-        totalCapacity += seatCount;
-      } else {
-        const capField = Number(section.capacity) || 0;
-        const rowsCalc = (Number(section.rows) || 0) * (Number(section.seatsPerRow) || 0);
-        totalCapacity += Math.max(capField, rowsCalc);
-      }
+      const capField = Number(section.capacity) || 0;
+      const rowsCalc = (Number(section.rows) || 0) * (Number(section.seatsPerRow) || 0);
+      const contribution = Math.max(seatCount, capField, rowsCalc);
+      totalCapacity += contribution;
+      sectionBreakdown.push({ name: section.name, type: section.sectionType, seatCount, capField, rowsCalc, contribution });
     }
+    console.log(`[ScannerStats] eventId=${eventId} totalCapacity=${totalCapacity}`, JSON.stringify(sectionBreakdown));
 
     const [activeTickets, usedTickets] = await Promise.all([
       this.ticketRepo.count({ where: { eventId, status: TicketStatus.ACTIVE } }),
@@ -699,6 +700,7 @@ export class OrdersService {
       totalPurchased: totalIssued,
       ticketsToScan: activeTickets,
       ticketsEntered: usedTickets,
+      _debug: sectionBreakdown,
     };
   }
 

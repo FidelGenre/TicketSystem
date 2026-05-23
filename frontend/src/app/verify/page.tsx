@@ -29,6 +29,7 @@ type EventTicketStats = {
   totalCapacity?: number;
   sectionCount?: number;
   sections?: { name: string; type: string; capacity: number }[];
+  _debug?: { name: string; type: string; seatCount: number; capField: number; rowsCalc: number; contribution: number }[];
 };
 
 type RecentScan = {
@@ -660,6 +661,28 @@ export default function TicketScannerPage() {
                       style={{ width: `${Math.min(100, Math.round(((eventTicketStats.ticketsEntered ?? 0) / eventTicketStats.totalCapacity) * 100))}%` }} />
                   </div>
                 </div>
+              )}
+              {eventTicketStats._debug && (
+                <details className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <summary className="cursor-pointer text-[10px] font-black uppercase tracking-wide text-slate-400">Debug: secciones ({eventTicketStats._debug.length})</summary>
+                  <div className="mt-2 overflow-x-auto">
+                    <table className="w-full text-[10px] text-slate-600">
+                      <thead><tr className="font-black text-slate-400"><th className="text-left pr-2">Sección</th><th className="pr-2">Tipo</th><th className="pr-2">DB seats</th><th className="pr-2">capField</th><th className="pr-2">rowsCalc</th><th>Contrib</th></tr></thead>
+                      <tbody>
+                        {eventTicketStats._debug.map((s, i) => (
+                          <tr key={i} className="border-t border-slate-100">
+                            <td className="py-0.5 pr-2 font-semibold">{s.name}</td>
+                            <td className="pr-2">{s.type}</td>
+                            <td className="pr-2 text-center">{s.seatCount}</td>
+                            <td className="pr-2 text-center">{s.capField}</td>
+                            <td className="pr-2 text-center">{s.rowsCalc}</td>
+                            <td className="text-center font-black text-[#0A375A]">{s.contribution}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
               )}
             </div>
           )}
