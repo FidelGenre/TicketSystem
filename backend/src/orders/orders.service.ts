@@ -672,34 +672,19 @@ export class OrdersService {
       return t !== 'stage' && t !== 'decor';
     });
 
-    const seatedSections = activeSections.filter(
-      s => String(s.sectionType).toLowerCase() !== 'standing',
-    );
-    const standingSections = activeSections.filter(
-      s => String(s.sectionType).toLowerCase() === 'standing',
-    );
+    // Per-section: use max(capacity, rows×seatsPerRow) — covers all section types
+    const sectionCapacity = activeSections.reduce((sum, s) => {
+      const capField = Number(s.capacity) || 0;
+      const rowsCalc = (Number(s.rows) || 0) * (Number(s.seatsPerRow) || 0);
+      return sum + Math.max(capField, rowsCalc);
+    }, 0);
 
-    const standingCapacity = standingSections.reduce(
-      (sum, s) => sum + (Number(s.capacity) || 0), 0,
-    );
-
-    // For seated/table sections: count actual seat records; fall back to rows×seatsPerRow
-    const seatedSectionIds = seatedSections.map(s => s.id);
-    const [activeTickets, usedTickets, dbSeatCount] = await Promise.all([
+    const [activeTickets, usedTickets] = await Promise.all([
       this.ticketRepo.count({ where: { eventId, status: TicketStatus.ACTIVE } }),
       this.ticketRepo.count({ where: { eventId, status: TicketStatus.USED } }),
-      seatedSectionIds.length > 0
-        ? this.seatRepo.count({ where: { sectionId: In(seatedSectionIds) } })
-        : Promise.resolve(0),
     ]);
 
-    // If DB seat count looks too low, sum rows×seatsPerRow as fallback
-    const rowsCapacity = seatedSections.reduce(
-      (sum, s) => sum + (Number(s.rows) || 0) * (Number(s.seatsPerRow) || 0), 0,
-    );
-    const seatedCapacity = dbSeatCount > rowsCapacity ? dbSeatCount : rowsCapacity;
-
-    const totalCapacity = standingCapacity + seatedCapacity;
+    const totalCapacity = sectionCapacity;
     const totalIssued = activeTickets + usedTickets;
 
     return {
