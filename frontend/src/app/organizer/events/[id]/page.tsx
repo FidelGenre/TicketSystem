@@ -1839,6 +1839,57 @@ export default function EventDetailPage() {
             </div>
           </div>
 
+          {(() => {
+            const blockedSections = sections
+              .map((section) => {
+                const blockedSeats = (section.seats || []).filter((seat) => seat.status === 'locked' && !seat.lockExpiresAt);
+                return { section, blockedSeats };
+              })
+              .filter((item) => item.blockedSeats.length > 0);
+
+            if (blockedSections.length === 0) return null;
+
+            return (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 space-y-3">
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-[0.22em] text-amber-800">
+                    {lang === 'es' ? 'Mesas bloqueadas' : 'Blocked tables'}
+                  </h3>
+                  <p className="mt-1 text-xs text-amber-700">
+                    {lang === 'es' ? 'Selecciona una mesa para verla y administrarla sin buscar en el selector.' : 'Select a table to open and manage it without searching the selector.'}
+                  </p>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {blockedSections.map(({ section, blockedSeats }) => (
+                    <button
+                      key={section.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedBlockSection(section.id);
+                        setSelectedBlockSeats(blockedSeats.map((seat) => seat.id));
+                      }}
+                      className={`text-left rounded-xl border px-4 py-3 transition-all ${
+                        selectedBlockSection === section.id
+                          ? 'border-amber-500 bg-white shadow-sm'
+                          : 'border-amber-200 bg-white/80 hover:border-amber-400 hover:bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="font-black text-sm text-gray-900 truncate">{section.name}</span>
+                        <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-amber-800">
+                          {blockedSeats.length}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs font-semibold text-gray-500">
+                        {blockedSeats.length} {lang === 'es' ? 'asientos bloqueados' : 'blocked seats'}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
           {selectedBlockSection ? (
             (() => {
               const sec = sections.find(s => s.id === selectedBlockSection);
