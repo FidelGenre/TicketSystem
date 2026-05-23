@@ -1443,7 +1443,20 @@ export default function AdminEventsPage() {
               )}
             </div>
 
-            <div className="p-6 border-t border-gray-100 shrink-0">
+            <div className="p-6 border-t border-gray-100 shrink-0 space-y-2">
+              {eventPricesConfig?.sections?.some((s: any) => s.pendingPrice !== null && s.pendingPrice !== undefined) && (
+                <button
+                  onClick={async () => {
+                    const pending = (eventPricesConfig?.sections ?? []).filter((s: any) => s.pendingPrice !== null && s.pendingPrice !== undefined);
+                    for (const sec of pending) {
+                      await handleApproveSectionPrice(sec.id);
+                    }
+                  }}
+                  className="w-full py-3 text-sm font-bold text-white bg-green-600 hover:bg-green-700 rounded-xl transition-all active:scale-95 shadow-sm"
+                >
+                  ✓ {lang === 'es' ? 'Aprobar todos los cambios pendientes' : 'Approve all pending changes'}
+                </button>
+              )}
               <button
                 onClick={() => setSelectedEventForPrices(null)}
                 className="w-full py-3 text-sm font-semibold text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-all"
