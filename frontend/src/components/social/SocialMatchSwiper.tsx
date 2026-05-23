@@ -120,14 +120,22 @@ export default function SocialMatchSwiper({ suggestions, lang, onConnect, onSkip
                     <>
                       <button
                         type="button"
-                        className="absolute left-0 top-0 w-1/2 h-full z-10"
+                        className="absolute left-0 top-0 w-1/2 h-full z-10 flex items-center justify-start pl-3"
                         onClick={(e) => { e.stopPropagation(); setPhotoIndex((p) => Math.max(0, p - 1)); }}
-                      />
+                      >
+                        {clampedIndex > 0 && (
+                          <div className="w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white text-xl font-bold shadow-lg">‹</div>
+                        )}
+                      </button>
                       <button
                         type="button"
-                        className="absolute right-0 top-0 w-1/2 h-full z-10"
+                        className="absolute right-0 top-0 w-1/2 h-full z-10 flex items-center justify-end pr-3"
                         onClick={(e) => { e.stopPropagation(); setPhotoIndex((p) => Math.min(allPhotos.length - 1, p + 1)); }}
-                      />
+                      >
+                        {clampedIndex < allPhotos.length - 1 && (
+                          <div className="w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white text-xl font-bold shadow-lg">›</div>
+                        )}
+                      </button>
                       {/* Progress bars (Instagram-style) */}
                       <div className="absolute top-3 left-3 right-3 flex gap-1 z-20">
                         {allPhotos.map((_, i) => (
