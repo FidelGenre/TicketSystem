@@ -14,10 +14,24 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 const DEMO_EVENTS: Event[] = [];
 
+type MarketingHomeBanner = {
+  id: string;
+  imageData: string;
+  fileName?: string;
+  bannerPosition?: string;
+  isMarketingBanner: true;
+};
+
+type HomeBannerItem = Event | MarketingHomeBanner;
+
+const isMarketingBanner = (banner: HomeBannerItem): banner is MarketingHomeBanner =>
+  'isMarketingBanner' in banner && banner.isMarketingBanner === true;
+
 export default function HomePage() {
   const { t, lang } = useLang();
   const { categories } = useCategories();
   const [allEvents, setAllEvents] = useState<Event[]>([]);
+  const [marketingBanner, setMarketingBanner] = useState<MarketingHomeBanner | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('');
   const [usingDemo, setUsingDemo] = useState(false);
@@ -54,6 +68,19 @@ export default function HomePage() {
       } else {
         setAllEvents(DEMO_EVENTS);
         setUsingDemo(true);
+      }
+
+      const bannerResponse = await api.get('/marketing/banner/home').catch(() => null);
+      if (bannerResponse?.data?.imageData) {
+        setMarketingBanner({
+          id: bannerResponse.data.id || 'marketing-home-banner',
+          imageData: bannerResponse.data.imageData,
+          fileName: bannerResponse.data.fileName || 'Banner publicitario LPTicket',
+          bannerPosition: 'center',
+          isMarketingBanner: true,
+        });
+      } else {
+        setMarketingBanner(null);
       }
     } catch (err) {
       console.error('API Error:', err);
@@ -103,12 +130,14 @@ export default function HomePage() {
     return result.sort((a, b) => parseSafeDate(a.eventDate).getTime() - parseSafeDate(b.eventDate).getTime());
   }, [filteredEvents, sortBy]);
 
-  const bannerEvents = useMemo(() => {
-    return allEvents
+  const bannerEvents = useMemo<HomeBannerItem[]>(() => {
+    const eventBanners = allEvents
       .filter((e) => e.status === EventStatus.PUBLISHED && e.isFeatured)
       .sort(() => Math.random() - 0.5)
       .slice(0, 15);
-  }, [allEvents]);
+
+    return marketingBanner ? [marketingBanner, ...eventBanners] : eventBanners;
+  }, [allEvents, marketingBanner]);
 
   const bannerEvent = bannerEvents.length > 0 ? bannerEvents[currentBannerIdx % bannerEvents.length] : null;
 
@@ -133,12 +162,12 @@ export default function HomePage() {
         <section className="home-hero-shell">
           <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8">
             <div className="home-hero-frame group">
-              <Link href={usingDemo ? '#' : `/events/${bannerEvent.slug}`} className="absolute inset-0 z-[5] block overflow-hidden bg-[#0A375A]" aria-label={bannerEvent.title}>
+              <Link href={isMarketingBanner(bannerEvent) || usingDemo ? '#' : `/events/${bannerEvent.slug}`} className="absolute inset-0 z-[5] block overflow-hidden bg-[#0A375A]" aria-label={isMarketingBanner(bannerEvent) ? (bannerEvent.fileName || 'Banner publicitario LPTicket') : bannerEvent.title}>
                 <AnimatePresence initial={false}>
                   <motion.img
                     key={`${bannerEvent.id}-mobile`}
-                    src={getImageUrl(bannerEvent.imageUrl) || '/demo/concert.png'}
-                    alt={bannerEvent.title}
+                    src={isMarketingBanner(bannerEvent) ? bannerEvent.imageData : (getImageUrl(bannerEvent.imageUrl) || '/demo/concert.png')}
+                    alt={isMarketingBanner(bannerEvent) ? (bannerEvent.fileName || 'Banner publicitario LPTicket') : bannerEvent.title}
                     initial={{ opacity: 0, scale: 1.02 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0 }}
@@ -151,8 +180,8 @@ export default function HomePage() {
                   />
                   <motion.img
                     key={`${bannerEvent.id}-desktop`}
-                    src={getImageUrl(bannerEvent.bannerImageUrl || bannerEvent.imageUrl) || '/demo/concert.png'}
-                    alt={bannerEvent.title}
+                    src={isMarketingBanner(bannerEvent) ? bannerEvent.imageData : (getImageUrl(bannerEvent.bannerImageUrl || bannerEvent.imageUrl) || '/demo/concert.png')}
+                    alt={isMarketingBanner(bannerEvent) ? (bannerEvent.fileName || 'Banner publicitario LPTicket') : bannerEvent.title}
                     initial={{ opacity: 0, scale: 1.02 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0 }}
@@ -164,9 +193,10 @@ export default function HomePage() {
                     onError={(e) => { (e.target as HTMLImageElement).src = '/demo/concert.png'; }}
                   />
                 </AnimatePresence>
-                <span className="home-hero-overlay" />
+                {!isMarketingBanner(bannerEvent) && <span className="home-hero-overlay" />}
               </Link>
 
+              {!isMarketingBanner(bannerEvent) && (
               <div className="pointer-events-none absolute inset-0 z-10 flex items-end">
                 <div className="home-hero-content">
                   <div className="mb-4 hidden items-center gap-2 rounded-lg border border-white/20 bg-white/12 px-3 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-white/90 backdrop-blur-md sm:inline-flex">
@@ -199,6 +229,7 @@ export default function HomePage() {
                   </div>
                 </div>
               </div>
+              )}
 
               {bannerEvents.length > 1 && (
                 <>
