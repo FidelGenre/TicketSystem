@@ -174,22 +174,22 @@ export default function AdminMarketingPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div className="space-y-4 pb-8 sm:space-y-6">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-bold uppercase tracking-wide text-orange-600">
+          <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-orange-600 sm:text-xs">
             <HiOutlineSpeakerphone className="h-4 w-4" />
             Marketing
           </div>
-          <h1 className="mt-3 text-3xl font-black text-[#0A375A]">Banner publicitario</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-500">
+          <h1 className="mt-3 text-2xl font-black leading-tight text-[#0A375A] sm:text-3xl">Banner publicitario</h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-500 sm:text-sm">
             Sube un diseno terminado para que rote dentro del carrusel principal junto a los eventos destacados.
           </p>
         </div>
 
         <button
           type="button"
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#F97316] px-5 py-3 text-sm font-black text-white shadow-lg shadow-orange-500/20 transition hover:bg-orange-600"
+          className="inline-flex w-fit items-center justify-center gap-2 rounded-xl bg-[#F97316] px-4 py-2.5 text-xs font-black text-white shadow-lg shadow-orange-500/20 transition hover:bg-orange-600 sm:px-5 sm:py-3 sm:text-sm"
         >
           <HiOutlineSparkles className="h-5 w-5" />
           Nueva campana
@@ -197,9 +197,9 @@ export default function AdminMarketingPage() {
       </div>
 
       <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-        <div className="flex flex-col gap-3 border-b border-gray-100 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 border-b border-gray-100 px-4 py-4 sm:px-6 sm:py-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-sm font-black uppercase tracking-wide text-gray-500">Vista previa del banner</h2>
+            <h2 className="text-xs font-black uppercase tracking-wide text-gray-500 sm:text-sm">Vista previa del banner</h2>
             <p className="mt-1 text-xs text-gray-400">Formato largo para el carrusel principal del Home.</p>
           </div>
 
@@ -208,7 +208,7 @@ export default function AdminMarketingPage() {
           </div>
         </div>
 
-        <div className="grid gap-5 p-5 sm:p-6 xl:grid-cols-[1fr_280px]">
+        <div className="grid gap-4 p-4 sm:gap-5 sm:p-6 xl:grid-cols-[1fr_280px]">
           <div>
           {bannerPreview ? (
             <div className="rounded-2xl bg-gradient-to-br from-[#0A375A]/10 via-white to-[#F97316]/10 p-3">
@@ -236,13 +236,13 @@ export default function AdminMarketingPage() {
           </div>
 
           <div>
-            <div className="mb-3">
+            <div className="mb-3 flex items-center justify-between gap-3">
               <h3 className="text-sm font-black uppercase tracking-wide text-gray-500">Vista previa movil</h3>
               <p className="mt-1 text-xs text-gray-400">Formato flyer para celulares.</p>
             </div>
 
             {mobileBannerPreview ? (
-              <div className="rounded-2xl bg-gradient-to-br from-[#0A375A]/10 via-white to-[#F97316]/10 p-3">
+              <div className="rounded-2xl bg-gradient-to-br from-[#0A375A]/10 via-white to-[#F97316]/10 p-2 sm:p-3">
                 <div className="overflow-hidden rounded-xl bg-black shadow-xl shadow-[rgba(10,55,90,0.14)]">
                   <div className="relative aspect-[3/4] w-full">
                     <img
@@ -254,7 +254,7 @@ export default function AdminMarketingPage() {
                 </div>
               </div>
             ) : (
-              <div className="flex min-h-[300px] flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center">
+              <div className="mx-auto flex min-h-[260px] max-w-[250px] flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-5 text-center sm:min-h-[300px] xl:max-w-none">
                 <HiOutlineDeviceMobile className="h-12 w-12 text-gray-300" />
                 <h3 className="mt-4 text-base font-black text-gray-900">Formato movil</h3>
                 <p className="mt-2 text-sm leading-6 text-gray-500">
@@ -266,15 +266,15 @@ export default function AdminMarketingPage() {
         </div>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <section className="grid gap-4 sm:gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-50 text-[#F97316]">
               <HiOutlineUpload className="h-6 w-6" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-gray-950">Subir banner</h2>
-              <p className="text-sm text-gray-500">Carga el arte final del banner publicitario.</p>
+              <h2 className="text-base font-black text-gray-950 sm:text-lg">Subir banner</h2>
+              <p className="text-sm leading-5 text-gray-500">Carga el arte final del banner publicitario.</p>
             </div>
           </div>
 
@@ -285,7 +285,7 @@ export default function AdminMarketingPage() {
               event.preventDefault();
               handleBannerFile(event.dataTransfer.files?.[0]);
             }}
-            className="mt-6 flex min-h-[255px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-gradient-to-br from-gray-50 to-white px-6 py-8 text-center transition hover:border-[#F97316] hover:bg-orange-50/40"
+            className="mt-5 flex min-h-[210px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-gradient-to-br from-gray-50 to-white px-5 py-7 text-center transition hover:border-[#F97316] hover:bg-orange-50/40 sm:mt-6 sm:min-h-[255px] sm:px-6 sm:py-8"
           >
             <input
               ref={fileInputRef}
@@ -299,7 +299,7 @@ export default function AdminMarketingPage() {
               <HiOutlineUpload className="h-8 w-8" />
             </div>
 
-            <h3 className="mt-5 text-base font-black text-gray-950">Haz clic para subir tu banner</h3>
+            <h3 className="mt-4 text-sm font-black text-gray-950 sm:mt-5 sm:text-base">Haz clic para subir tu banner</h3>
             <p className="mt-2 max-w-md text-sm leading-6 text-gray-500">
               Tambien puedes arrastrar la imagen aqui. Usa un diseno horizontal en alta calidad.
             </p>
@@ -333,13 +333,13 @@ export default function AdminMarketingPage() {
           )}
         </div>
 
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0A375A]/5 text-[#0A375A]">
               <HiOutlineDeviceMobile className="h-6 w-6" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-gray-950">Subir banner movil</h2>
+              <h2 className="text-base font-black text-gray-950 sm:text-lg">Subir banner movil</h2>
               <p className="text-sm text-gray-500">Flyer vertical para celulares, como los flyers de eventos.</p>
             </div>
           </div>
@@ -351,7 +351,7 @@ export default function AdminMarketingPage() {
               event.preventDefault();
               handleMobileBannerFile(event.dataTransfer.files?.[0]);
             }}
-            className="mt-6 flex min-h-[255px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-gradient-to-br from-gray-50 to-white px-6 py-8 text-center transition hover:border-[#0A375A] hover:bg-blue-50/40"
+            className="mt-5 flex min-h-[210px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-gradient-to-br from-gray-50 to-white px-5 py-7 text-center transition hover:border-[#0A375A] hover:bg-blue-50/40 sm:mt-6 sm:min-h-[255px] sm:px-6 sm:py-8"
           >
             <input
               ref={mobileFileInputRef}
@@ -365,7 +365,7 @@ export default function AdminMarketingPage() {
               <HiOutlineDeviceMobile className="h-8 w-8" />
             </div>
 
-            <h3 className="mt-5 text-base font-black text-gray-950">Subir flyer movil</h3>
+            <h3 className="mt-4 text-sm font-black text-gray-950 sm:mt-5 sm:text-base">Subir flyer movil</h3>
             <p className="mt-2 max-w-md text-sm leading-6 text-gray-500">
               Recomendado: 1080 x 1440 px o formato 3:4.
             </p>
@@ -381,7 +381,7 @@ export default function AdminMarketingPage() {
           )}
         </div>
 
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0A375A]/5 text-[#0A375A]">
               <HiOutlineBadgeCheck className="h-6 w-6" />
@@ -404,12 +404,12 @@ export default function AdminMarketingPage() {
             </div>
           </div>
 
-          <div className="mt-5 flex flex-wrap gap-3">
+          <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <button
               type="button"
               disabled={!bannerPreview}
               onClick={publishBanner}
-              className="rounded-xl bg-[#0A375A] px-5 py-3 text-sm font-black text-white shadow-lg shadow-[#0A375A]/10 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
+              className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#0A375A] px-5 py-3 text-sm font-black text-white shadow-lg shadow-[#0A375A]/10 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
             >
               Publicar banner
             </button>
@@ -417,7 +417,7 @@ export default function AdminMarketingPage() {
               type="button"
               disabled={!bannerPreview}
               onClick={() => fileInputRef.current?.click()}
-              className="rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-black text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex min-h-12 items-center justify-center rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-black text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
             >
               Cambiar imagen
             </button>
@@ -425,7 +425,7 @@ export default function AdminMarketingPage() {
         </div>
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
         {[
           ['Banners activos', bannerStatus === 'active' ? '1' : '0', HiOutlinePhotograph],
           ['Audiencias', '0', HiOutlineUsers],
@@ -444,7 +444,7 @@ export default function AdminMarketingPage() {
         ))}
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
         {channels.map((channel) => {
           const Icon = channel.icon;
 
@@ -463,7 +463,7 @@ export default function AdminMarketingPage() {
         })}
       </section>
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0A375A]/5 text-[#0A375A]">
             <HiOutlineChartBar className="h-6 w-6" />
