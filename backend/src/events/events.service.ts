@@ -45,6 +45,19 @@ export class EventsService {
     return slug;
   }
 
+  private routeBase64EventImage(slug: string, url: string | null, kind: 'image' | 'banner') {
+    if (!url?.startsWith('data:')) return url;
+    return `/api/events/${slug}/og-image?kind=${kind}`;
+  }
+
+  private routeBase64EventImages(event: Event) {
+    return {
+      ...event,
+      imageUrl: this.routeBase64EventImage(event.slug, event.imageUrl, 'image'),
+      bannerImageUrl: this.routeBase64EventImage(event.slug, event.bannerImageUrl, 'banner'),
+    };
+  }
+
   /**
    * create
    * Initializes a new event in 'DRAFT' status.
@@ -116,7 +129,7 @@ export class EventsService {
     });
 
     return {
-      events,
+      events: events.map((event) => this.routeBase64EventImages(event)),
       total,
       page,
       totalPages: Math.ceil(total / limit),
@@ -129,7 +142,7 @@ export class EventsService {
    */
   async findFeatured() {
     const { MoreThanOrEqual } = require('typeorm');
-    return this.eventRepo.find({
+    const events = await this.eventRepo.find({
       where: { 
         status: EventStatus.PUBLISHED, 
         isFeatured: true,
@@ -138,6 +151,7 @@ export class EventsService {
       order: { eventDate: 'ASC' },
       take: 6,
     });
+    return events.map((event) => this.routeBase64EventImages(event));
   }
 
   /**
@@ -165,11 +179,13 @@ export class EventsService {
     return event;
   }
 
-  async getOgImageBySlug(slug: string) {
+  async getOgImageBySlug(slug: string, kind: 'image' | 'banner' = 'image') {
     const event = await this.eventRepo.findOne({ where: { slug } });
     if (!event) throw new NotFoundException('Evento no encontrado');
 
-    const image = event.imageUrl || event.bannerImageUrl;
+    const image = kind === 'banner'
+      ? event.bannerImageUrl || event.imageUrl
+      : event.imageUrl || event.bannerImageUrl;
     if (!image) throw new NotFoundException('Imagen del evento no encontrada');
 
     const match = image.match(/^data:([^;]+);base64,(.+)$/);
@@ -341,10 +357,11 @@ export class EventsService {
   }
 
   async getOrganizerEvents(organizerId: string) {
-    return this.eventRepo.find({
+    const events = await this.eventRepo.find({
       where: { organizerId },
       order: { createdAt: 'DESC' },
     });
+    return events.map((event) => this.routeBase64EventImages(event));
   }
 
   // --- Seat Map & Inventory Management ---

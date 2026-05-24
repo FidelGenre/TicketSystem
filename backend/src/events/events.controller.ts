@@ -40,8 +40,8 @@ export class EventsController {
   }
 
   @Get(':slug/og-image')
-  async getOgImage(@Param('slug') slug: string, @Res() res: any) {
-    const image = await this.eventsService.getOgImageBySlug(slug);
+  async getOgImage(@Param('slug') slug: string, @Query('kind') kind: 'image' | 'banner' | undefined, @Res() res: any) {
+    const image = await this.eventsService.getOgImageBySlug(slug, kind);
 
     res.header('Content-Type', image.mimeType);
     res.header('Cache-Control', 'public, max-age=86400, s-maxage=86400');

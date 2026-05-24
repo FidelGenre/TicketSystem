@@ -14,6 +14,19 @@ export class AdminService {
     @InjectRepository(VenueSection) private readonly sectionRepo: Repository<VenueSection>,
   ) {}
 
+  private routeBase64EventImage(slug: string, url: string | null, kind: 'image' | 'banner') {
+    if (!url?.startsWith('data:')) return url;
+    return `/api/events/${slug}/og-image?kind=${kind}`;
+  }
+
+  private routeBase64EventImages(event: Event) {
+    return {
+      ...event,
+      imageUrl: this.routeBase64EventImage(event.slug, event.imageUrl, 'image'),
+      bannerImageUrl: this.routeBase64EventImage(event.slug, event.bannerImageUrl, 'banner'),
+    };
+  }
+
   async getDashboardStats() {
     // Run all aggregate counts in parallel — these are independent reads.
     const [
@@ -200,7 +213,7 @@ export class AdminService {
       take: limit,
     });
 
-    return { events, total, page, totalPages: Math.ceil(total / limit) };
+    return { events: events.map((event) => this.routeBase64EventImages(event)), total, page, totalPages: Math.ceil(total / limit) };
   }
 
   async approveEvent(eventId: string) {
