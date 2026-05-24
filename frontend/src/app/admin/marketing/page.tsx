@@ -47,17 +47,24 @@ const channels = [
 
 export default function AdminMarketingPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const mobileFileInputRef = useRef<HTMLInputElement | null>(null);
   const [bannerPreview, setBannerPreview] = useState('');
   const [bannerFileName, setBannerFileName] = useState('');
+  const [mobileBannerPreview, setMobileBannerPreview] = useState('');
+  const [mobileBannerFileName, setMobileBannerFileName] = useState('');
   const [bannerStatus, setBannerStatus] = useState<'draft' | 'active'>('draft');
 
   useEffect(() => {
     const savedBanner = localStorage.getItem('lpMarketingBannerPreview');
     const savedFileName = localStorage.getItem('lpMarketingBannerFileName');
     const savedStatus = localStorage.getItem('lpMarketingBannerStatus');
+    const savedMobileBanner = localStorage.getItem('lpMarketingMobileBannerPreview');
+    const savedMobileFileName = localStorage.getItem('lpMarketingMobileBannerFileName');
 
     if (savedBanner) setBannerPreview(savedBanner);
     if (savedFileName) setBannerFileName(savedFileName);
+    if (savedMobileBanner) setMobileBannerPreview(savedMobileBanner);
+    if (savedMobileFileName) setMobileBannerFileName(savedMobileFileName);
     if (savedStatus === 'active' || savedStatus === 'draft') setBannerStatus(savedStatus);
   }, []);
 
@@ -78,6 +85,28 @@ export default function AdminMarketingPage() {
 
       localStorage.setItem('lpMarketingBannerPreview', result);
       localStorage.setItem('lpMarketingBannerFileName', file.name);
+      localStorage.setItem('lpMarketingBannerStatus', 'draft');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleMobileBannerFile = (file?: File) => {
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Selecciona una imagen valida para el banner movil.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === 'string' ? reader.result : '';
+      setMobileBannerPreview(result);
+      setMobileBannerFileName(file.name);
+      setBannerStatus('draft');
+
+      localStorage.setItem('lpMarketingMobileBannerPreview', result);
+      localStorage.setItem('lpMarketingMobileBannerFileName', file.name);
       localStorage.setItem('lpMarketingBannerStatus', 'draft');
     };
     reader.readAsDataURL(file);
@@ -152,7 +181,8 @@ export default function AdminMarketingPage() {
           </div>
         </div>
 
-        <div className="p-5 sm:p-6">
+        <div className="grid gap-5 p-5 sm:p-6 xl:grid-cols-[1fr_280px]">
+          <div>
           {bannerPreview ? (
             <div className="rounded-2xl bg-gradient-to-br from-[#0A375A]/10 via-white to-[#F97316]/10 p-3">
               <div className="overflow-hidden rounded-xl bg-black shadow-2xl shadow-[rgba(10,55,90,0.18)]">
@@ -176,6 +206,36 @@ export default function AdminMarketingPage() {
               </p>
             </div>
           )}
+          </div>
+
+          <div>
+            <div className="mb-3">
+              <h3 className="text-sm font-black uppercase tracking-wide text-gray-500">Vista previa movil</h3>
+              <p className="mt-1 text-xs text-gray-400">Formato flyer para celulares.</p>
+            </div>
+
+            {mobileBannerPreview ? (
+              <div className="rounded-2xl bg-gradient-to-br from-[#0A375A]/10 via-white to-[#F97316]/10 p-3">
+                <div className="overflow-hidden rounded-xl bg-black shadow-xl shadow-[rgba(10,55,90,0.14)]">
+                  <div className="relative aspect-[3/4] w-full">
+                    <img
+                      src={mobileBannerPreview}
+                      alt="Preview del banner movil"
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex min-h-[300px] flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center">
+                <HiOutlineDeviceMobile className="h-12 w-12 text-gray-300" />
+                <h3 className="mt-4 text-base font-black text-gray-900">Formato movil</h3>
+                <p className="mt-2 text-sm leading-6 text-gray-500">
+                  Sube un flyer vertical para celulares.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </section>
 
@@ -242,6 +302,54 @@ export default function AdminMarketingPage() {
               >
                 <HiOutlineX className="h-5 w-5" />
               </button>
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0A375A]/5 text-[#0A375A]">
+              <HiOutlineDeviceMobile className="h-6 w-6" />
+            </div>
+            <div>
+              <h2 className="text-lg font-black text-gray-950">Subir banner movil</h2>
+              <p className="text-sm text-gray-500">Flyer vertical para celulares, como los flyers de eventos.</p>
+            </div>
+          </div>
+
+          <div
+            onClick={() => mobileFileInputRef.current?.click()}
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={(event) => {
+              event.preventDefault();
+              handleMobileBannerFile(event.dataTransfer.files?.[0]);
+            }}
+            className="mt-6 flex min-h-[255px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-gradient-to-br from-gray-50 to-white px-6 py-8 text-center transition hover:border-[#0A375A] hover:bg-blue-50/40"
+          >
+            <input
+              ref={mobileFileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="hidden"
+              onChange={(event) => handleMobileBannerFile(event.target.files?.[0])}
+            />
+
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-[#0A375A] shadow-sm ring-1 ring-gray-100">
+              <HiOutlineDeviceMobile className="h-8 w-8" />
+            </div>
+
+            <h3 className="mt-5 text-base font-black text-gray-950">Subir flyer movil</h3>
+            <p className="mt-2 max-w-md text-sm leading-6 text-gray-500">
+              Recomendado: 1080 x 1440 px o formato 3:4.
+            </p>
+          </div>
+
+          {mobileBannerFileName && (
+            <div className="mt-4 flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-black text-gray-900">{mobileBannerFileName}</p>
+                <p className="text-xs font-semibold text-gray-500">Movil</p>
+              </div>
             </div>
           )}
         </div>
