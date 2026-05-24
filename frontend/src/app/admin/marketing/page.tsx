@@ -135,8 +135,6 @@ export default function AdminMarketingPage() {
       await api.post('/marketing/admin/banner/home', {
         imageData: bannerPreview,
         fileName: bannerFileName || 'banner-home',
-        mobileImageData: mobileBannerPreview || null,
-        mobileFileName: mobileBannerFileName || null,
       });
 
       setBannerStatus('active');
