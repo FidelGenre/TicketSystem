@@ -175,21 +175,21 @@ export default function AdminMarketingPage() {
 
   return (
     <div className="space-y-4 pb-8 sm:space-y-6">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+      <div className="mx-auto flex max-w-5xl flex-col items-center gap-4 text-center lg:max-w-none lg:flex-row lg:items-end lg:justify-between lg:text-left">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-orange-600 sm:text-xs">
+          <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-orange-600 sm:text-xs lg:mx-0">
             <HiOutlineSpeakerphone className="h-4 w-4" />
             Marketing
           </div>
-          <h1 className="mt-3 text-2xl font-black leading-tight text-[#0A375A] sm:text-3xl">Banner publicitario</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-500 sm:text-sm">
+          <h1 className="mx-auto mt-3 max-w-[340px] text-3xl font-black leading-tight text-[#0A375A] sm:max-w-none sm:text-4xl lg:mx-0 lg:text-3xl">Banner publicitario</h1>
+          <p className="mx-auto mt-2 max-w-[360px] text-sm leading-6 text-gray-500 sm:max-w-2xl lg:mx-0 lg:max-w-3xl">
             Sube un diseno terminado para que rote dentro del carrusel principal junto a los eventos destacados.
           </p>
         </div>
 
         <button
           type="button"
-          className="inline-flex w-fit items-center justify-center gap-2 rounded-xl bg-[#F97316] px-4 py-2.5 text-xs font-black text-white shadow-lg shadow-orange-500/20 transition hover:bg-orange-600 sm:px-5 sm:py-3 sm:text-sm"
+          className="inline-flex w-fit items-center justify-center gap-2 rounded-xl bg-[#F97316] px-4 py-2.5 text-xs font-black text-white shadow-lg shadow-orange-500/20 transition hover:bg-orange-600 sm:px-5 sm:py-3 sm:text-sm lg:ml-auto"
         >
           <HiOutlineSparkles className="h-5 w-5" />
           Nueva campana
