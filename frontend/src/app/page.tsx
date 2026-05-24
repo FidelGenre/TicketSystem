@@ -11,7 +11,6 @@ import { useCategories } from '@/context/CategoryContext';
 import { useLang } from '@/context/LanguageContext';
 import { HiOutlineCalendar, HiOutlineLocationMarker, HiOutlineSearch, HiOutlineTicket } from 'react-icons/hi';
 import { AnimatePresence, motion } from 'framer-motion';
-import HomeMarketingBanner from '@/components/marketing/HomeMarketingBanner';
 
 const DEMO_EVENTS: Event[] = [];
 
@@ -124,7 +123,6 @@ export default function HomePage() {
 
   return (
     <div className="home-signature min-h-screen">
-      <HomeMarketingBanner />
       {loading ? (
         <section className="home-hero-shell">
           <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8">
