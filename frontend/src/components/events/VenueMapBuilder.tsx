@@ -202,6 +202,8 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
       
       if (foundSeat) {
         if (foundSeat.status === 'sold') return 'sold';
+        // Temporary checkout hold: show as yellow, not sold gray
+        if (foundSeat.status === 'locked' && foundSeat.lockExpiresAt) return 'held';
         // Permanent block if locked and no expiry
         if (foundSeat.status === 'locked' && !foundSeat.lockExpiresAt) return 'reserved';
       }
@@ -1718,6 +1720,7 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
                         const isSeatWheelchair = seatOverride.isWheelchair !== undefined ? seatOverride.isWheelchair : isWheelchair;
                         const isDisabled = seatOverride.disabled || false;
                         const sStatus = getSeatStatus(sec, seatKey);
+                        const isHeld = sStatus === 'held';
                         const isReserved = sStatus === 'reserved';
                         const isSold = sStatus === 'sold';
                         const isSeatSelected = selectedSeat?.secId === sec.id && selectedSeat?.seatKey === seatKey;
@@ -1740,7 +1743,7 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
                               width: Math.max(10, Math.min(22, (sec.mapWidth! - 24) / seatsCount - 2)),
                               height: Math.max(10, Math.min(22, (sec.mapWidth! - 24) / seatsCount - 2)),
                               transform: `translate(-50%, -50%) translate(${finalXOffset}px, ${finalYOffset}px) rotate(${angleDeg}deg)`,
-                              backgroundColor: isSold ? '#94a3b8' : (isReserved ? '#f97316' : (isSeatWheelchair ? '#1a73e8' : sec.color)),
+                              backgroundColor: isSold ? '#94a3b8' : (isHeld ? '#facc15' : (isReserved ? '#f97316' : (isSeatWheelchair ? '#1a73e8' : sec.color))),
                               boxShadow: isSeatSelected ? '0 0 0 3px #3b82f6, 0 4px 10px rgba(59,130,246,0.5)' : '0 1px 3px rgba(0,0,0,0.15)',
                               border: isSeatSelected ? '2px solid #fff' : '1.5px solid #fff',
                               opacity: isDisabled ? 0.25 : 1,
@@ -1749,7 +1752,7 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
                           >
                             {isReserved && <div className="w-[60%] h-[60%] bg-white rounded-full flex items-center justify-center text-[8px] font-bold text-orange-600">B</div>}
                             {isSold && <div className="w-[60%] h-[60%] bg-white rounded-full flex items-center justify-center text-[8px] font-bold text-slate-500">S</div>}
-                            {isSeatWheelchair && !isReserved && (
+                            {isSeatWheelchair && !isHeld && !isReserved && (
                               <FaWheelchair className="w-[70%] h-[70%] text-white" />
                             )}
                             {/* Seat label on hover */}
@@ -1804,6 +1807,7 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
                           const isSeatWheelchair = seatOverride.isWheelchair || false;
                           const isDisabled = seatOverride.disabled || false;
                           const sStatus = getSeatStatus(sec, seatKey);
+                          const isHeld = sStatus === 'held';
                           const isReserved = sStatus === 'reserved';
                           const isSold = sStatus === 'sold';
                           const isSeatSelected = selectedSeat?.secId === sec.id && selectedSeat?.seatKey === seatKey;
@@ -1824,7 +1828,7 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
                               style={{
                                 width: chairSize,
                                 height: chairSize,
-                                backgroundColor: isSold ? '#94a3b8' : (isReserved ? '#f97316' : (isSeatWheelchair ? '#1a73e8' : sec.color)),
+                                backgroundColor: isSold ? '#94a3b8' : (isHeld ? '#facc15' : (isReserved ? '#f97316' : (isSeatWheelchair ? '#1a73e8' : sec.color))),
                                 transform: `rotate(${angle}deg) translate(0, -210%) rotate(-${angle}deg) translate(${finalXOffset}px, ${finalYOffset}px)`,
                                 boxShadow: isSeatSelected ? '0 0 0 3px #3b82f6, 0 4px 10px rgba(59,130,246,0.5)' : '0 1px 3px rgba(0,0,0,0.15)',
                                 border: isSeatSelected ? '2px solid #fff' : '1.5px solid #fff',
@@ -1833,7 +1837,7 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
                               }}
                             >
                               {isReserved && <div className="w-[70%] h-[70%] bg-white rounded-full flex items-center justify-center text-[8px] font-bold text-orange-600 absolute inset-0 m-auto">B</div>}
-                              {isSeatWheelchair && !isReserved && (
+                              {isSeatWheelchair && !isHeld && !isReserved && (
                                 <FaWheelchair className="w-[70%] h-[70%] text-white absolute inset-0 m-auto" />
                               )}
                               <div className="absolute bottom-full mb-1 bg-gray-900 text-white text-[9px] px-1 py-0.5 rounded opacity-0 group-hover/seat:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
@@ -1899,6 +1903,7 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
                           const isSeatWheelchair = seatOverride.isWheelchair || false;
                           const isDisabled = seatOverride.disabled || false;
                           const sStatus = getSeatStatus(sec, seatKey);
+                          const isHeld = sStatus === 'held';
                           const isReserved = sStatus === 'reserved';
                           const isSold = sStatus === 'sold';
                           const isSeatSelected = selectedSeat?.secId === sec.id && selectedSeat?.seatKey === seatKey;
@@ -1919,7 +1924,7 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
                               style={{
                                 width: chairSize,
                                 height: chairSize,
-                                backgroundColor: isSold ? '#94a3b8' : (isReserved ? '#f97316' : (isSeatWheelchair ? '#1a73e8' : sec.color)),
+                                backgroundColor: isSold ? '#94a3b8' : (isHeld ? '#facc15' : (isReserved ? '#f97316' : (isSeatWheelchair ? '#1a73e8' : sec.color))),
                                 left: `${x}%`,
                                 top: `${y}%`,
                                 transform: `translate(-50%, -50%) translate(${finalXOffset}px, ${finalYOffset}px)`,
@@ -1931,7 +1936,7 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
                             >
                               {isReserved && <div className="w-[70%] h-[70%] bg-white rounded-full flex items-center justify-center text-[8px] font-bold text-orange-600 absolute inset-0 m-auto">B</div>}
                               {isSold && <div className="w-[70%] h-[70%] bg-white rounded-full flex items-center justify-center text-[8px] font-bold text-slate-500 absolute inset-0 m-auto">S</div>}
-                              {isSeatWheelchair && !isReserved && !isSold && (
+                              {isSeatWheelchair && !isHeld && !isReserved && !isSold && (
                                 <FaWheelchair className="w-[70%] h-[70%] text-white absolute inset-0 m-auto" />
                               )}
                               <div className="absolute bottom-full mb-1 bg-gray-900 text-white text-[9px] px-1 py-0.5 rounded opacity-0 group-hover/seat:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
