@@ -20,6 +20,11 @@ export default function EventCard({ event, priority = false }: EventCardProps) {
   const { getCategoryInfo } = useCategories();
   const { lang } = useLang();
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  const resolvedSrc = !imageError && event.imageUrl
+    ? getImageUrl(event.imageUrl) || '/demo/concert.png'
+    : '/demo/concert.png';
 
   const defaultCategory = {
     labelEs: 'Otro',
@@ -46,13 +51,13 @@ export default function EventCard({ event, priority = false }: EventCardProps) {
           )}
 
           <img
-            src={event.imageUrl ? getImageUrl(event.imageUrl) : '/demo/concert.png'}
+            src={resolvedSrc}
             alt={event.title}
             loading={priority ? 'eager' : 'lazy'}
             fetchPriority={priority ? 'high' : 'auto'}
             onLoad={() => setImageLoaded(true)}
             className={`h-full w-full object-cover transition-all duration-700 group-hover:scale-[1.035] ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
-            onError={() => setImageLoaded(true)}
+            onError={() => { setImageError(true); setImageLoaded(true); }}
           />
 
           <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-lg bg-white/92 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-[0.08em] text-[#0A375A] shadow-sm backdrop-blur-md">
