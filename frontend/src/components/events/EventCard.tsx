@@ -21,14 +21,15 @@ export default function EventCard({ event, priority = false }: EventCardProps) {
   const { lang } = useLang();
   const [imageLoaded, setImageLoaded] = useState(false);
 
-  const categoryInfo = getCategoryInfo(event.category) || {
+  const defaultCategory = {
     labelEs: 'Otro',
     labelEn: 'Other',
     icon: '🎫',
     color: '#6366f1',
   };
 
-  const catLabel = lang === 'en' ? categoryInfo.labelEn : categoryInfo.labelEs;
+  const categoryInfo = getCategoryInfo(event.category) || defaultCategory;
+  const catLabel = lang === 'en' ? categoryInfo?.labelEn : categoryInfo?.labelEs;
   const eventLocale = lang === 'es' ? 'es' : 'en-US';
   const eventTz = event.eventTimezone || 'UTC';
   const eventDay = formatDateInTimezone(event.eventDate, eventTz, eventLocale, { day: '2-digit', month: '2-digit' });
@@ -44,7 +45,7 @@ export default function EventCard({ event, priority = false }: EventCardProps) {
             <div className="absolute inset-0 z-10 h-full w-full animate-shimmer" />
           )}
 
-          {event.imageUrl ? (
+          {event.imageUrl && (
             <img
               src={getImageUrl(event.imageUrl)}
               alt={event.title}
@@ -52,19 +53,15 @@ export default function EventCard({ event, priority = false }: EventCardProps) {
               fetchPriority={priority ? 'high' : 'auto'}
               onLoad={() => setImageLoaded(true)}
               className={`h-full w-full object-cover transition-all duration-700 group-hover:scale-[1.035] ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
-              onError={(e) => {
-                setImageLoaded(true);
-                (e.target as HTMLImageElement).style.display = 'none';
-              }}
+              onError={() => setImageLoaded(true)}
             />
-          ) : null}
+          )}
 
-          <div
-            className="absolute inset-0 flex h-full w-full items-center justify-center bg-gradient-to-br from-[#0A375A] via-[#0A375A] to-[#F97316]"
-            style={{ display: imageLoaded && event.imageUrl ? 'none' : 'flex' }}
-          >
-            <span className="text-6xl">{categoryInfo.icon}</span>
-          </div>
+          {!imageLoaded && (
+            <div className="absolute inset-0 flex h-full w-full items-center justify-center bg-gradient-to-br from-[#0A375A] via-[#0A375A] to-[#F97316]">
+              <span className="text-6xl">{categoryInfo?.icon || '🎫'}</span>
+            </div>
+          )}
 
           <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-lg bg-white/92 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-[0.08em] text-[#0A375A] shadow-sm backdrop-blur-md">
             <span className="h-1.5 w-1.5 rounded-full bg-primary-500" />
