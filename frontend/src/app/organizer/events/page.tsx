@@ -54,7 +54,8 @@ export default function OrganizerEventsPage() {
     if (!confirm(lang === 'es' ? '¿Estás seguro de eliminar este evento?' : 'Are you sure you want to delete this event?')) return;
     try {
       await api.delete(`/events/${id}`);
-      await loadEvents();
+      setEvents((current) => current.filter((event) => event.id !== id));
+      toast.success(lang === 'es' ? 'Evento eliminado' : 'Event deleted');
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Error');
     }

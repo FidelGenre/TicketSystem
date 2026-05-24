@@ -4,6 +4,7 @@ import {
   Column,
   ManyToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { VenueSection } from './venue-section.entity';
 
@@ -14,6 +15,8 @@ export enum SeatStatus {
 }
 
 @Entity('seats')
+@Index(['lockedBy', 'status', 'lockExpiresAt'])
+@Index(['sectionId'])
 export class Seat {
   @PrimaryGeneratedColumn('uuid')
   id: string;

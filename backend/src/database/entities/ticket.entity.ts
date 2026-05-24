@@ -20,6 +20,8 @@ export enum TicketStatus {
 }
 
 @Entity('tickets')
+@Index(['sectionId'])
+@Index(['eventId', 'status'])
 @Index(['eventId'])
 @Index(['orderId'])
 @Index(['userId'])

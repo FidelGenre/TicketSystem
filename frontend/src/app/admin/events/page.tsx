@@ -297,7 +297,12 @@ export default function AdminEventsPage() {
 
   const handleDelete = async (id: string, title: string) => {
     if (!confirm(lang === 'es' ? `¿Estás seguro de eliminar el evento "${title}"?` : `Are you sure you want to delete "${title}"?`)) return;
-    try { await api.delete(`/admin/events/${id}`); await loadEvents(); }
+    try {
+      await api.delete(`/admin/events/${id}`);
+      setEvents((current) => current.filter((event) => event.id !== id));
+      setTotal((current) => Math.max(0, current - 1));
+      toast.success(lang === 'es' ? 'Evento eliminado' : 'Event deleted');
+    }
     catch (err: any) { toast.error(err.response?.data?.message || 'Error'); }
   };
 

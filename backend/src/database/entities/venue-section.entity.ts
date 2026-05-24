@@ -5,6 +5,7 @@ import {
   ManyToOne,
   OneToMany,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { Event } from './event.entity';
 
@@ -18,6 +19,7 @@ export enum SectionType {
 }
 
 @Entity('venue_sections')
+@Index(['eventId'])
 export class VenueSection {
   @PrimaryGeneratedColumn('uuid')
   id: string;

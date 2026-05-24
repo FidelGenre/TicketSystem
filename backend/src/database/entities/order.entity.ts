@@ -28,6 +28,8 @@ export enum OrderStatus {
  * Stores detailed fee breakdowns and references to external payment processors.
  */
 @Entity('orders')
+@Index(['stripeSessionId'])
+@Index(['eventId'])
 @Index(['status'])
 @Index(['eventId', 'status'])
 @Index(['userId'])
