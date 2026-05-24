@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import api from '@/lib/api';
 import {
   HiOutlineBadgeCheck,
   HiOutlineChartBar,
@@ -82,7 +83,7 @@ export default function AdminMarketingPage() {
     reader.readAsDataURL(file);
   };
 
-  const removeBanner = () => {
+  const removeBanner = async () => {
     setBannerPreview('');
     setBannerFileName('');
     setBannerStatus('draft');
@@ -90,12 +91,30 @@ export default function AdminMarketingPage() {
     localStorage.removeItem('lpMarketingBannerPreview');
     localStorage.removeItem('lpMarketingBannerFileName');
     localStorage.removeItem('lpMarketingBannerStatus');
+
+    try {
+      await api.delete('/marketing/admin/banner/home');
+    } catch (error) {
+      console.error('[remove marketing banner error]', error);
+    }
   };
 
-  const publishBanner = () => {
+  const publishBanner = async () => {
     if (!bannerPreview) return;
-    setBannerStatus('active');
-    localStorage.setItem('lpMarketingBannerStatus', 'active');
+
+    try {
+      await api.post('/marketing/admin/banner/home', {
+        imageData: bannerPreview,
+        fileName: bannerFileName || 'banner-home',
+      });
+
+      setBannerStatus('active');
+      localStorage.setItem('lpMarketingBannerStatus', 'active');
+      alert('Banner publicado correctamente. Ya puede mostrarse en el Home.');
+    } catch (error: any) {
+      console.error('[publish marketing banner error]', error);
+      alert(error?.response?.data?.message || 'No se pudo publicar el banner.');
+    }
   };
 
   return (
