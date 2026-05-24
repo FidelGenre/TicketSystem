@@ -98,6 +98,8 @@ export class OrdersService {
     sectionId?: string,
     quantity?: number,
     rawSpecialCode?: string,
+    buyerEmail?: string,
+    buyerName?: string,
   ) {
     const event = await this.eventRepo.findOne({ where: { id: eventId } });
     if (!event) throw new NotFoundException('Event not found');
@@ -341,8 +343,12 @@ export class OrdersService {
       ? (rawAppUrl.startsWith('http') ? rawAppUrl : `https://${rawAppUrl}`)
       : 'https://ticketsystem-jzgf.onrender.com';
 
+    const checkoutBuyerEmail = buyerEmail?.trim();
+    const checkoutBuyerName = buyerName?.trim();
+
     const session = await this.stripe.checkout.sessions.create({
       payment_method_types: ['card'],
+      ...(checkoutBuyerEmail ? { customer_email: checkoutBuyerEmail } : {}),
       line_items: lineItems,
       mode: 'payment',
       expires_at: Math.floor(Date.now() / 1000) + (30 * 60), 
@@ -352,6 +358,8 @@ export class OrdersService {
         orderId: savedOrder.id,
         userId,
         eventId,
+        buyerEmail: checkoutBuyerEmail || '',
+        buyerName: checkoutBuyerName || '',
       },
     });
 
@@ -569,8 +577,8 @@ export class OrdersService {
           relations: ['user', 'event'],
         });
         if (fullOrder && fullOrder.user) {
-          const buyerEmail = session.customer_details?.email || fullOrder.user.email;
-          const buyerName = session.customer_details?.name || fullOrder.user.firstName;
+          const buyerEmail = session.customer_details?.email || session.metadata?.buyerEmail || fullOrder.user.email;
+          const buyerName = session.customer_details?.name || session.metadata?.buyerName || fullOrder.user.firstName;
           await this.mailService.sendTicketEmail(
             buyerEmail,
             buyerName,

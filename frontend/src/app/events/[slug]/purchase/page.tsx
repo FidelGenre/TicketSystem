@@ -335,7 +335,11 @@ export default function PurchasePage() {
   const handlePay = async () => {
     setBuying(true);
     try {
-      const payload: any = { eventId: event!.id };
+      const payload: any = {
+        eventId: event!.id,
+        buyerEmail: personalInfo.email.trim(),
+        buyerName: `${personalInfo.firstName || ''} ${personalInfo.lastName || ''}`.trim(),
+      };
       if (selectedSection?.sectionType === 'standing') {
         payload.sectionId = selectedSection.id;
         payload.quantity = standingQuantity;
