@@ -6,17 +6,11 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://ticketsystembackend.u
 
 function resolveImage(url?: string | null, slug?: string | null) {
   if (!url) return `${siteUrl}/logo.png`;
-  if (slug && url.startsWith('data:')) {
-    return `${siteUrl}/events/${encodeURIComponent(slug)}/og-image`;
-  }
-  if (slug && url.startsWith('/api/events/') && url.includes('/og-image')) {
-    return `${siteUrl}/events/${encodeURIComponent(slug)}/og-image`;
-  }
+  // External CDN / absolute URLs — use directly
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  if (url.startsWith('data:')) return `${siteUrl}/logo.png`;
-
-  const backendBase = apiUrl.replace(/\/api\/?$/, '');
-  return `${backendBase}${url.startsWith('/') ? url : `/${url}`}`;
+  // Everything else (base64, /uploads/, /api/events/*/og-image) → proxy through Next.js
+  if (slug) return `${siteUrl}/events/${encodeURIComponent(slug)}/og-image`;
+  return `${siteUrl}/logo.png`;
 }
 
 function cleanText(value?: string | null, fallback = '') {

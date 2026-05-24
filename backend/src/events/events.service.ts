@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, ILike } from 'typeorm';
+import * as fs from 'fs';
+import * as path from 'path';
 import { Event, EventStatus, EventCategory, VenueSection, Seat, SeatStatus, User, Ticket, Order, EventCategoryEntity } from '../database/entities';
 import { CreateEventDto, UpdateEventDto, EventQueryDto } from './dto/event.dto';
 
@@ -188,15 +190,32 @@ export class EventsService {
       : event.imageUrl || event.bannerImageUrl;
     if (!image) throw new NotFoundException('Imagen del evento no encontrada');
 
+    // Base64 stored directly in the DB
     const match = image.match(/^data:([^;]+);base64,(.+)$/);
-    if (!match) {
-      throw new BadRequestException('La imagen del evento no está guardada como Base64');
+    if (match) {
+      return { mimeType: match[1], buffer: Buffer.from(match[2], 'base64') };
     }
 
-    return {
-      mimeType: match[1],
-      buffer: Buffer.from(match[2], 'base64'),
-    };
+    // External HTTP(S) URL — proxy the image bytes so social crawlers get a simple response
+    if (image.startsWith('http://') || image.startsWith('https://')) {
+      const res = await fetch(image);
+      if (!res.ok) throw new NotFoundException('Imagen externa no disponible');
+      const mimeType = res.headers.get('content-type') || 'image/jpeg';
+      const buffer = Buffer.from(await res.arrayBuffer());
+      return { mimeType, buffer };
+    }
+
+    // Local /uploads/ path — try to read from disk
+    const cleanPath = image.replace(/^\//, '');
+    const filePath = path.join(process.cwd(), cleanPath);
+    if (fs.existsSync(filePath)) {
+      const buffer = fs.readFileSync(filePath);
+      const ext = path.extname(filePath).toLowerCase();
+      const mimeMap: Record<string, string> = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp' };
+      return { mimeType: mimeMap[ext] || 'image/jpeg', buffer };
+    }
+
+    throw new NotFoundException('Imagen del evento no encontrada');
   }
 
   /**
