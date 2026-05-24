@@ -96,7 +96,7 @@ export default function EventsContent({ initialEvents, initialTotal, initialTota
           </div>
         ) : events.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-5">
-            {events.map((event) => <EventCard key={event.id} event={event} />)}
+            {events.map((event, idx) => <EventCard key={event.id} event={event} priority={idx < 4} />)}
           </div>
         ) : (
           <div className="text-center py-20 border border-gray-200 rounded-lg"><p className="text-gray-500">{lang === 'es' ? 'No se encontraron eventos' : 'No events found'}</p></div>

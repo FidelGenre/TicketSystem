@@ -13,9 +13,10 @@ import { formatDateInTimezone, getTimezoneAbbr } from '@/lib/dateUtils';
 
 interface EventCardProps {
   event: Event;
+  priority?: boolean; // true para primeras tarjetas que deben cargar rápido
 }
 
-export default function EventCard({ event }: EventCardProps) {
+export default function EventCard({ event, priority = false }: EventCardProps) {
   const { getCategoryInfo } = useCategories();
   const { lang } = useLang();
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -47,7 +48,8 @@ export default function EventCard({ event }: EventCardProps) {
             <img
               src={getImageUrl(event.imageUrl)}
               alt={event.title}
-              loading="lazy"
+              loading={priority ? 'eager' : 'lazy'}
+              fetchPriority={priority ? 'high' : 'low'}
               onLoad={() => setImageLoaded(true)}
               className={`h-full w-full object-cover transition-all duration-700 group-hover:scale-[1.035] ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
               onError={(e) => {

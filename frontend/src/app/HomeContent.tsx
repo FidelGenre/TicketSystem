@@ -296,7 +296,7 @@ export default function HomeContent({ initialEvents, initialBanner }: HomeConten
 
         {sortedEvents.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-5">
-            {sortedEvents.map((event) => <EventCard key={event.id} event={event} />)}
+            {sortedEvents.map((event, idx) => <EventCard key={event.id} event={event} priority={idx < 8} />)}
           </div>
         ) : (
           <div className="text-center py-20 border border-gray-200 rounded-lg bg-white/80">
