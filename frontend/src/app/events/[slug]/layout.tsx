@@ -4,12 +4,15 @@ import type { ReactNode } from 'react';
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.lpticket.com').replace(/\/$/, '');
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://ticketsystembackend.up.railway.app/api';
 
-function resolveImage(url?: string | null, slug?: string | null) {
+function resolveImage(url?: string | null, slug?: string | null, version?: string | null) {
   if (!url) return `${siteUrl}/logo.png`;
-  // External CDN / absolute URLs — use directly
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  // Everything else (base64, /uploads/, /api/events/*/og-image) → proxy through Next.js
-  if (slug) return `${siteUrl}/events/${encodeURIComponent(slug)}/og-image`;
+  // Always proxy social previews through Next.js so WhatsApp/Facebook get a
+  // normalized 1200x630 image and a fresh URL after event image updates.
+  if (slug) {
+    const imageUrl = new URL(`${siteUrl}/events/${encodeURIComponent(slug)}/og-image`);
+    if (version) imageUrl.searchParams.set('v', version);
+    return imageUrl.toString();
+  }
   return `${siteUrl}/logo.png`;
 }
 
@@ -107,7 +110,8 @@ export async function generateMetadata({
     const eventUrl = `${siteUrl}/events/${canonicalSlug}`;
     const title = `${eventName} | LP Ticket`;
     const description = buildDescription(event);
-    const image = resolveImage(event.imageUrl || event.bannerImageUrl, canonicalSlug);
+    const imageVersion = event.updatedAt || event.createdAt || event.eventDate || '';
+    const image = resolveImage(event.imageUrl || event.bannerImageUrl, canonicalSlug, imageVersion);
 
     return {
       title,

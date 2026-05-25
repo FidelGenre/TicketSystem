@@ -1,3 +1,5 @@
+import sharp from 'sharp';
+
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://ticketsystembackend.up.railway.app/api';
 
 export const runtime = 'nodejs';
@@ -17,15 +19,26 @@ export async function GET(
     return new Response('Event image not found', { status: 404 });
   }
 
-  const contentType = response.headers.get('content-type') || 'image/jpeg';
-  const buffer = await response.arrayBuffer();
+  const sourceBuffer = Buffer.from(await response.arrayBuffer());
+  const imageBuffer = await sharp(sourceBuffer, { failOn: 'none' })
+    .rotate()
+    .resize(1200, 630, {
+      fit: 'cover',
+      position: 'center',
+      withoutEnlargement: false,
+    })
+    .jpeg({
+      quality: 82,
+      mozjpeg: true,
+    })
+    .toBuffer();
 
-  return new Response(buffer, {
+  return new Response(new Uint8Array(imageBuffer), {
     status: 200,
     headers: {
-      'Content-Type': contentType,
+      'Content-Type': 'image/jpeg',
       'Cache-Control': 'public, max-age=86400, s-maxage=86400',
-      'Content-Length': String(buffer.byteLength),
+      'Content-Length': String(imageBuffer.byteLength),
     },
   });
 }
