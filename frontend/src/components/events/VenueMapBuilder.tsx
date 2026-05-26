@@ -779,6 +779,7 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
           mapHeight: s.mapHeight ? parseFloat(Number(s.mapHeight).toFixed(2)) : 100,
           curve: Number(s.curve) || 0,
           rotation: Number(s.rotation) || 0,
+          labelFontSize: Number((s as any).labelFontSize) || 0,
           isWheelchair: !!s.isWheelchair,
           tableShape: s.tableShape || 'round',
           tablePurchaseMode: s.tablePurchaseMode || 'individual',
@@ -1322,6 +1323,41 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
                   </select>
                 </div>
 
+                <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-white via-blue-50/40 to-orange-50/30 p-3 shadow-sm">
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <div>
+                      <label className="block text-[11px] font-black uppercase tracking-[0.16em] text-[#0A375A]">
+                        {lang === 'es' ? 'Tamaño del texto' : 'Text size'}
+                      </label>
+                      <p className="text-[10px] font-semibold text-gray-400 mt-0.5">
+                        {lang === 'es' ? 'Nombre visible en el mapa' : 'Visible map label'}
+                      </p>
+                    </div>
+                    <div className="min-w-[52px] rounded-xl bg-white px-2.5 py-1.5 text-center text-sm font-black text-[#F97316] border border-orange-100 shadow-sm">
+                      {Number((selectedSection as any).labelFontSize || 0) || (selectedSection.sectionType === 'stage' ? 13 : selectedSection.sectionType === 'table' ? 10 : 12)}px
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      min="7"
+                      max="32"
+                      step="1"
+                      value={Number((selectedSection as any).labelFontSize || 0) || (selectedSection.sectionType === 'stage' ? 13 : selectedSection.sectionType === 'table' ? 10 : 12)}
+                      onChange={e => updateSelected('labelFontSize', +e.target.value)}
+                      className="w-full accent-[#F97316]"
+                    />
+                    <input
+                      type="number"
+                      min="7"
+                      max="32"
+                      value={Number((selectedSection as any).labelFontSize || 0) || (selectedSection.sectionType === 'stage' ? 13 : selectedSection.sectionType === 'table' ? 10 : 12)}
+                      onChange={e => updateSelected('labelFontSize', +e.target.value)}
+                      className="w-16 rounded-xl border border-blue-100 bg-white px-2 py-1.5 text-center text-xs font-black text-[#0A375A] outline-none focus:border-[#F97316] focus:ring-2 focus:ring-orange-100"
+                    />
+                  </div>
+                </div>
+
                 {/* Price fields */}
                 {selectedSection.sectionType !== 'stage' && selectedSection.sectionType !== 'decor' && (
                   <div className={`grid gap-3 ${selectedSection.sectionType === 'table' ? 'grid-cols-2' : 'grid-cols-1'}`}>
@@ -1636,6 +1672,10 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
             const curve = sec.curve || 0;
             const isWheelchair = sec.isWheelchair || false;
             const tableShape = sec.tableShape || 'round';
+            const labelFontSize = Number((sec as any).labelFontSize || 0);
+            const tableLabelFontSize = labelFontSize || ((sec.name || '').length > 8 ? 7 : (sec.name || '').length > 5 ? 8 : 10);
+            const sectionLabelFontSize = labelFontSize || 12;
+            const stageLabelFontSize = labelFontSize || 13;
 
             return (
               <div
@@ -1673,14 +1713,14 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
               >
                 {isDecor && (
                   <div className="flex flex-col items-center justify-center p-2 text-center pointer-events-none">
-                    <span className="text-[11px] font-black text-white uppercase tracking-widest break-words leading-tight">
+                    <span className="font-black text-white uppercase tracking-widest break-words leading-tight" style={{ fontSize: sectionLabelFontSize }}>
                       {sec.name}
                     </span>
                   </div>
                 )}
                 {isStage && (
                   <>
-                    <span style={{ color: '#60a5fa', fontSize: 13, fontWeight: 800, letterSpacing: 5, textTransform: 'uppercase', textShadow: '0 0 10px rgba(96, 165, 250, 0.5)' }}>
+                    <span style={{ color: '#60a5fa', fontSize: stageLabelFontSize, fontWeight: 800, letterSpacing: 5, textTransform: 'uppercase', textShadow: '0 0 10px rgba(96, 165, 250, 0.5)' }}>
                       {sec.name}
                     </span>
                     <span style={{ color: '#94a3b8', fontSize: 9, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', marginTop: 1 }}>
@@ -1779,16 +1819,13 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
                           width: '60%', height: '60%'
                         }}>
                           <span 
-                            className={`font-black uppercase tracking-tight text-center px-1 select-none leading-none ${
-                              (sec.name || '').length > 8 
-                                ? 'text-[7px] text-slate-400' 
-                                : (sec.name || '').length > 5 
-                                  ? 'text-[8px] text-slate-500' 
-                                  : 'text-[9.5px] text-slate-600'
-                            }`}
+                            className="font-black uppercase tracking-tight text-center px-1 select-none leading-none text-slate-600"
                             style={{
                               transform: `rotate(${-(sec.rotation || 0)}deg)`,
-                              display: 'inline-block'
+                              display: 'inline-block',
+                              fontSize: tableLabelFontSize,
+                              maxWidth: '92%',
+                              wordBreak: 'break-word'
                             }}
                           >
                             {sec.name || ''}
@@ -1857,16 +1894,13 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
                           width: '70%', height: '45%'
                         }}>
                           <span 
-                            className={`font-black uppercase tracking-tight text-center px-1 select-none leading-none ${
-                              (sec.name || '').length > 8 
-                                ? 'text-[7.5px] text-slate-400' 
-                                : (sec.name || '').length > 5 
-                                  ? 'text-[8.5px] text-slate-500' 
-                                  : 'text-[10px] text-slate-600'
-                            }`}
+                            className="font-black uppercase tracking-tight text-center px-1 select-none leading-none text-slate-600"
                             style={{
                               transform: `rotate(${-(sec.rotation || 0)}deg)`,
-                              display: 'inline-block'
+                              display: 'inline-block',
+                              fontSize: tableLabelFontSize,
+                              maxWidth: '92%',
+                              wordBreak: 'break-word'
                             }}
                           >
                             {sec.name || ''}
@@ -1959,7 +1993,7 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
                   <div className="relative z-10 flex flex-col items-center justify-center pointer-events-none">
                     <span style={{ 
                       fontWeight: 800, 
-                      fontSize: 12, 
+                      fontSize: sectionLabelFontSize, 
                       textAlign: 'center', 
                       color: isStanding ? '#fff' : '#1e293b', 
                       backgroundColor: isStanding ? 'transparent' : 'rgba(255,255,255,0.9)', 

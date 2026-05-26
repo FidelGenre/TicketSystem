@@ -638,6 +638,10 @@ export default function SeatMapInteractive({
             const isDecor = section.sectionType === 'decor';
             const isTable = section.sectionType === 'table';
             const tableShape = section.tableShape || 'round';
+            const labelFontSize = Number((section as any).labelFontSize || 0);
+            const tableLabelFontSize = labelFontSize || ((section.name || '').length > 8 ? 7 : (section.name || '').length > 5 ? 8 : 10);
+            const sectionLabelFontSize = labelFontSize || 12;
+            const stageLabelFontSize = labelFontSize || 13;
 
             return (
               <div 
@@ -673,7 +677,7 @@ export default function SeatMapInteractive({
                 {/* --- Decor/Text-only sections --- */}
                 {isDecor && (
                   <div className="flex flex-col items-center justify-center p-2 text-center">
-                    <span className="text-[11px] font-black text-white uppercase tracking-widest break-words leading-tight">
+                    <span className="font-black text-white uppercase tracking-widest break-words leading-tight" style={{ fontSize: sectionLabelFontSize }}>
                       {section.name}
                     </span>
                   </div>
@@ -682,7 +686,7 @@ export default function SeatMapInteractive({
                 {/* --- Stage visual representation --- */}
                 {isStage && (
                   <>
-                    <span style={{ color: '#60a5fa', fontSize: 13, fontWeight: 800, letterSpacing: 5, textTransform: 'uppercase', textShadow: '0 0 10px rgba(96, 165, 250, 0.5)' }}>
+                    <span style={{ color: '#60a5fa', fontSize: stageLabelFontSize, fontWeight: 800, letterSpacing: 5, textTransform: 'uppercase', textShadow: '0 0 10px rgba(96, 165, 250, 0.5)' }}>
                       {section.name}
                     </span>
                     <span style={{ color: '#94a3b8', fontSize: 9, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', marginTop: 1 }}>
@@ -762,16 +766,13 @@ export default function SeatMapInteractive({
                             }}
                           >
                             <span 
-                              className={`font-black uppercase tracking-tight text-center px-1 select-none leading-none ${
-                                section.name.length > 8 
-                                  ? 'text-[7px] text-slate-400' 
-                                  : section.name.length > 5 
-                                    ? 'text-[8px] text-slate-500' 
-                                    : 'text-[9.5px] text-slate-600'
-                              }`}
+                              className="font-black uppercase tracking-tight text-center px-1 select-none leading-none text-slate-600"
                               style={{
                                 transform: `rotate(${-(section.rotation || 0)}deg)`,
-                                display: 'inline-block'
+                                display: 'inline-block',
+                                fontSize: tableLabelFontSize,
+                                maxWidth: '92%',
+                                wordBreak: 'break-word'
                               }}
                             >
                               {section.name}
@@ -875,16 +876,13 @@ export default function SeatMapInteractive({
                             }}
                           >
                             <span 
-                              className={`font-black uppercase tracking-tight text-center px-1 select-none leading-none ${
-                                section.name.length > 8 
-                                  ? 'text-[7.5px] text-slate-400' 
-                                  : section.name.length > 5 
-                                    ? 'text-[8.5px] text-slate-500' 
-                                    : 'text-[10px] text-slate-600'
-                              }`}
+                              className="font-black uppercase tracking-tight text-center px-1 select-none leading-none text-slate-600"
                               style={{
                                 transform: `rotate(${-(section.rotation || 0)}deg)`,
-                                display: 'inline-block'
+                                display: 'inline-block',
+                                fontSize: tableLabelFontSize,
+                                maxWidth: '92%',
+                                wordBreak: 'break-word'
                               }}
                             >
                               {section.name}
