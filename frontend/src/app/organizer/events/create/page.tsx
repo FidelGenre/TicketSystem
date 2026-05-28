@@ -240,26 +240,23 @@ export default function CreateEventPage() {
       // 1. Create event
       const { data: event } = await api.post('/events', payload);
 
-      // 2. Upload selected images in parallel
-      const imageUploads: Promise<unknown>[] = [];
-
+      // 2. Upload image if selected
       if (imageFile) {
         const formData = new FormData();
         formData.append('image', imageFile);
-        imageUploads.push(api.post(`/events/${event.id}/image`, formData, {
+        await api.post(`/events/${event.id}/image`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
-        }));
+        });
       }
 
+      // 2b. Upload banner if selected
       if (bannerFile) {
         const formData = new FormData();
         formData.append('image', bannerFile);
-        imageUploads.push(api.post(`/events/${event.id}/image/banner`, formData, {
+        await api.post(`/events/${event.id}/image/banner`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
-        }));
+        });
       }
-
-      await Promise.all(imageUploads);
 
       setCreatedEventId(event.id);
       setStep(2);

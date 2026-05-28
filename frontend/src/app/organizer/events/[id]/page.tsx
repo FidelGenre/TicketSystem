@@ -685,7 +685,8 @@ export default function EventDetailPage() {
   const loadEvent = async () => {
     try {
       // Load event details
-      const { data: ev } = await api.get(`/events/${id}`);
+      const { data: events } = await api.get('/events', { params: { limit: 100 } });
+      const ev = (events.events || []).find((e: Event) => e.id === id);
       if (!ev || (ev.organizerId !== user?.id && user?.role !== 'admin')) { router.push('/organizer/events'); return; }
       setEvent(ev);
       setEditForm({
@@ -863,26 +864,23 @@ export default function EventDetailPage() {
         maxTicketsPerTransaction: editForm.maxTicketsPerTransaction ? Number(editForm.maxTicketsPerTransaction) : 10,
       });
 
-      // 2. Upload selected images in parallel
-      const imageUploads: Promise<unknown>[] = [];
-
+      // 2. Upload cover image if selected
       if (imageFile) {
         const formData = new FormData();
         formData.append('image', imageFile);
-        imageUploads.push(api.post(`/events/${id}/image`, formData, {
+        await api.post(`/events/${id}/image`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
-        }));
+        });
       }
 
+      // 3. Upload banner image if selected
       if (bannerFile) {
         const formData = new FormData();
         formData.append('image', bannerFile);
-        imageUploads.push(api.post(`/events/${id}/image/banner`, formData, {
+        await api.post(`/events/${id}/image/banner`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
-        }));
+        });
       }
-
-      await Promise.all(imageUploads);
 
       setImageFile(null);
       setBannerFile(null);
