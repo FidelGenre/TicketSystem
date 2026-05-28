@@ -165,7 +165,7 @@ export class EventsService {
    */
   async findBySlug(slug: string) {
     const event = await this.eventRepo.findOne({
-      where: { slug },
+      where: [{ slug }, { id: slug }],
       relations: ['organizer'],
     });
     if (!event) throw new NotFoundException('Evento no encontrado');
