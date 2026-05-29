@@ -163,16 +163,16 @@ export default function Header() {
 
   const pathname = usePathname();
   const navItems = [
-    { href: '/events', label: t('events'), width: 'w-[80px]', match: (path: string) => path.startsWith('/events') },
-    { href: '/about', label: t('whoWeAre'), width: 'w-[120px]', match: (path: string) => path.startsWith('/about') },
-    { href: '/dashboard?tab=tickets', label: t('myTickets'), width: 'w-[100px]', match: (path: string) => path.startsWith('/dashboard') },
-    { href: '/contact', label: t('contact'), width: 'w-[80px]', match: (path: string) => path.startsWith('/contact') },
-    { href: '/support', label: t('support'), width: 'w-[80px]', match: (path: string) => path.startsWith('/support') },
+    { href: '/events', label: t('events'), width: '', match: (path: string) => path.startsWith('/events') },
+    { href: '/about', label: t('whoWeAre'), width: '', match: (path: string) => path.startsWith('/about') },
+    { href: '/dashboard?tab=tickets', label: t('myTickets'), width: '', match: (path: string) => path.startsWith('/dashboard') },
+    { href: '/contact', label: t('contact'), width: '', match: (path: string) => path.startsWith('/contact') },
+    { href: '/support', label: t('support'), width: '', match: (path: string) => path.startsWith('/support') },
   ];
 
   return (
     <>
-    <header className={`sticky top-0 bg-white border-b border-gray-100 shadow-sm print:hidden ${mobileMenuOpen ? 'z-[200]' : 'z-50'}`}>
+    <header className={`site-header-future sticky top-0 bg-white border-b border-gray-100 shadow-sm print:hidden ${mobileMenuOpen ? 'z-[200]' : 'z-50'}`}>
       <div className="max-w-[1600px] mx-auto px-4 md:px-6">
         <div className="flex items-center h-[60px] md:h-[70px]">
           
@@ -188,14 +188,14 @@ export default function Header() {
           </div>
 
           {/* Navigation Links: Fixed widths to prevent layout shifting */}
-          <nav className="hidden lg:flex items-center gap-2">
+          <nav className="header-main-nav hidden lg:flex items-center gap-2">
             {navItems.map((item) => {
               const active = item.match(pathname);
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`premium-nav-link ${item.width} ${active ? 'active' : ''}`}
+                  className={`header-nav-link ${active ? 'is-active' : ''}`}
                 >
                   {item.label}
                 </Link>
@@ -207,10 +207,10 @@ export default function Header() {
           <div className="flex-1" />
 
           {/* Right: Actions */}
-          <div className="hidden lg:flex items-center gap-3 shrink-0 relative">
+          <div className="header-main-actions hidden lg:flex items-center gap-3 shrink-0 relative">
             
             {/* 1. Language Switcher (h-8 w-110) */}
-            <div className="flex border border-gray-200 rounded-lg overflow-hidden h-8 w-[110px] shrink-0">
+            <div className="header-lang-switch flex border border-gray-200 rounded-lg overflow-hidden h-8 w-[110px] shrink-0">
               <button 
                 onClick={() => setLang('es')}
                 className={`flex-1 text-[10px] font-bold transition-colors ${lang === 'es' ? 'bg-[#0A375A] text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
@@ -229,7 +229,7 @@ export default function Header() {
             {isAuthenticated ? (
               <Link
                 href="/verify"
-                className="h-8 w-[110px] bg-[#F97316] hover:bg-[#F97316] text-white rounded-lg flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 shrink-0"
+                className="header-scan-button h-8 w-[110px] text-white rounded-lg flex items-center justify-center gap-2 transition-all active:scale-95 shrink-0"
               >
                 <HiOutlineQrcode className="w-3.5 h-3.5" />
                 <span className="text-[10px] font-black uppercase tracking-wider">SCAN</span>
@@ -388,11 +388,11 @@ export default function Header() {
 
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
-        <div className="lp-mobile-menu lg:hidden animate-fade-in fixed top-[60px] md:top-[70px] left-0 w-full z-[200] overflow-y-auto max-h-[calc(100vh-60px)] md:max-h-[calc(100vh-70px)]">
-          <div className="lp-mobile-menu-inner space-y-4">
+        <div className="hamburger-menu-panel lg:hidden animate-fade-in">
+          <div className="hamburger-menu-inner space-y-3">
             
             {/* Nav Links */}
-            <div className="lp-mobile-menu-card space-y-1 p-2">
+            <div className="hamburger-menu-card space-y-1 p-2">
               {navItems.map((item) => {
                 const active = item.match(pathname);
                 return (
@@ -400,9 +400,7 @@ export default function Header() {
                     key={item.href}
                     href={item.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`relative block px-4 py-3 font-black text-[16px] rounded-xl transition-all overflow-hidden ${
-                      active ? 'text-[#0A375A] bg-[rgba(10,55,90,0.06)]' : 'text-[#0A375A] hover:bg-[rgba(10,55,90,0.06)]'
-                    }`}
+                    className={`hamburger-nav-link ${active ? 'is-active' : ''}`}
                   >
                     <span className="relative z-10">{item.label}</span>
                     <span className={`absolute left-4 bottom-2 h-[3px] rounded-full bg-gradient-to-r from-blue-500 to-orange-400 transition-all ${active ? 'w-9' : 'w-0'}`} />
@@ -413,35 +411,35 @@ export default function Header() {
 
             {/* Mode Toggle inside Mobile Menu (Pill version as in screenshot) */}
             {isAuthenticated && user?.role !== 'admin' && (
-              <div className="lp-mobile-menu-card flex justify-center py-4">
+              <div className="hamburger-menu-card flex justify-center py-4">
                 <ModeToggle variant="pill" />
               </div>
             )}
 
             {/* Bottom Links (Profile, Tickets, Organizer, Logout) */}
             {isAuthenticated && (
-              <div className="lp-mobile-menu-card p-2 space-y-1">
-                <Link href="/dashboard?tab=profile" onClick={() => setMobileMenuOpen(false)} className="lp-menu-item flex items-center gap-3 px-3 py-3 font-bold text-[15px] transition-colors">
+              <div className="hamburger-menu-card p-2 space-y-1">
+                <Link href="/dashboard?tab=profile" onClick={() => setMobileMenuOpen(false)} className="hamburger-account-link lp-menu-item">
                   <HiOutlineUser className="w-5 h-5 opacity-60" />
                   {t('myProfile')}
                 </Link>
 
                 {(user?.role === 'admin' || mode === 'buyer') && (
-                  <Link href="/dashboard?tab=tickets" onClick={() => setMobileMenuOpen(false)} className="lp-menu-item flex items-center gap-3 px-3 py-3 font-bold text-[15px] transition-colors">
+                  <Link href="/dashboard?tab=tickets" onClick={() => setMobileMenuOpen(false)} className="hamburger-account-link lp-menu-item">
                     <HiOutlineTicket className="w-5 h-5 opacity-60" />
                     {t('myTickets')}
                   </Link>
                 )}
                 
                 {(user?.role === 'admin' || mode === 'organizer') && (
-                  <Link href="/organizer" onClick={() => setMobileMenuOpen(false)} className="lp-menu-item flex items-center gap-3 px-3 py-3 font-bold text-[15px] transition-colors">
+                  <Link href="/organizer" onClick={() => setMobileMenuOpen(false)} className="hamburger-account-link lp-menu-item">
                     <HiOutlineCog className="w-5 h-5 opacity-60" />
                     {t('organizerPanel') || 'Organizer Panel'}
                   </Link>
                 )}
 
                 {user?.role === 'admin' && (
-                  <Link href="/admin" onClick={() => setMobileMenuOpen(false)} className="lp-menu-danger flex items-center gap-3 px-3 py-3 font-bold text-[15px] transition-colors border-t border-gray-50 mt-1">
+                  <Link href="/admin" onClick={() => setMobileMenuOpen(false)} className="hamburger-account-link hamburger-danger-link lp-menu-danger">
                     <HiOutlineCog className="w-5 h-5 opacity-60" />
                     {t('adminPanel') || 'Admin Panel'}
                   </Link>
@@ -449,7 +447,7 @@ export default function Header() {
 
                 <button 
                   onClick={() => { logout(); setMobileMenuOpen(false); }} 
-                  className="lp-menu-danger flex items-center gap-3 w-full px-3 py-3 font-bold text-[15px] transition-colors text-left"
+                  className="hamburger-account-link hamburger-danger-link lp-menu-danger"
                 >
                   <HiOutlineLogout className="w-5 h-5 opacity-60" />
                   {t('logout')}
