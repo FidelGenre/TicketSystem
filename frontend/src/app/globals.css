@@ -1955,16 +1955,18 @@ html {
 }
 
 .lp-menu-danger {
-  color: rgba(252, 165, 165, 0.9) !important;
+  color: rgba(249, 115, 22, 0.9) !important;
+  border-top: 1px solid rgba(255,255,255,0.06) !important;
+  margin-top: 2px !important;
 }
 
 .lp-menu-danger:hover {
-  background: rgba(239, 68, 68, 0.12) !important;
-  color: #fca5a5 !important;
+  background: rgba(249, 115, 22, 0.10) !important;
+  color: #F97316 !important;
 }
 
 .lp-menu-danger svg {
-  color: #f87171 !important;
+  color: #F97316 !important;
 }
 
 .lp-menu-item:hover {
@@ -5682,11 +5684,11 @@ footer .rounded-full:hover {
 @media (max-width: 1023px) {
   body header .hamburger-menu-panel {
     position: fixed !important;
-    top: 7.25rem !important;
-    left: 1rem !important;
-    right: 1rem !important;
-    width: calc(100vw - 2rem) !important;
-    max-height: calc(100dvh - 8rem) !important;
+    top: 4.5rem !important;
+    left: 0.75rem !important;
+    right: 0.75rem !important;
+    width: calc(100vw - 1.5rem) !important;
+    max-height: calc(100dvh - 5rem) !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
     z-index: 9999 !important;
@@ -5786,7 +5788,7 @@ footer .rounded-full:hover {
 
   body header .hamburger-menu-panel {
     position: fixed !important;
-    top: 7.35rem !important;
+    top: 4rem !important;
     left: 0 !important;
     right: 0 !important;
     bottom: 0 !important;
@@ -5823,22 +5825,33 @@ footer .rounded-full:hover {
   body header .hamburger-menu-card a,
   body header .hamburger-menu-card button {
     width: 100% !important;
-    min-height: 4rem !important;
+    min-height: 3.5rem !important;
     display: flex !important;
     align-items: center !important;
-    justify-content: flex-start !important;
-    gap: 1rem !important;
-    padding: 1rem 1.1rem !important;
+    justify-content: center !important;
+    gap: 0.75rem !important;
+    padding: 0.85rem 1.1rem !important;
     border: 0 !important;
     border-radius: 0.9rem !important;
     background: transparent !important;
     color: #ffffff !important;
-    font-size: 1.28rem !important;
-    font-weight: 900 !important;
+    font-size: 1.1rem !important;
+    font-weight: 800 !important;
     line-height: 1.1 !important;
-    text-align: left !important;
+    text-align: center !important;
     box-shadow: none !important;
     text-shadow: none !important;
+  }
+
+  body header .hamburger-menu-card .lp-menu-danger {
+    color: rgba(249, 115, 22, 0.85) !important;
+    border-top: 1px solid rgba(255,255,255,0.07) !important;
+    margin-top: 4px !important;
+  }
+
+  body header .hamburger-menu-card .lp-menu-danger:hover {
+    color: #F97316 !important;
+    background: rgba(249, 115, 22, 0.1) !important;
   }
 
   body header .hamburger-menu-card a:hover,
