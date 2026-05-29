@@ -363,23 +363,23 @@ export default function Header() {
               <Link
                 href="/verify"
                 onClick={() => setMobileMenuOpen(false)}
-                className="h-9 px-3 bg-[#F97316] text-white rounded-lg flex items-center gap-2 transition-all shadow-md active:scale-95 shrink-0"
+                className="h-9 px-3 bg-[#F97316] text-white rounded-lg flex items-center gap-1.5 transition-all shadow-md active:scale-95 shrink-0"
               >
                 <HiOutlineQrcode className="w-4 h-4" />
-                <span className="text-[11px] font-black uppercase tracking-wider">SCAN</span>
+                <span className="text-[11px] font-black uppercase">SCAN</span>
               </Link>
             ) : (
               <Link
                 href="/login"
                 onClick={() => setMobileMenuOpen(false)}
-                className="h-9 px-3 border border-white/30 text-white text-[10px] font-black uppercase tracking-wider rounded-lg transition-all flex items-center justify-center shrink-0"
+                className="h-9 w-9 border border-white/30 text-white rounded-lg transition-all flex items-center justify-center shrink-0"
               >
-                {t('login')}
+                <HiOutlineUser className="w-5 h-5" />
               </Link>
             )}
 
-            {/* Hamburger — white so it's visible on dark header */}
-            <button className="p-1 text-white ml-1" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            {/* Hamburger */}
+            <button className="p-1 text-white" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
               {mobileMenuOpen ? <HiOutlineX className="w-7 h-7" /> : <HiOutlineMenu className="w-7 h-7" />}
             </button>
           </div>
