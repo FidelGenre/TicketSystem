@@ -1629,12 +1629,76 @@ html {
 
 /* Home page: pull up to fill behind the semi-transparent header */
 .home-signature {
-  margin-top: -76px;
+  margin-top: -4rem; /* matches pt-16 mobile */
 }
 
 @media (min-width: 1024px) {
   .home-signature {
-    margin-top: -80px;
+    margin-top: -5rem; /* matches pt-20 desktop */
+  }
+}
+
+/* Reduce hero-shell padding on mobile so hero is closer to the header */
+@media (max-width: 1023px) {
+  .home-hero-shell {
+    padding-top: 0.25rem !important;
+  }
+}
+
+/* ===== Responsive utilities ===== */
+
+/* Dropdowns/menus: constrain to viewport on mobile */
+@media (max-width: 640px) {
+  .lp-user-menu {
+    width: min(18rem, calc(100vw - 2rem)) !important;
+    right: 0 !important;
+  }
+
+  .floating-action-pill {
+    width: 3rem !important;
+    height: 3rem !important;
+  }
+}
+
+/* Dashboard tabs: single row scrollable on mobile instead of grid */
+@media (max-width: 639px) {
+  .dashboard-premium-tabs {
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    gap: 0.25rem !important;
+    padding-bottom: 2px !important;
+  }
+
+  .dashboard-premium-tab {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    font-size: 0.7rem !important;
+    padding: 0.5rem 0.65rem !important;
+  }
+}
+
+/* Events filter bar: full width search on mobile */
+@media (max-width: 1023px) {
+  .events-filter-bar {
+    gap: 0.75rem !important;
+  }
+}
+
+/* Management layout (admin/organizer): no flex on very small screens */
+@media (max-width: 1023px) {
+  .lp-management-layout {
+    display: block !important;
+  }
+}
+
+/* Page dark shell: reduce padding on mobile */
+@media (max-width: 639px) {
+  .page-dark-shell > div,
+  .page-dark-shell > .max-w-5xl,
+  .page-dark-shell > .max-w-4xl {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
   }
 }
 
