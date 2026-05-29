@@ -1,6 +1,4 @@
-'use client';
-
-import { HiOutlineCreditCard, HiOutlineQrcode, HiOutlineShieldCheck, HiOutlineSupport } from 'react-icons/hi';
+import { HiOutlineCreditCard, HiOutlineShieldCheck, HiOutlineQrcode, HiOutlineSupport } from 'react-icons/hi';
 import { useLang } from '@/context/LanguageContext';
 
 type TrustBadgesProps = {
@@ -10,44 +8,42 @@ type TrustBadgesProps = {
 export default function TrustBadges({ compact = false }: TrustBadgesProps) {
   const { lang } = useLang();
 
-  const items = [
+  const badges = [
     {
       icon: HiOutlineCreditCard,
       title: lang === 'es' ? 'Pagos seguros' : 'Secure payments',
-      text: lang === 'es' ? 'Procesados por Stripe' : 'Processed by Stripe',
+      text: lang === 'es' ? 'Procesado por Stripe.' : 'Processed by Stripe',
     },
     {
       icon: HiOutlineShieldCheck,
       title: lang === 'es' ? 'Tickets verificados' : 'Verified tickets',
-      text: lang === 'es' ? 'Entrada digital protegida' : 'Protected digital entry',
+      text: lang === 'es' ? 'Entrada digital protegida.' : 'Protected digital entry',
     },
     {
       icon: HiOutlineQrcode,
       title: lang === 'es' ? 'QR único' : 'Unique QR',
-      text: lang === 'es' ? 'Validación rápida en puerta' : 'Fast door validation',
+      text: lang === 'es' ? 'Validación rápida en puerta.' : 'Fast door validation',
     },
     {
       icon: HiOutlineSupport,
       title: lang === 'es' ? 'Soporte disponible' : 'Support available',
-      text: lang === 'es' ? 'Antes y después de comprar' : 'Before and after purchase',
+      text: lang === 'es' ? 'Antes y después de tu compra.' : 'Before and after purchase',
     },
   ];
 
   return (
-    <div className={compact ? 'grid grid-cols-2 gap-2' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3'}>
-      {items.map((item) => {
-        const Icon = item.icon;
+    <div className={compact ? 'trust-badges trust-badges-compact' : 'trust-badges'}>
+      {badges.map((badge) => {
+        const Icon = badge.icon;
+
         return (
-          <div
-            key={item.title}
-            className="trust-premium-badge flex items-center gap-3 px-4 py-3 transition-all"
-          >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[rgba(249,115,22,0.12)] text-[#0A375A]">
-              <Icon className="h-5 w-5" />
+          <div key={badge.title} className="trust-badge-item">
+            <span className="trust-badge-icon" aria-hidden="true">
+              <Icon />
             </span>
-            <span className="min-w-0">
-              <span className="block text-sm font-black text-[#0A375A]">{item.title}</span>
-              <span className="block text-xs font-semibold text-slate-500">{item.text}</span>
+            <span className="trust-badge-copy">
+              <strong>{badge.title}</strong>
+              <span>{badge.text}</span>
             </span>
           </div>
         );

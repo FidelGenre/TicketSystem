@@ -82,17 +82,17 @@ export default function EventCard({ event, priority = false }: EventCardProps) {
           )}
         </div>
 
-        <div className="space-y-3 p-4 pb-3">
-          <h3 className="line-clamp-2 min-h-[3rem] text-base font-black leading-tight text-[#0A375A]">
+        <div className="event-card-body space-y-3 p-4 pb-3">
+          <h3 className="line-clamp-2 min-h-[3.6rem] text-[1.3rem] font-black leading-tight text-white">
             {event.title}
           </h3>
 
-          <div className="flex items-center gap-1.5 text-sm font-semibold text-[#0A375A]">
+          <div className="event-card-date flex items-center gap-1.5 text-sm font-semibold">
             <HiOutlineCalendar className="h-4 w-4 shrink-0" />
             <span>{eventDay} {lang === 'es' ? 'a las' : 'at'} {eventTime}{eventTzAbbr && <span className="ml-1 font-medium text-gray-500">({eventTzAbbr})</span>}</span>
           </div>
 
-          <div className="flex min-w-0 items-start gap-1.5 text-sm font-semibold text-gray-500">
+          <div className="event-card-location flex min-w-0 items-start gap-1.5 text-sm font-semibold text-gray-500">
             <HiOutlineLocationMarker className="mt-0.5 h-4 w-4 shrink-0" />
             <span className="min-w-0">
               <span className="block truncate">{event.venueName}</span>
@@ -104,10 +104,10 @@ export default function EventCard({ event, priority = false }: EventCardProps) {
         </div>
       </Link>
 
-      <div className="mx-4 flex flex-col gap-3 border-t border-gray-100 pb-4 pt-3">
-        <div className="flex min-w-0 items-center gap-1.5 text-[#0A375A]">
+      <div className="event-card-footer mx-4 flex flex-col gap-3 border-t border-gray-100 pb-4 pt-3">
+        <div className="flex min-w-0 items-center gap-1.5 text-white">
           <HiOutlineTag className="h-4 w-4 shrink-0 text-primary-500" />
-          <span className="text-sm font-black leading-tight">
+          <span className="event-card-price text-sm font-black leading-tight">
             {lang === 'es' ? 'Desde' : 'From'} {Number(event.minPrice || 0).toFixed(2)} {event.currency || 'USD'}
           </span>
         </div>
@@ -118,12 +118,12 @@ export default function EventCard({ event, priority = false }: EventCardProps) {
             eventPath={eventHref}
             label={lang === 'es' ? 'Comparte con tus amigos' : 'Share with friends'}
             compact
-            className="!h-12 !w-12 !rounded-lg !border-[#0A375A] !bg-[#0A375A] !text-white !shadow-none hover:!bg-[#0A375A]"
+            className="!h-12 !w-12 !rounded-lg !border-[#ff7a00]/70 !bg-transparent !text-white !shadow-[0_0_18px_rgba(255,122,0,0.18)] hover:!border-[#ff7a00] hover:!bg-[rgba(255,122,0,0.08)]"
           />
 
           <Link
             href={eventHref}
-            className="inline-flex h-12 flex-1 items-center justify-center rounded-lg bg-primary-500 px-4 text-[11px] font-black uppercase tracking-[0.12em] text-white transition-all hover:bg-primary-600"
+            className="event-card-buy-button inline-flex flex-1 items-center justify-center rounded-lg bg-primary-500 px-4 text-[11px] font-black uppercase tracking-[0.12em] text-white transition-all hover:bg-primary-600"
           >
             {lang === 'es' ? 'Comprar tickets' : 'Buy tickets'}
           </Link>
