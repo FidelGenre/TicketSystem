@@ -1632,13 +1632,27 @@ html {
   color: rgba(148, 163, 184, 0.6) !important;
 }
 
-/* Keep semantic status badges readable (green/yellow/red tints stay) */
-.lp-management-layout [class*="text-green"],
-.lp-management-layout [class*="text-red"],
-.lp-management-layout [class*="text-yellow"],
-.lp-management-layout [class*="text-primary"],
-.lp-management-layout [class*="text-orange"] {
-  color: revert !important;
+/* Hover backgrounds must not turn white — tint them subtly instead */
+.lp-management-layout [class*="hover:bg-white"]:hover,
+.lp-management-layout [class*="hover:bg-gray-50"]:hover,
+.lp-management-layout [class*="hover:bg-gray-100"]:hover,
+.lp-management-layout [class*="hover:bg-slate-50"]:hover,
+.lp-management-layout [class*="hover:bg-slate-100"]:hover,
+.page-dark-shell [class*="hover:bg-white"]:hover,
+.page-dark-shell [class*="hover:bg-gray-50"]:hover,
+.page-dark-shell [class*="hover:bg-gray-100"]:hover,
+.page-dark-shell [class*="hover:bg-slate-50"]:hover,
+.page-dark-shell [class*="hover:bg-slate-100"]:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Faint persistent gray tints (e.g. past-event rows bg-gray-50/20) */
+.lp-management-layout [class*="bg-gray-50/"],
+.lp-management-layout [class*="bg-slate-50/"],
+.lp-management-layout [class*="bg-gray-100/"],
+.page-dark-shell [class*="bg-gray-50/"],
+.page-dark-shell [class*="bg-slate-50/"] {
+  background: rgba(255, 255, 255, 0.04) !important;
 }
 
 /* ===== Future Home Continuation: dark gold blue ===== */
