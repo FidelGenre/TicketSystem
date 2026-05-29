@@ -1188,13 +1188,21 @@ html {
   }
 }
 
-/* ===== Admin/organizer pages keep white background ===== */
-.premium-shell,
+/* ===== Admin/organizer panels: dark theme matching the rest of the site ===== */
 .lp-management-layout {
   background:
-    radial-gradient(circle at top left, rgba(249, 115, 22, 0.06), transparent 30%),
-    linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
-  color: var(--color-gray-800) !important;
+    radial-gradient(circle at 10% -8%, rgba(249, 115, 22, 0.18), transparent 28rem),
+    radial-gradient(circle at 86% 3%, rgba(56, 189, 248, 0.12), transparent 30rem),
+    linear-gradient(180deg, #061b2d 0%, #071827 46%, #05111f 100%) !important;
+  color: #e2e8f0 !important;
+  padding-top: 4rem;
+}
+@media (min-width: 1024px) {
+  .lp-management-layout { padding-top: 4.5rem; }
+}
+.premium-shell {
+  background: transparent !important;
+  color: #e2e8f0 !important;
 }
 
 /* ===== Dark page shell — same theme as home-signature ===== */
@@ -1485,23 +1493,22 @@ html {
   color: #0A375A !important;
 }
 
-.lp-management-layout {
-  background:
-    radial-gradient(circle at top left, rgba(249, 115, 22, 0.06), transparent 30%),
-    linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
-}
-
 .lp-sidebar {
-  border-right: 1px solid rgba(10, 55, 90, 0.12) !important;
-  background: rgba(255, 255, 255, 0.96) !important;
-  box-shadow: 12px 0 34px rgba(10, 55, 90, 0.06) !important;
+  border-right: 1px solid rgba(246, 198, 95, 0.12) !important;
+  background: linear-gradient(180deg, rgba(8, 31, 51, 0.92), rgba(5, 17, 31, 0.92)) !important;
+  box-shadow: 12px 0 34px rgba(0, 0, 0, 0.3) !important;
 }
 
 .lp-sidebar-header {
   background:
-    linear-gradient(135deg, rgba(10, 55, 90, 0.06), rgba(249, 115, 22, 0.08)) !important;
-  border-bottom: 1px solid rgba(10, 55, 90, 0.10) !important;
+    linear-gradient(135deg, rgba(249, 115, 22, 0.12), rgba(10, 55, 90, 0.18)) !important;
+  border-bottom: 1px solid rgba(246, 198, 95, 0.12) !important;
 }
+
+.lp-sidebar-header h2 { color: #f1f5f9 !important; }
+.lp-sidebar-header p,
+.lp-sidebar-header a { color: rgba(148, 163, 184, 0.9) !important; }
+.lp-sidebar-header a:hover { color: #F97316 !important; }
 
 .lp-sidebar-link {
   border-radius: 8px !important;
@@ -1509,33 +1516,35 @@ html {
 }
 
 .lp-sidebar-link.active {
-  background: #0A375A !important;
+  background: rgba(249, 115, 22, 0.9) !important;
   color: #ffffff !important;
-  box-shadow: 0 12px 30px rgba(10, 55, 90, 0.18) !important;
+  box-shadow: 0 12px 30px rgba(249, 115, 22, 0.25) !important;
 }
 
 .lp-sidebar-link.active svg {
-  color: #F97316 !important;
+  color: #ffffff !important;
 }
 
 .lp-sidebar-link:not(.active) {
-  color: #475569 !important;
+  color: rgba(203, 213, 225, 0.85) !important;
 }
 
 .lp-sidebar-link:not(.active):hover {
-  background: rgba(10, 55, 90, 0.06) !important;
-  color: #0A375A !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: #ffffff !important;
 }
 
 .lp-sidebar-link:not(.active) svg {
-  color: #94a3b8 !important;
+  color: #F97316 !important;
 }
 
 .lp-mobile-sidebar-panel {
-  border-right: 1px solid rgba(10, 55, 90, 0.12) !important;
-  background: #ffffff !important;
-  box-shadow: 24px 0 70px rgba(10, 55, 90, 0.20) !important;
+  border-right: 1px solid rgba(246, 198, 95, 0.14) !important;
+  background: linear-gradient(180deg, #081f33, #05111f) !important;
+  box-shadow: 24px 0 70px rgba(0, 0, 0, 0.5) !important;
 }
+.lp-mobile-sidebar-panel h2 { color: #f1f5f9 !important; }
+.lp-mobile-sidebar-panel p { color: rgba(148, 163, 184, 0.9) !important; }
 
 .lp-mobile-sidebar-toggle {
   border-radius: 8px !important;
@@ -1546,6 +1555,90 @@ html {
 
 .lp-mobile-sidebar-toggle:hover {
   background: #ea650c !important;
+}
+
+/* ===== Admin/organizer panel CONTENT dark overrides (cards, text, inputs) ===== */
+.lp-management-layout .premium-stat-card,
+.lp-management-layout .premium-section-card,
+.lp-management-layout .dashboard-premium-card,
+.lp-management-layout .card {
+  background: rgba(8, 31, 51, 0.82) !important;
+  border-color: rgba(246, 198, 95, 0.14) !important;
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.28) !important;
+}
+
+.lp-management-layout .premium-stat-card:hover,
+.lp-management-layout .premium-section-card:hover {
+  border-color: rgba(249, 115, 22, 0.30) !important;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.38) !important;
+}
+
+.lp-management-layout .premium-page-title,
+.lp-management-layout h1,
+.lp-management-layout h2,
+.lp-management-layout h3 {
+  color: #f1f5f9 !important;
+}
+
+.lp-management-layout .premium-muted,
+.lp-management-layout p,
+.lp-management-layout li {
+  color: rgba(203, 213, 225, 0.85) !important;
+}
+
+.lp-management-layout .text-gray-400,
+.lp-management-layout .text-gray-500,
+.lp-management-layout .text-gray-600,
+.lp-management-layout .text-slate-400,
+.lp-management-layout .text-slate-500,
+.lp-management-layout .text-slate-600,
+.lp-management-layout .text-slate-700 {
+  color: rgba(148, 163, 184, 0.85) !important;
+}
+
+.lp-management-layout .text-gray-700,
+.lp-management-layout .text-gray-800,
+.lp-management-layout .text-gray-900,
+.lp-management-layout .text-slate-800,
+.lp-management-layout .text-slate-900,
+.lp-management-layout .text-\[\#0A375A\] {
+  color: #f1f5f9 !important;
+}
+
+.lp-management-layout .bg-white,
+.lp-management-layout .bg-gray-50,
+.lp-management-layout .bg-slate-50,
+.lp-management-layout .bg-slate-100 {
+  background: rgba(8, 31, 51, 0.55) !important;
+}
+
+.lp-management-layout .border-gray-100,
+.lp-management-layout .border-gray-200,
+.lp-management-layout .border-slate-100,
+.lp-management-layout .border-slate-200 {
+  border-color: rgba(117, 132, 153, 0.18) !important;
+}
+
+.lp-management-layout input,
+.lp-management-layout textarea,
+.lp-management-layout select {
+  background: rgba(8, 31, 51, 0.7) !important;
+  border-color: rgba(117, 132, 153, 0.28) !important;
+  color: #f1f5f9 !important;
+}
+
+.lp-management-layout input::placeholder,
+.lp-management-layout textarea::placeholder {
+  color: rgba(148, 163, 184, 0.6) !important;
+}
+
+/* Keep semantic status badges readable (green/yellow/red tints stay) */
+.lp-management-layout [class*="text-green"],
+.lp-management-layout [class*="text-red"],
+.lp-management-layout [class*="text-yellow"],
+.lp-management-layout [class*="text-primary"],
+.lp-management-layout [class*="text-orange"] {
+  color: revert !important;
 }
 
 /* ===== Future Home Continuation: dark gold blue ===== */
