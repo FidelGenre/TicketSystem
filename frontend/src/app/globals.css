@@ -2545,6 +2545,14 @@ html {
 /* Add more separation between stacked floating buttons */
 .fixed:has(.floating-action-pill) {
   gap: 1.15rem !important;
+  /* Promote the fixed widget to its own GPU layer so the footer scrolling/sitting
+     underneath isn't re-composited every frame by the pulsing translucent button
+     (was pegging the GPU / spinning up fans at the footer). */
+  transform: translateZ(0);
+}
+.floating-action-pill {
+  isolation: isolate;
+  transform: translateZ(0);
 }
 
 /* Orange notification/status dot */
