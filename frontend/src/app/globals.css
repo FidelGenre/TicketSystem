@@ -2606,13 +2606,13 @@ html {
   color: rgba(255, 255, 255, 0.88) !important;
 }
 
-.site-header-future a[href="/events"],
+.site-header-future a[href="/events"].is-active,
 .site-header-future .premium-nav-link.active {
   position: relative !important;
   color: #ff7a00 !important;
 }
 
-.site-header-future a[href="/events"]::after,
+.site-header-future a[href="/events"].is-active::after,
 .site-header-future .premium-nav-link.active::after {
   content: '' !important;
   position: absolute !important;
@@ -2727,12 +2727,12 @@ body header .premium-nav-link:hover {
 }
 
 /* Active Events underline */
-body header a[href="/events"],
+body header a[href="/events"].is-active,
 body header .premium-nav-link.active {
   color: #ff7a00 !important;
 }
 
-body header a[href="/events"]::after,
+body header a[href="/events"].is-active::after,
 body header .premium-nav-link.active::after {
   content: '' !important;
   position: absolute !important;
@@ -2925,8 +2925,8 @@ body header button:has(span.text-\[11px\]):hover {
     inset 0 -12px 24px rgba(129, 31, 0, 0.22) !important;
 }
 
-/* ===== Header active line only from .active, not hardcoded Events ===== */
-body header a[href="/events"]:not(.active)::after {
+/* ===== Header active line only from .is-active, not hardcoded Events ===== */
+body header a[href="/events"]:not(.is-active)::after {
   opacity: 0 !important;
   transform: translateX(-50%) scaleX(0.35) !important;
 }
