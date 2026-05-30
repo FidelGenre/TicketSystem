@@ -5437,11 +5437,35 @@ html body header.site-header-future.site-header-future {
 .venue-builder-dark [class*="bg-[#fff]"],
 .venue-builder-dark [class*="bg-[#f9fafb]"],
 .venue-builder-dark [class*="bg-[#fafafa]"],
+.venue-builder-dark [class*="bg-[#dbeafe]"],
+.venue-builder-dark [class*="bg-[#eef2ff]"],
 .venue-builder-dark .bg-gray-50,
 .venue-builder-dark .bg-gray-100,
 .venue-builder-dark .bg-slate-50,
-.venue-builder-dark .bg-slate-100 {
+.venue-builder-dark .bg-slate-100,
+.venue-builder-dark .bg-blue-50,
+.venue-builder-dark .bg-orange-50 {
   background: #0b2236 !important;
+}
+/* Selected-seat inspector overlay (was light blue bg-[#eff6ff]) */
+.venue-builder-dark [class*="bg-[#eff6ff]"] {
+  background: rgba(246, 198, 95, 0.06) !important;
+  border-color: rgba(246, 198, 95, 0.22) !important;
+}
+.venue-builder-dark [class*="border-[#bfdbfe]"],
+.venue-builder-dark [class*="border-[#bf"] {
+  border-color: rgba(246, 198, 95, 0.22) !important;
+}
+/* Make editor panels read as distinct from the canvas: clear accent dividers */
+.venue-builder-dark [class*="w-[55px]"] {
+  background: #0a1d31 !important;
+  border-right: 2px solid rgba(246, 198, 95, 0.32) !important;
+  box-shadow: 4px 0 18px rgba(0, 0, 0, 0.38);
+}
+.venue-builder-dark [class*="w-[280px]"] {
+  background: #0a1d31 !important;
+  border-left: 2px solid rgba(246, 198, 95, 0.32) !important;
+  box-shadow: -4px 0 18px rgba(0, 0, 0, 0.38);
 }
 .venue-builder-dark .text-gray-700,
 .venue-builder-dark .text-gray-800,
@@ -5483,4 +5507,11 @@ html body header.site-header-future.site-header-future {
 .venue-builder-dark [class*="hover:bg-gray-100"]:hover,
 .venue-builder-dark [class*="hover:bg-slate-50"]:hover {
   background: rgba(255, 255, 255, 0.06) !important;
+}
+/* Lighten dark-navy accent text so it reads on the dark inspector */
+.venue-builder-dark [class*="text-[#1e3a8a]"],
+.venue-builder-dark [class*="text-[#1e40af]"],
+.venue-builder-dark [class*="text-[#1d4ed8]"],
+.venue-builder-dark [class*="text-[#1d4fd8]"] {
+  color: #93c5fd !important;
 }
