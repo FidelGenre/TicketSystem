@@ -2463,10 +2463,13 @@ html {
   border-radius: 999px !important;
 }
 
-/* ===== Final orange button glow from reference ===== */
+/* ===== Final orange button glow from reference =====
+   Applied to every primary orange button site-wide so they all look and behave
+   like the Home "ORDENAR POR" button. */
 .home-discovery-panel form>button[type="submit"],
 .home-sort-button,
-.event-signature-card .mx-4 a[href*="/events/"] {
+.event-signature-card .mx-4 a[href*="/events/"],
+.btn-primary {
   min-height: 3.65rem !important;
   border-radius: 10px !important;
   border: 1px solid rgba(255, 151, 45, 0.62) !important;
@@ -2486,7 +2489,8 @@ html {
 
 .home-discovery-panel form>button[type="submit"]::before,
 .home-sort-button::before,
-.event-signature-card .mx-4 a[href*="/events/"]::before {
+.event-signature-card .mx-4 a[href*="/events/"]::before,
+.btn-primary::before {
   content: '' !important;
   position: absolute !important;
   left: 0.8rem !important;
@@ -2500,14 +2504,16 @@ html {
 
 .home-discovery-panel form>button[type="submit"],
 .home-sort-button,
-.event-signature-card .mx-4 a[href*="/events/"] {
+.event-signature-card .mx-4 a[href*="/events/"],
+.btn-primary {
   position: relative !important;
   overflow: hidden !important;
 }
 
 .home-discovery-panel form>button[type="submit"]:hover,
 .home-sort-button:hover,
-.event-signature-card .mx-4 a[href*="/events/"]:hover {
+.event-signature-card .mx-4 a[href*="/events/"]:hover,
+.btn-primary:hover {
   background:
     linear-gradient(180deg, #ff9828 0%, #ff7408 48%, #d84b00 100%) !important;
   box-shadow:
