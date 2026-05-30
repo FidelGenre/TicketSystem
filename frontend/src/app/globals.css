@@ -1380,9 +1380,18 @@ html {
 }
 
 .public-premium-icon {
-  background: rgba(249, 115, 22, 0.12) !important;
-  color: #0A375A !important;
-  border-radius: 12px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(255, 122, 0, 0.5) !important;
+  background:
+    radial-gradient(circle at center, rgba(255, 122, 0, 0.14), rgba(255, 122, 0, 0.03) 70%) !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 122, 0, 0.05) inset,
+    0 0 18px rgba(255, 122, 0, 0.12) !important;
+  color: #ff7a00 !important;
+}
+.public-premium-icon svg {
+  color: #ff7a00 !important;
+  stroke: #ff7a00 !important;
 }
 
 .public-premium-input {
