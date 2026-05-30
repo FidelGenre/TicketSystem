@@ -77,11 +77,6 @@ function LoginContent() {
   return (
     <div className="page-dark-shell flex items-start justify-center px-4 pt-40 pb-12 min-h-[calc(100vh-80px)]">
       <div className="w-full max-w-md">
-        <div className="flex justify-center mb-6">
-          <Link href="/">
-            <img src="/logo.png" alt="LPTicket" className="h-14 w-auto brightness-0 invert object-contain" />
-          </Link>
-        </div>
         <div className="text-center mb-6">
           <h1 className="public-premium-title font-black text-2xl mt-3">{t('loginTitle')}</h1>
           <p className="text-gray-500 text-sm mt-1">{t('loginSubtitle')}</p>
