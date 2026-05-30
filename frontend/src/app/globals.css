@@ -5290,3 +5290,65 @@ html body header.site-header-future.site-header-future {
   background: rgba(249, 115, 22, 0.14) !important;
   color: #F97316 !important;
 }
+
+/* ============================================================
+   Checkout / purchase page: dark theme (scoped to .purchase-premium-shell)
+   ============================================================ */
+.purchase-premium-shell {
+  background:
+    radial-gradient(circle at 10% -8%, rgba(249, 115, 22, 0.16), transparent 28rem),
+    radial-gradient(circle at 86% 3%, rgba(56, 189, 248, 0.12), transparent 30rem),
+    linear-gradient(180deg, #061b2d 0%, #071827 46%, #05111f 100%) !important;
+  color: #e2e8f0 !important;
+}
+.purchase-premium-shell .purchase-premium-panel,
+.purchase-premium-shell .purchase-premium-section-button,
+.purchase-premium-shell .bg-white {
+  background: #0b2236 !important;
+  border-color: rgba(246, 198, 95, 0.12) !important;
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.28) !important;
+}
+.purchase-premium-shell .bg-gray-50,
+.purchase-premium-shell .bg-slate-50,
+.purchase-premium-shell .bg-gray-100,
+.purchase-premium-shell [class*="bg-[#f"] {
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+.purchase-premium-shell h1,
+.purchase-premium-shell h2,
+.purchase-premium-shell h3,
+.purchase-premium-shell h4,
+.purchase-premium-shell .purchase-premium-heading,
+.purchase-premium-shell [class*="text-[#0A375A]"],
+.purchase-premium-shell .text-slate-900,
+.purchase-premium-shell .text-gray-900,
+.purchase-premium-shell .text-slate-800,
+.purchase-premium-shell .text-gray-800 {
+  color: #f1f5f9 !important;
+}
+.purchase-premium-shell .text-gray-500,
+.purchase-premium-shell .text-gray-600,
+.purchase-premium-shell .text-gray-700,
+.purchase-premium-shell .text-slate-500,
+.purchase-premium-shell .text-slate-600,
+.purchase-premium-shell .text-slate-700 {
+  color: rgba(203, 213, 225, 0.82) !important;
+}
+.purchase-premium-shell .border-gray-100,
+.purchase-premium-shell .border-gray-200,
+.purchase-premium-shell .border-slate-100,
+.purchase-premium-shell .border-slate-200,
+.purchase-premium-shell [class*="border-[rgba(10,55,90"] {
+  border-color: rgba(117, 132, 153, 0.18) !important;
+}
+.purchase-premium-shell input,
+.purchase-premium-shell .purchase-premium-input,
+.purchase-premium-shell textarea,
+.purchase-premium-shell select {
+  background: rgba(8, 31, 51, 0.7) !important;
+  border-color: rgba(117, 132, 153, 0.28) !important;
+  color: #f1f5f9 !important;
+}
+.purchase-premium-shell input::placeholder {
+  color: rgba(148, 163, 184, 0.6) !important;
+}
