@@ -43,7 +43,7 @@ export default function EventDetailContent({ initialEvent, initialSeatMap }: Eve
   const router = useRouter();
   const { lang, t } = useLang();
   const { isAuthenticated } = useAuthStore();
-  const { getCategoryInfo } = useCategories();
+  const { getCategoryInfo, loading: categoriesLoading } = useCategories();
   const [event, setEvent] = useState<Event | null>(initialEvent);
   const [seatMap, setSeatMap] = useState<(VenueSection & { seats: Seat[] })[]>(initialSeatMap);
   const [selectedSeats, setSelectedSeats] = useState<Seat[]>([]);
@@ -271,9 +271,13 @@ export default function EventDetailContent({ initialEvent, initialSeatMap }: Eve
   if (loading) return <div className="event-premium-shell max-w-7xl mx-auto px-4 py-8"><div className="h-64 skeleton rounded-lg mb-6" /><div className="h-6 skeleton rounded w-1/2 mb-3" /></div>;
   if (!event) return null;
 
-  const categoryInfo = getCategoryInfo(event.category) || {
+  const matchedCategory = getCategoryInfo(event.category);
+  const categoryInfo = matchedCategory || {
     labelEs: 'Otro', labelEn: 'Other', icon: '🎫', color: '#6366f1'
   };
+  // Avoid the "Otro" flash on reload: only show the pill once categories are
+  // loaded (or when we already have a real match).
+  const showCategoryPill = Boolean(matchedCategory) || !categoriesLoading;
 
   const publicSiteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.lpticket.com';
   const eventPublicUrl = `${publicSiteUrl}/events/${event.slug}`;
@@ -339,7 +343,9 @@ export default function EventDetailContent({ initialEvent, initialSeatMap }: Eve
         {/* Event Info */}
         <div className="lg:col-span-2 space-y-6">
           <div>
-            <span className="category-pill text-xs mb-3 inline-block">{categoryInfo.icon} {lang === 'en' ? categoryInfo.labelEn : categoryInfo.labelEs}</span>
+            {showCategoryPill && (
+              <span className="category-pill text-xs mb-3 inline-block">{categoryInfo.icon} {lang === 'en' ? categoryInfo.labelEn : categoryInfo.labelEs}</span>
+            )}
             <h1 className="font-bold text-2xl sm:text-3xl text-gray-900">{event.title}</h1>
             <ShareEventButton
               eventTitle={event.title}
@@ -416,21 +422,21 @@ export default function EventDetailContent({ initialEvent, initialSeatMap }: Eve
               <h3 className="font-black text-lg text-[#0A375A]">{t('purchaseSummary')}</h3>
 
               {seatMap.length > 0 && (
-                <details className="group border border-[rgba(10,55,90,0.12)] rounded-lg bg-white overflow-hidden shadow-sm">
-                  <summary className="px-4 py-3 text-sm font-bold text-[#0A375A] cursor-pointer list-none flex justify-between items-center hover:bg-orange-50 transition-colors">
+                <details className="group border border-[rgba(246,198,95,0.18)] rounded-lg bg-[#0b2236] overflow-hidden shadow-sm">
+                  <summary className="px-4 py-3 text-sm font-bold text-slate-100 cursor-pointer list-none flex justify-between items-center hover:bg-[rgba(249,115,22,0.12)] transition-colors">
                     <span>{lang === 'es' ? 'Ver Precios y Zonas' : 'View Prices & Zones'}</span>
-                    <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">▼</span>
+                    <span className="text-slate-400 group-open:rotate-180 transition-transform text-xs">▼</span>
                   </summary>
-                  <div className="px-4 pb-4 pt-2 space-y-2 border-t border-gray-100 bg-white">
+                  <div className="px-4 pb-4 pt-2 space-y-2 border-t border-white/10 bg-[#0b2236]">
                     {seatMap
                       .filter((s) => s.sectionType !== 'stage' && s.sectionType !== 'decor')
                       .map((section) => (
                       <div key={section.id} className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600 flex items-center gap-2">
+                        <span className="text-slate-300 flex items-center gap-2">
                           <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: section.color }} />
                           {section.name}
                         </span>
-                        <span className="font-semibold text-gray-900">${Number(section.price).toFixed(2)}</span>
+                        <span className="font-semibold text-white">${Number(section.price).toFixed(2)}</span>
                       </div>
                     ))}
                   </div>
