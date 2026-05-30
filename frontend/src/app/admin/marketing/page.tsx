@@ -267,11 +267,11 @@ export default function AdminMarketingPage() {
             </div>
           </div>
 
-          <div className="mt-5 grid gap-3 rounded-2xl border border-orange-100 bg-orange-50/50 p-4 sm:grid-cols-3">
+          <div className="mt-5 grid gap-3 rounded-2xl border border-[rgba(249,115,22,0.22)] bg-[rgba(249,115,22,0.08)] p-4 sm:grid-cols-3">
             {['Diseno', 'Prueba', 'Envio'].map((step, index) => (
-              <div key={step} className="rounded-2xl bg-white p-3 shadow-sm">
-                <p className="text-xs font-black uppercase tracking-wide text-orange-500">Paso {index + 1}</p>
-                <p className="mt-1 font-black text-gray-950">{step}</p>
+              <div key={step} className="rounded-2xl bg-[rgba(8,31,51,0.6)] border border-[rgba(246,198,95,0.12)] p-3 shadow-sm">
+                <p className="text-xs font-black uppercase tracking-wide text-orange-400">Paso {index + 1}</p>
+                <p className="mt-1 font-black text-white">{step}</p>
               </div>
             ))}
           </div>
@@ -338,7 +338,7 @@ export default function AdminMarketingPage() {
           <button
             type="button"
             disabled
-            className="mt-5 w-full rounded-2xl bg-slate-300 px-5 py-4 text-sm font-black text-white"
+            className="mt-5 w-full rounded-2xl bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] px-5 py-4 text-sm font-black text-slate-400 cursor-not-allowed"
           >
             Guardar borrador en fase 2
           </button>
