@@ -5197,11 +5197,10 @@ html body header.site-header-future.site-header-future {
   top: 0 !important;
   margin-top: 0 !important;
   transform: none !important;
-  background:
-    linear-gradient(180deg, rgba(8, 26, 44, 0.82) 0%, rgba(6, 18, 32, 0.82) 100%) !important;
+  background: linear-gradient(180deg, #0a2036 0%, #071827 100%) !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
   box-shadow: 0 6px 26px rgba(0, 0, 0, 0.34) !important;
-  backdrop-filter: blur(16px) saturate(1.1) !important;
+  backdrop-filter: none !important;
 }
 
 /* ============================================================
