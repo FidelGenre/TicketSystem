@@ -5203,3 +5203,13 @@ html body header.site-header-future.site-header-future {
   box-shadow: 0 6px 26px rgba(0, 0, 0, 0.34) !important;
   backdrop-filter: blur(16px) saturate(1.1) !important;
 }
+
+/* ============================================================
+   FINAL: home hero breathing room below the header on desktop
+   (overrides the accumulated .home-signature padding-top rules)
+   ============================================================ */
+@media (min-width: 1024px) {
+  html body .home-signature {
+    padding-top: 7.5rem !important;
+  }
+}
