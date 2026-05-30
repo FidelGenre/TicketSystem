@@ -71,10 +71,10 @@ body {
   max-width: 100%;
 }
 
-/* Public & dashboard pages: top padding equal to header height */
+/* Public & dashboard pages: top padding clears the sticky header + a gap */
 .page-dark-shell,
 .public-premium-shell {
-  padding-top: 4rem;
+  padding-top: 5.75rem;
 }
 
 @media (min-width: 1024px) {
