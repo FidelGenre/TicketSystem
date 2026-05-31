@@ -158,7 +158,6 @@ export default function HomeContent({ initialEvents, initialBanner }: HomeConten
                     onError={(e) => { (e.target as HTMLImageElement).src = '/demo/concert.png'; }}
                   />
                 </AnimatePresence>
-                {!isMarketingBanner(bannerEvent) && <span className="home-hero-overlay" />}
               </Link>
 
               {!isMarketingBanner(bannerEvent) && (
