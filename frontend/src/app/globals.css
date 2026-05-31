@@ -5718,3 +5718,59 @@ html body {
 .page-dark-shell .border-gray-200 {
   border-color: rgba(246, 198, 95, 0.16) !important;
 }
+
+/* ===== Events filters compact SCAN polish ===== */
+.events-search-form {
+  min-height: 3.65rem !important;
+}
+
+.events-search-icon {
+  display: flex !important;
+  width: 3.35rem !important;
+  align-self: stretch !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding-left: 0 !important;
+  border-right: 1px solid rgba(246, 198, 95, 0.12) !important;
+}
+
+.page-dark-shell .events-filter-bar .category-pill.active {
+  position: relative !important;
+  overflow: hidden !important;
+  min-height: auto !important;
+  height: auto !important;
+  padding-top: 0.625rem !important;
+  padding-bottom: 0.625rem !important;
+  border-radius: 10px !important;
+  border: 1px solid rgba(255, 151, 45, 0.62) !important;
+  background:
+    linear-gradient(180deg, #ff8a18 0%, #f46c00 46%, #c93f00 100%) !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.24) !important;
+  box-shadow:
+    0 18px 36px rgba(255, 104, 0, 0.24),
+    0 0 0 1px rgba(255, 255, 255, 0.12) inset,
+    inset 0 1px 0 rgba(255, 211, 150, 0.42),
+    inset 0 -12px 22px rgba(129, 31, 0, 0.20) !important;
+}
+
+.page-dark-shell .events-filter-bar .category-pill.active::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 0.65rem !important;
+  right: 0.65rem !important;
+  top: 0.28rem !important;
+  height: 1px !important;
+  border-radius: 999px !important;
+  background: linear-gradient(90deg, transparent, rgba(255, 235, 205, 0.88), transparent) !important;
+  pointer-events: none !important;
+}
+
+.page-dark-shell .events-filter-bar .category-pill.active::after {
+  content: '' !important;
+  position: absolute !important;
+  inset: auto 0 0 0 !important;
+  height: 42% !important;
+  background: linear-gradient(180deg, transparent, rgba(110, 25, 0, 0.20)) !important;
+  pointer-events: none !important;
+}

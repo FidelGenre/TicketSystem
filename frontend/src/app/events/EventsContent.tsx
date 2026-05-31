@@ -61,8 +61,8 @@ export default function EventsContent({ initialEvents, initialTotal, initialTota
       <div className="events-filter-bar relative flex flex-col lg:flex-row items-stretch lg:items-center gap-3 p-3 mb-8">
 
         {/* Search */}
-        <form onSubmit={handleSearch} className="relative flex items-center rounded-xl border border-[rgba(246,198,95,0.18)] bg-[rgba(5,17,31,0.7)] w-full lg:w-[450px] shrink-0 transition-all focus-within:border-primary-500">
-          <div className="pl-4 text-gray-400">
+        <form onSubmit={handleSearch} className="events-search-form relative flex items-center rounded-xl border border-[rgba(246,198,95,0.18)] bg-[rgba(5,17,31,0.7)] w-full lg:w-[450px] shrink-0 transition-all focus-within:border-primary-500">
+          <div className="events-search-icon text-gray-400">
             <HiOutlineSearch className="w-4 h-4 text-primary-400" />
           </div>
           <input
@@ -98,13 +98,7 @@ export default function EventsContent({ initialEvents, initialTotal, initialTota
 
       {/* Grid */}
       <div className="mt-12">
-        {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-            {[...Array(8)].map((_, i) => (
-              <div key={i} className="card"><div className="aspect-[3/4] skeleton" /><div className="p-4 space-y-2"><div className="h-4 skeleton rounded w-3/4" /><div className="h-3 skeleton rounded w-1/2" /></div></div>
-            ))}
-          </div>
-        ) : events.length > 0 ? (
+        {events.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
             {events.map((event, idx) => <EventCard key={event.id} event={event} priority={idx < 4} />)}
           </div>
