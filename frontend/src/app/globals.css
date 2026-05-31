@@ -1302,8 +1302,9 @@ html {
 }
 
 .page-dark-shell .dashboard-premium-tab {
+  position: relative !important;
   border: 1px solid rgba(246, 198, 95, 0.18) !important;
-  border-radius: 0.6rem !important;
+  border-radius: 0.5rem !important;
   background: rgba(8, 31, 51, 0.6) !important;
   color: rgba(226, 232, 240, 0.85) !important;
 }
@@ -1314,12 +1315,33 @@ html {
   color: #ffffff !important;
 }
 
+/* Active tab: identical glossy orange treatment to the Events category pills */
 .page-dark-shell .dashboard-premium-tab.active,
 .page-dark-shell .dashboard-premium-tab[class*="bg-[#0A375A]"],
 .page-dark-shell .dashboard-premium-tab[class*="bg-primary"] {
-  background: rgba(249, 115, 22, 0.9) !important;
-  border-color: rgba(249, 115, 22, 0.6) !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(255, 151, 45, 0.62) !important;
+  background: linear-gradient(180deg, #ff8a18 0%, #f46c00 46%, #c93f00 100%) !important;
   color: #ffffff !important;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.24) !important;
+  box-shadow:
+    0 18px 36px rgba(255, 104, 0, 0.24),
+    0 0 0 1px rgba(255, 255, 255, 0.12) inset,
+    inset 0 1px 0 rgba(255, 211, 150, 0.42),
+    inset 0 -12px 22px rgba(129, 31, 0, 0.20) !important;
+}
+.page-dark-shell .dashboard-premium-tab.active::before,
+.page-dark-shell .dashboard-premium-tab[class*="bg-[#0A375A]"]::before,
+.page-dark-shell .dashboard-premium-tab[class*="bg-primary"]::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 0.65rem !important;
+  right: 0.65rem !important;
+  top: 0.28rem !important;
+  height: 1px !important;
+  border-radius: 999px !important;
+  background: linear-gradient(90deg, transparent, rgba(255, 235, 205, 0.88), transparent) !important;
+  pointer-events: none !important;
 }
 
 /* Count badge inside a tab (e.g. "2") → readable on the dark pill */
