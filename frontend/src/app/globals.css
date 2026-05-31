@@ -1714,6 +1714,11 @@ html {
 
 .lp-sidebar-link:not(.active) {
   color: rgba(203, 213, 225, 0.85) !important;
+  /* Inactive links never show any border/ring/outline — kills the leftover white
+     box on the previously-selected item (any state). */
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .lp-sidebar-link:not(.active):hover {
