@@ -56,7 +56,7 @@ export default function EventsContent({ initialEvents, initialTotal, initialTota
   const handleSearch = (e: React.FormEvent) => { e.preventDefault(); setPage(1); loadEvents(); };
 
   return (
-    <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-14">
+    <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-5 pb-14">
       {/* Main Bar: Search + Categories */}
       <div className="events-filter-bar relative flex flex-col lg:flex-row items-stretch lg:items-center gap-3 p-3 mb-8">
 
