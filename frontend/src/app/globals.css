@@ -2695,7 +2695,7 @@ html {
 }
 
 .site-header-future img {
-  filter: brightness(0) invert(1) !important;
+  filter: none !important;
 }
 
 .site-header-future a,
@@ -2797,7 +2797,7 @@ body header * {
 }
 
 body header img {
-  filter: brightness(0) invert(1) !important;
+  filter: none !important;
 }
 
 body header nav a,
@@ -3465,7 +3465,7 @@ html body header.site-header-future>div>div {
   body header .premium-logo img,
   body header img[alt="LPTicket"] {
     height: 2.75rem !important;
-    filter: brightness(0) invert(1) !important;
+    filter: none !important;
   }
 
   /* Show the same nav on mobile as a horizontal scroll */
@@ -3586,7 +3586,7 @@ html body header.site-header-future>div>div {
   body header .premium-logo img,
   body header img[alt="LPTicket"] {
     height: 2.5rem !important;
-    filter: brightness(0) invert(1) !important;
+    filter: none !important;
   }
 
   body header .header-main-nav {
@@ -3724,7 +3724,7 @@ html body header.site-header-future>div>div {
 
   body header img[alt="LPTicket"] {
     height: 2.55rem !important;
-    filter: brightness(0) invert(1) !important;
+    filter: none !important;
   }
 
   .home-signature {
