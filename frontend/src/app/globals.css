@@ -852,9 +852,9 @@ html {
   }
 
   .home-hero-overlay {
-    background:
-      linear-gradient(180deg, rgba(5, 24, 44, 0.05) 0%, rgba(5, 24, 44, 0.24) 62%, rgba(5, 24, 44, 0.88) 100%);
-  }
+  background: transparent !important;
+  backdrop-filter: none !important;
+}
 }
 
 @media (max-width: 639px) {
@@ -2052,13 +2052,12 @@ html {
 }
 
 .home-hero-frame img {
-  filter: saturate(1.08) contrast(1.06) brightness(0.88) !important;
+  filter: none !important;
 }
 
 .home-hero-overlay {
-  background:
-    linear-gradient(90deg, rgba(5, 11, 18, 0.82) 0%, rgba(5, 11, 18, 0.34) 44%, rgba(5, 11, 18, 0.12) 100%),
-    linear-gradient(180deg, transparent 0%, rgba(5, 11, 18, 0.62) 100%) !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
 }
 
 /* Search/category glass panel */
