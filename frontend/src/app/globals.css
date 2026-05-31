@@ -5773,19 +5773,20 @@ html body {
   height: 42% !important;
   background: linear-gradient(180deg, transparent, rgba(110, 25, 0, 0.20)) !important;
   pointer-events: none !important;
-}\n
+}
 /* ===== Event card buy button single-line text ===== */
 .event-card-buy-button {
   white-space: nowrap !important;
   letter-spacing: 0 !important;
   word-spacing: 0 !important;
   line-height: 1 !important;
-}\n
-/* ===== Events page EventCard white lines match home ===== */
+}
+
+/* ===== Events page EventCard persistent white lines ===== */
 .page-dark-shell .event-signature-card {
-  border-color: var(--ref-border) !important;
+  border-color: rgba(255, 255, 255, 0.72) !important;
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.42),
     0 18px 44px rgba(0, 0, 0, 0.24) !important;
 }
 
@@ -5794,32 +5795,13 @@ html body {
 }
 
 .page-dark-shell .event-signature-card:hover {
-  border-color: rgba(255, 107, 0, 0.72) !important;
+  border-color: rgba(255, 122, 0, 0.78) !important;
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+    inset 0 0 0 1px rgba(255, 122, 0, 0.48),
     0 24px 54px rgba(0, 0, 0, 0.38),
-    0 0 22px rgba(246, 198, 95, 0.12) !important;
-}\n
-/* ===== Events page EventCard persistent lines like home ===== */
-.page-dark-shell .event-signature-card {
-  border-color: rgba(246, 198, 95, 0.38) !important;
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.12),
-    0 18px 44px rgba(0, 0, 0, 0.24) !important;
-}
-
-.page-dark-shell .event-card-footer {
-  border-top-color: rgba(255, 255, 255, 0.72) !important;
-}
-
-.page-dark-shell .event-signature-card:hover {
-  border-color: rgba(255, 107, 0, 0.72) !important;
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 122, 0, 0.38),
-    0 24px 54px rgba(0, 0, 0, 0.38),
-    0 0 22px rgba(255, 122, 0, 0.18) !important;
+    0 0 22px rgba(255, 122, 0, 0.20) !important;
 }
 
 .page-dark-shell .event-signature-card:hover .event-card-footer {
-  border-top-color: rgba(255, 122, 0, 0.72) !important;
+  border-top-color: rgba(255, 122, 0, 0.78) !important;
 }
