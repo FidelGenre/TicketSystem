@@ -108,7 +108,7 @@ export default function EventCard({ event, priority = false }: EventCardProps) {
           />
           <Link
             href={eventHref}
-            className="event-card-buy-button inline-flex flex-1 items-center justify-center rounded-lg bg-primary-500 px-4 text-[11px] font-black uppercase tracking-[0.12em] text-white transition-all hover:bg-primary-600"
+            className="event-card-buy-button inline-flex flex-1 items-center justify-center rounded-lg bg-primary-500 px-4 text-[11px] font-black uppercase text-white transition-all hover:bg-primary-600"
           >
             {lang === 'es' ? 'Comprar tickets' : 'Buy tickets'}
           </Link>

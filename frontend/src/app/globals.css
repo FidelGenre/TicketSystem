@@ -5773,4 +5773,11 @@ html body {
   height: 42% !important;
   background: linear-gradient(180deg, transparent, rgba(110, 25, 0, 0.20)) !important;
   pointer-events: none !important;
+}\n
+/* ===== Event card buy button single-line text ===== */
+.event-card-buy-button {
+  white-space: nowrap !important;
+  letter-spacing: 0 !important;
+  word-spacing: 0 !important;
+  line-height: 1 !important;
 }
