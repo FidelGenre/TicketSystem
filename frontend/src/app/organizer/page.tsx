@@ -26,7 +26,11 @@ export default function OrganizerDashboard() {
   const { getCategoryInfo } = useCategories();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ totalRevenue: 0, totalTickets: 0, activeEvents: 0, totalOrders: 0 });
+  const [stats, setStats] = useState({
+    totalRevenue: 0, totalTickets: 0, activeEvents: 0, totalOrders: 0,
+    netEstimated: 0, scannedTickets: 0, pendingTickets: 0,
+    salesByDay: [] as { date: string; orders: number; tickets: number; revenue: number }[],
+  });
 
   useEffect(() => {
     loadData();
@@ -53,6 +57,10 @@ export default function OrganizerDashboard() {
         totalTickets: statsRes.data.totalTickets || 0,
         totalOrders: statsRes.data.totalOrders || 0,
         activeEvents,
+        netEstimated: statsRes.data.netEstimated || 0,
+        scannedTickets: statsRes.data.scannedTickets || 0,
+        pendingTickets: statsRes.data.pendingTickets || 0,
+        salesByDay: statsRes.data.salesByDay || [],
       });
     } catch (err) {
       console.error(err);
@@ -131,6 +139,82 @@ export default function OrganizerDashboard() {
             <p className="text-2xl font-bold text-gray-900">{card.value}</p>
           </div>
         ))}
+      </div>
+
+      {/* Sales chart + access control */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Sales by day (last 14 days) */}
+        <div className="premium-section-card p-6 lg:col-span-2">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="font-bold text-lg text-gray-900">{lang === 'es' ? 'Ventas por día' : 'Sales by day'}</h2>
+              <p className="text-xs font-semibold text-gray-500">{lang === 'es' ? 'Últimos 14 días · todos tus eventos' : 'Last 14 days · all your events'}</p>
+            </div>
+            <HiOutlineChartBar className="w-5 h-5 text-[#F97316]" />
+          </div>
+          {stats.salesByDay.length === 0 ? (
+            <p className="text-sm text-gray-500 py-8 text-center">{lang === 'es' ? 'Aún no hay ventas en este periodo.' : 'No sales in this period yet.'}</p>
+          ) : (
+            <div className="space-y-2.5">
+              {(() => {
+                const maxRevenue = Math.max(...stats.salesByDay.map((d) => d.revenue), 1);
+                return stats.salesByDay.map((day) => (
+                  <div key={day.date}>
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="font-bold text-slate-300">
+                        {format(parseSafeDate(`${day.date}T12:00:00`), 'd MMM', { locale: dateFnsLocale })}
+                      </span>
+                      <span className="font-black text-[#F97316]">${day.revenue.toFixed(2)}</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-white/5 overflow-hidden">
+                      <div className="h-full rounded-full bg-[#F97316]" style={{ width: `${Math.max(4, (day.revenue / maxRevenue) * 100)}%` }} />
+                    </div>
+                    <p className="text-[10px] text-gray-500 mt-0.5">{day.orders} {lang === 'es' ? 'órdenes' : 'orders'} · {day.tickets} tickets</p>
+                  </div>
+                ));
+              })()}
+            </div>
+          )}
+        </div>
+
+        {/* Access control + net revenue */}
+        <div className="space-y-4">
+          <div className="premium-section-card p-6">
+            <h2 className="font-bold text-lg text-gray-900 mb-1">{lang === 'es' ? 'Control de acceso' : 'Access control'}</h2>
+            <p className="text-xs font-semibold text-gray-500 mb-4">{lang === 'es' ? 'Tickets escaneados vs pendientes' : 'Scanned vs pending tickets'}</p>
+            {(() => {
+              const total = stats.scannedTickets + stats.pendingTickets;
+              const pct = total > 0 ? Math.round((stats.scannedTickets / total) * 100) : 0;
+              return (
+                <>
+                  <div className="flex items-end justify-between mb-2">
+                    <span className="text-3xl font-black text-green-400">{pct}%</span>
+                    <span className="text-xs text-gray-400">{stats.scannedTickets} / {total} {lang === 'es' ? 'ingresados' : 'checked in'}</span>
+                  </div>
+                  <div className="h-2.5 rounded-full bg-white/5 overflow-hidden">
+                    <div className="h-full rounded-full bg-green-500" style={{ width: `${pct}%` }} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 mt-4">
+                    <div className="rounded-xl p-3 bg-green-500/10 border border-green-500/20 text-center">
+                      <p className="text-xl font-black text-green-400">{stats.scannedTickets}</p>
+                      <p className="text-[10px] uppercase tracking-wider text-green-300/80 font-bold">{lang === 'es' ? 'Ingresados' : 'Scanned'}</p>
+                    </div>
+                    <div className="rounded-xl p-3 bg-orange-500/10 border border-orange-500/20 text-center">
+                      <p className="text-xl font-black text-[#F97316]">{stats.pendingTickets}</p>
+                      <p className="text-[10px] uppercase tracking-wider text-orange-300/80 font-bold">{lang === 'es' ? 'Pendientes' : 'Pending'}</p>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+
+          <div className="premium-section-card p-6">
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">{lang === 'es' ? 'Neto estimado' : 'Estimated net'}</p>
+            <p className="text-2xl font-black text-green-400 mt-1">${stats.netEstimated.toFixed(2)}</p>
+            <p className="text-[11px] text-gray-500 mt-1">{lang === 'es' ? 'Venta de entradas menos comisión de pago estimada.' : 'Ticket sales minus estimated processing fee.'}</p>
+          </div>
+        </div>
       </div>
 
       {/* Recent Events */}
