@@ -170,10 +170,10 @@ export default function AdminDashboard() {
             <p className="text-[11px] text-gray-500 mt-1">{lang === 'es' ? 'Cargo sobre el precio base' : 'Markup over base price'}</p>
           </div>
           {/* Stripe fees */}
-          <div className="rounded-xl p-4 border border-purple-100 bg-purple-50">
-            <p className="text-[11px] font-black uppercase tracking-wider text-purple-700">{lang === 'es' ? 'Comisión Stripe' : 'Stripe fees'}</p>
-            <p className="text-2xl font-black text-purple-700 mt-1">-${stats.stripeFees.toFixed(2)}</p>
-            <p className="text-[11px] text-gray-500 mt-1">{(stats.stripePercent * 100).toFixed(1)}% + ${stats.stripeFixed.toFixed(2)} {lang === 'es' ? 'por orden' : 'per order'}</p>
+          <div className="rounded-xl p-4 border border-[rgba(168,85,247,0.3)] bg-[rgba(168,85,247,0.12)]">
+            <p className="text-[11px] font-black uppercase tracking-wider text-purple-300">{lang === 'es' ? 'Comisión Stripe' : 'Stripe fees'}</p>
+            <p className="text-2xl font-black text-purple-300 mt-1">-${stats.stripeFees.toFixed(2)}</p>
+            <p className="text-[11px] text-gray-400 mt-1">{(stats.stripePercent * 100).toFixed(1)}% + ${stats.stripeFixed.toFixed(2)} {lang === 'es' ? 'por orden' : 'per order'}</p>
           </div>
           {/* LPTicket net profit */}
           <div className="rounded-xl p-4 border border-green-200 bg-green-50 sm:col-span-2 lg:col-span-1">
