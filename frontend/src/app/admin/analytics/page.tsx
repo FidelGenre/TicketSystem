@@ -156,10 +156,10 @@ export default function AdminAnalyticsPage() {
               </div>
             </button>
             {recentOpen && (
-              <div className="border-t border-gray-100 px-5 pb-5">
+              <div className="border-t border-white/10 px-6 sm:px-8 pt-3 pb-6">
                 <div className="max-h-[360px] overflow-auto">
                   <table className="w-full text-sm">
-                    <thead className="sticky top-0 bg-white z-10">
+                    <thead className="sticky top-0 bg-[#0b2236] z-10">
                       <tr className="border-b border-gray-100 text-left text-xs uppercase tracking-wider text-gray-400">
                         <th className="py-3 pr-4">Path</th>
                         <th className="py-3 pr-4">Event</th>
