@@ -358,14 +358,14 @@ export default function EventDetailContent({ initialEvent, initialSeatMap }: Eve
           {/* Quick info */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="event-premium-info flex items-center gap-3 p-4">
-              <HiOutlineCalendar className="w-5 h-5 text-[#0A375A] shrink-0" />
+              <HiOutlineCalendar className="w-5 h-5 text-[#ff7a00] shrink-0" />
               <div>
                 <div className="text-xs text-gray-500">{t('dateLabel')}</div>
                 <div className="text-sm font-semibold text-gray-900">{formatDateInTimezone(event.eventDate, event.eventTimezone || 'UTC', lang === 'en' ? 'en-US' : 'es', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
               </div>
             </div>
             <div className="event-premium-info flex items-center gap-3 p-4">
-              <HiOutlineClock className="w-5 h-5 text-[#0A375A] shrink-0" />
+              <HiOutlineClock className="w-5 h-5 text-[#ff7a00] shrink-0" />
               <div>
                 <div className="text-xs text-gray-500">{t('timeLabel')}</div>
                 <div className="text-sm font-semibold text-gray-900">
@@ -375,7 +375,7 @@ export default function EventDetailContent({ initialEvent, initialSeatMap }: Eve
               </div>
             </div>
             <div className="event-premium-info flex items-center gap-3 p-4">
-              <HiOutlineLocationMarker className="w-5 h-5 text-[#0A375A] shrink-0" />
+              <HiOutlineLocationMarker className="w-5 h-5 text-[#ff7a00] shrink-0" />
               <div className="min-w-0 flex-1">
                 <div className="text-xs text-gray-500">{t('venueLabel')}</div>
                 <div className="text-sm font-black text-[#0A375A] truncate">{event.venueName}</div>
