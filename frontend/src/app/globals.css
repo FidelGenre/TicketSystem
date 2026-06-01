@@ -5920,13 +5920,10 @@ html body {
 .public-premium-card.public-premium-card:hover,
 .premium-section-card.premium-section-card:hover,
 .premium-stat-card.premium-stat-card:hover,
-.dashboard-premium-card.dashboard-premium-card:hover {
-  border-color: rgba(249, 115, 22, 0.32) !important;
-}
-/* Event detail cards: keep the hairline static (no orange hover border) */
+.dashboard-premium-card.dashboard-premium-card:hover,
 .event-premium-panel.event-premium-panel:hover,
 .event-premium-info.event-premium-info:hover {
-  border-color: rgba(246, 198, 95, 0.16) !important;
+  border-color: rgba(249, 115, 22, 0.32) !important;
 }
 
 .page-dark-shell .event-signature-card:hover .event-card-footer {
