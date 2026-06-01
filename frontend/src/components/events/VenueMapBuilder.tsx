@@ -839,11 +839,23 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
 
   const mapCapacity = sections.reduce((sum: number, section) => sum + getSectionCapacity(section), 0);
 
-  // Sold / available counts for the organizer header (sold = DB seat status 'sold').
+  // Full capacity = every seat (ignores blocked/disabled), so the header can show
+  // the real total separately from how many are blocked.
+  const fullCapacity = sections.reduce((sum: number, section) => {
+    const type = section.sectionType;
+    if (type === 'stage' || type === 'decor') return sum;
+    if (type === 'standing') return sum + Math.max(0, Number(section.capacity) || 0);
+    const rows = Math.max(1, Number(section.rows) || 1);
+    const seatsPerRow = Math.max(1, Number(section.seatsPerRow) || 1);
+    return sum + rows * seatsPerRow;
+  }, 0);
+
+  // Sold / blocked / available counts for the organizer header.
   const soldCount = sections.reduce(
     (sum: number, section) => sum + ((section.seats || []).filter((seat) => seat.status === 'sold').length),
     0
   );
+  const blockedCount = Math.max(0, fullCapacity - mapCapacity);
   const availableCount = Math.max(0, mapCapacity - soldCount);
 
   // Buyer name for a given sold seat, looked up in the seatBuyers map.
@@ -868,13 +880,16 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
             <div className="flex flex-wrap items-center gap-1.5">
               <h2 className="font-semibold text-gray-800 text-sm leading-tight">{lang === 'es' ? 'Diseñador de Asientos' : 'Seat Designer'}</h2>
               <span className="inline-flex items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-0.5 text-[11px] font-black text-[#1a73e8]">
-                {lang === 'es' ? 'Capacidad total' : 'Total capacity'}: {mapCapacity}
+                {lang === 'es' ? 'Capacidad total' : 'Total capacity'}: {fullCapacity}
               </span>
               <span className="inline-flex items-center gap-1 rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-black text-emerald-600">
                 {lang === 'es' ? 'Disponibles' : 'Available'}: {availableCount}
               </span>
               <span className="inline-flex items-center gap-1 rounded-full border border-orange-100 bg-orange-50 px-2.5 py-0.5 text-[11px] font-black text-[#F97316]">
                 {lang === 'es' ? 'Vendidas' : 'Sold'}: {soldCount}
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-slate-100 px-2.5 py-0.5 text-[11px] font-black text-slate-600">
+                {lang === 'es' ? 'Bloqueadas' : 'Blocked'}: {blockedCount}
               </span>
             </div>
           </div>
