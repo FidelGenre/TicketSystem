@@ -89,11 +89,19 @@ export default function AdminCategoriesPage() {
     } catch { } finally { setLoading(false); }
   };
 
+  const buildPayload = () => {
+    const payload: any = { ...form };
+    // Only include imageData when there's an actual image, so saving works even
+    // if the backend hasn't deployed the imageData field yet.
+    if (!payload.imageData) delete payload.imageData;
+    return payload;
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true); setError('');
     try {
-      await api.post('/categories', form);
+      await api.post('/categories', buildPayload());
       setForm(emptyForm);
       setShowForm(false);
       await loadCategories();
@@ -130,7 +138,7 @@ export default function AdminCategoriesPage() {
   const handleSaveEdit = async (id: string) => {
     setSaving(true); setError('');
     try {
-      await api.patch(`/categories/${id}`, form);
+      await api.patch(`/categories/${id}`, buildPayload());
       setEditingId(null);
       await loadCategories();
     } catch (err: any) {
