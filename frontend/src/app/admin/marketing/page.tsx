@@ -70,12 +70,29 @@ export default function AdminMarketingPage() {
   const [whatsappMessage, setWhatsappMessage] = useState('');
   const [sending, setSending] = useState<'' | 'email' | 'sms' | 'whatsapp'>('');
 
+  // Audience per channel: 'all' = todos, 'specify' = lista explícita.
+  const [emailAudience, setEmailAudience] = useState<'all' | 'specify'>('all');
+  const [emailRecipients, setEmailRecipients] = useState('');
+  const [smsAudience, setSmsAudience] = useState<'all' | 'specify'>('all');
+  const [smsRecipients, setSmsRecipients] = useState('');
+  const [waAudience, setWaAudience] = useState<'all' | 'specify'>('all');
+  const [waRecipients, setWaRecipients] = useState('');
+
+  const parseRecipients = (raw: string) =>
+    raw.split(/[\n,;]+/).map((s) => s.trim()).filter(Boolean);
+
   const handleSendEmail = async () => {
     if (!campaignSubject.trim() && !campaignName.trim()) {
       toast.error('Agrega un asunto o nombre de campaña.');
       return;
     }
-    if (!confirm('¿Enviar esta campaña de email a todos los usuarios?')) return;
+    const recipients = emailAudience === 'specify' ? parseRecipients(emailRecipients) : undefined;
+    if (emailAudience === 'specify' && (!recipients || recipients.length === 0)) {
+      toast.error('Agrega al menos un correo.');
+      return;
+    }
+    const who = recipients ? `${recipients.length} destinatario(s)` : 'todos los usuarios';
+    if (!confirm(`¿Enviar esta campaña de email a ${who}?`)) return;
     setSending('email');
     try {
       const { data } = await api.post('/marketing/admin/email-campaign', {
@@ -84,6 +101,7 @@ export default function AdminMarketingPage() {
         preheader: campaignPreheader,
         link: campaignLink,
         imageData: emailArtPreview || undefined,
+        recipients,
       });
       toast.success(`Email enviado: ${data.sent}/${data.total} (${data.failed} fallidos)`);
     } catch (err: any) {
@@ -93,11 +111,19 @@ export default function AdminMarketingPage() {
 
   const handleSendMessaging = async (channel: 'sms' | 'whatsapp') => {
     const message = channel === 'sms' ? smsMessage : whatsappMessage;
+    const audience = channel === 'sms' ? smsAudience : waAudience;
+    const rawRecipients = channel === 'sms' ? smsRecipients : waRecipients;
     if (!message.trim()) { toast.error('Escribe un mensaje.'); return; }
-    if (!confirm(`¿Enviar este ${channel === 'sms' ? 'SMS' : 'WhatsApp'} a todos los usuarios con teléfono?`)) return;
+    const recipients = audience === 'specify' ? parseRecipients(rawRecipients) : undefined;
+    if (audience === 'specify' && (!recipients || recipients.length === 0)) {
+      toast.error('Agrega al menos un número.');
+      return;
+    }
+    const who = recipients ? `${recipients.length} número(s)` : 'todos los usuarios con teléfono';
+    if (!confirm(`¿Enviar este ${channel === 'sms' ? 'SMS' : 'WhatsApp'} a ${who}?`)) return;
     setSending(channel);
     try {
-      const { data } = await api.post(`/marketing/admin/${channel}-campaign`, { message });
+      const { data } = await api.post(`/marketing/admin/${channel}-campaign`, { message, recipients });
       if (data.error) {
         toast.error(data.error);
       } else {
@@ -338,11 +364,23 @@ export default function AdminMarketingPage() {
               className="h-12 rounded-xl border border-gray-200 px-4 text-sm outline-none transition focus:border-[#F97316]"
               placeholder="Preheader / texto corto bajo el asunto"
             />
-            <select className="h-12 rounded-xl border border-[rgba(246,198,95,0.18)] bg-[#0b2236] text-slate-100 px-4 text-sm outline-none transition focus:border-[#F97316]">
-              <option className="bg-[#0b2236] text-slate-100">Todos los usuarios</option>
-              <option className="bg-[#0b2236] text-slate-100">Todos los compradores</option>
-              <option className="bg-[#0b2236] text-slate-100">Compradores de un evento</option>
+            <select
+              value={emailAudience}
+              onChange={(e) => setEmailAudience(e.target.value as 'all' | 'specify')}
+              className="h-12 rounded-xl border border-[rgba(246,198,95,0.18)] bg-[#0b2236] text-slate-100 px-4 text-sm outline-none transition focus:border-[#F97316]"
+            >
+              <option value="all" className="bg-[#0b2236] text-slate-100">Enviar a todos los usuarios</option>
+              <option value="specify" className="bg-[#0b2236] text-slate-100">Especificar destinatarios</option>
             </select>
+            {emailAudience === 'specify' && (
+              <textarea
+                value={emailRecipients}
+                onChange={(e) => setEmailRecipients(e.target.value)}
+                rows={3}
+                placeholder="Correos separados por coma o salto de línea…"
+                className="w-full resize-none rounded-xl border border-[rgba(246,198,95,0.18)] bg-[#0b2236] p-3 text-sm text-slate-100 outline-none focus:border-[#F97316]"
+              />
+            )}
             <input
               value={campaignLink}
               onChange={(event) => setCampaignLink(event.target.value)}
@@ -386,7 +424,9 @@ export default function AdminMarketingPage() {
           >
             {sending === 'email' ? 'Enviando…' : 'Enviar campaña por email'}
           </button>
-          <p className="mt-2 text-center text-[11px] text-gray-400">Se envía a todos los usuarios registrados.</p>
+          <p className="mt-2 text-center text-[11px] text-gray-400">
+            {emailAudience === 'all' ? 'Se envía a todos los usuarios registrados.' : 'Se envía solo a los correos especificados.'}
+          </p>
         </div>
 
         <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
@@ -445,17 +485,34 @@ export default function AdminMarketingPage() {
               <p className="text-xs text-gray-500">Recordatorios, accesos y promociones urgentes.</p>
             </div>
           </div>
+          <select
+            value={smsAudience}
+            onChange={(e) => setSmsAudience(e.target.value as 'all' | 'specify')}
+            className="mt-4 h-11 w-full rounded-xl border border-[rgba(246,198,95,0.18)] bg-[#0b2236] px-3 text-sm text-slate-100 outline-none focus:border-[#F97316]"
+          >
+            <option value="all" className="bg-[#0b2236] text-slate-100">Enviar a todos los usuarios</option>
+            <option value="specify" className="bg-[#0b2236] text-slate-100">Especificar números</option>
+          </select>
+          {smsAudience === 'specify' && (
+            <textarea
+              value={smsRecipients}
+              onChange={(e) => setSmsRecipients(e.target.value)}
+              rows={2}
+              placeholder="Números (+1...) separados por coma o salto de línea…"
+              className="mt-2 w-full resize-none rounded-xl border border-[rgba(246,198,95,0.18)] bg-[#0b2236] p-3 text-sm text-slate-100 outline-none focus:border-[#F97316]"
+            />
+          )}
           <textarea
             value={smsMessage}
             onChange={(e) => setSmsMessage(e.target.value)}
             rows={4}
             maxLength={320}
             placeholder="Escribe tu mensaje SMS…"
-            className="mt-4 w-full resize-none rounded-2xl border border-[rgba(246,198,95,0.18)] bg-[#0b2236] p-4 text-sm text-slate-100 outline-none focus:border-[#F97316]"
+            className="mt-2 w-full resize-none rounded-2xl border border-[rgba(246,198,95,0.18)] bg-[#0b2236] p-4 text-sm text-slate-100 outline-none focus:border-[#F97316]"
           />
           <div className="mt-1 text-right text-[11px] text-gray-400">{smsMessage.length}/320</div>
           <button type="button" onClick={() => handleSendMessaging('sms')} disabled={sending === 'sms'} className="btn-primary mt-2 w-full py-3 disabled:opacity-60">
-            {sending === 'sms' ? 'Enviando…' : 'Enviar SMS a todos'}
+            {sending === 'sms' ? 'Enviando…' : 'Enviar SMS'}
           </button>
         </div>
 
@@ -469,17 +526,34 @@ export default function AdminMarketingPage() {
               <p className="text-xs text-gray-500">Mensajes directos para audiencias segmentadas.</p>
             </div>
           </div>
+          <select
+            value={waAudience}
+            onChange={(e) => setWaAudience(e.target.value as 'all' | 'specify')}
+            className="mt-4 h-11 w-full rounded-xl border border-[rgba(246,198,95,0.18)] bg-[#0b2236] px-3 text-sm text-slate-100 outline-none focus:border-[#F97316]"
+          >
+            <option value="all" className="bg-[#0b2236] text-slate-100">Enviar a todos los usuarios</option>
+            <option value="specify" className="bg-[#0b2236] text-slate-100">Especificar números</option>
+          </select>
+          {waAudience === 'specify' && (
+            <textarea
+              value={waRecipients}
+              onChange={(e) => setWaRecipients(e.target.value)}
+              rows={2}
+              placeholder="Números (+1...) separados por coma o salto de línea…"
+              className="mt-2 w-full resize-none rounded-xl border border-[rgba(246,198,95,0.18)] bg-[#0b2236] p-3 text-sm text-slate-100 outline-none focus:border-[#F97316]"
+            />
+          )}
           <textarea
             value={whatsappMessage}
             onChange={(e) => setWhatsappMessage(e.target.value)}
             rows={4}
             maxLength={1000}
             placeholder="Escribe tu mensaje de WhatsApp…"
-            className="mt-4 w-full resize-none rounded-2xl border border-[rgba(246,198,95,0.18)] bg-[#0b2236] p-4 text-sm text-slate-100 outline-none focus:border-[#F97316]"
+            className="mt-2 w-full resize-none rounded-2xl border border-[rgba(246,198,95,0.18)] bg-[#0b2236] p-4 text-sm text-slate-100 outline-none focus:border-[#F97316]"
           />
           <div className="mt-1 text-right text-[11px] text-gray-400">{whatsappMessage.length}/1000</div>
           <button type="button" onClick={() => handleSendMessaging('whatsapp')} disabled={sending === 'whatsapp'} className="btn-primary mt-2 w-full py-3 disabled:opacity-60">
-            {sending === 'whatsapp' ? 'Enviando…' : 'Enviar WhatsApp a todos'}
+            {sending === 'whatsapp' ? 'Enviando…' : 'Enviar WhatsApp'}
           </button>
         </div>
       </section>

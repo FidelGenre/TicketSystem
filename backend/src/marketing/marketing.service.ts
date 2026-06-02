@@ -27,12 +27,19 @@ export class MarketingService {
     });
   }
 
-  /** Send an email marketing campaign to all active users (one email each). */
+  /** Send an email marketing campaign — to all active users, or to an explicit
+   *  list of emails when `recipients` is provided. */
   async sendEmailCampaign(dto: {
     subject?: string; title?: string; preheader?: string; imageData?: string | null; link?: string;
+    recipients?: string[];
   }): Promise<CampaignResult> {
-    const users = await this.getRecipients();
-    const targets = users.filter((u) => u.email);
+    let targets: { email: string }[];
+    if (dto.recipients && dto.recipients.length) {
+      targets = dto.recipients.map((e) => ({ email: String(e).trim() })).filter((t) => t.email);
+    } else {
+      const users = await this.getRecipients();
+      targets = users.filter((u) => u.email).map((u) => ({ email: u.email }));
+    }
     let sent = 0, failed = 0;
     for (const u of targets) {
       try {
@@ -73,33 +80,38 @@ export class MarketingService {
     if (!res.ok) throw new Error(await res.text());
   }
 
-  private async sendMessagingCampaign(message: string, channel: 'sms' | 'whatsapp'): Promise<CampaignResult> {
+  private async sendMessagingCampaign(message: string, channel: 'sms' | 'whatsapp', recipients?: string[]): Promise<CampaignResult> {
     if (!message?.trim()) throw new BadRequestException('El mensaje es obligatorio');
     const sid = this.config.get<string>('TWILIO_ACCOUNT_SID');
     const token = this.config.get<string>('TWILIO_AUTH_TOKEN');
     if (!sid || !token) {
       return { sent: 0, failed: 0, total: 0, error: 'Twilio no está configurado (faltan TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN).' };
     }
-    const users = await this.getRecipients();
-    const targets = users.filter((u) => u.phone && u.phone.trim());
+    let phones: string[];
+    if (recipients && recipients.length) {
+      phones = recipients.map((p) => String(p).trim()).filter(Boolean);
+    } else {
+      const users = await this.getRecipients();
+      phones = users.filter((u) => u.phone && u.phone.trim()).map((u) => u.phone.trim());
+    }
     let sent = 0, failed = 0;
-    for (const u of targets) {
+    for (const phone of phones) {
       try {
-        await this.sendTwilioMessage(u.phone.trim(), message, channel);
+        await this.sendTwilioMessage(phone, message, channel);
         sent++;
       } catch {
         failed++;
       }
     }
-    return { sent, failed, total: targets.length };
+    return { sent, failed, total: phones.length };
   }
 
-  sendSmsCampaign(message: string) {
-    return this.sendMessagingCampaign(message, 'sms');
+  sendSmsCampaign(message: string, recipients?: string[]) {
+    return this.sendMessagingCampaign(message, 'sms', recipients);
   }
 
-  sendWhatsappCampaign(message: string) {
-    return this.sendMessagingCampaign(message, 'whatsapp');
+  sendWhatsappCampaign(message: string, recipients?: string[]) {
+    return this.sendMessagingCampaign(message, 'whatsapp', recipients);
   }
 
   async getActiveHomeBanner() {

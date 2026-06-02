@@ -39,7 +39,7 @@ export class MarketingController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN)
   async sendEmailCampaign(
-    @Body() body: { subject?: string; title?: string; preheader?: string; imageData?: string | null; link?: string },
+    @Body() body: { subject?: string; title?: string; preheader?: string; imageData?: string | null; link?: string; recipients?: string[] },
   ) {
     return this.marketingService.sendEmailCampaign(body);
   }
@@ -47,14 +47,14 @@ export class MarketingController {
   @Post('admin/sms-campaign')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN)
-  async sendSmsCampaign(@Body() body: { message: string }) {
-    return this.marketingService.sendSmsCampaign(body?.message);
+  async sendSmsCampaign(@Body() body: { message: string; recipients?: string[] }) {
+    return this.marketingService.sendSmsCampaign(body?.message, body?.recipients);
   }
 
   @Post('admin/whatsapp-campaign')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN)
-  async sendWhatsappCampaign(@Body() body: { message: string }) {
-    return this.marketingService.sendWhatsappCampaign(body?.message);
+  async sendWhatsappCampaign(@Body() body: { message: string; recipients?: string[] }) {
+    return this.marketingService.sendWhatsappCampaign(body?.message, body?.recipients);
   }
 }
