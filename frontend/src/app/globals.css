@@ -6004,6 +6004,13 @@ html body main .home-signature {
   border-radius: 14px !important;
 }
 
+/* Header hamburger: illuminated orange icon (glow effect like the support icons) */
+body header .header-hamburger-glow,
+body header .header-hamburger-glow svg {
+  color: #ff7a00 !important;
+  stroke: #ff7a00 !important;
+}
+
 /* ===== Hard guard: never allow horizontal (side-to-side) scroll ===== */
 html {
   overflow-x: hidden !important;
