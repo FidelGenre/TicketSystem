@@ -88,8 +88,13 @@ export class MarketingService {
     return null;
   }
 
-  /** Send a Twilio message (SMS or WhatsApp) using the REST API (no SDK). */
-  private async sendTwilioMessage(to: string, body: string, channel: 'sms' | 'whatsapp') {
+  /** Send a Twilio message (SMS or WhatsApp) via the REST API (no SDK).
+   *  For WhatsApp it can use an approved Content template (contentSid + variables). */
+  private async sendTwilioMessage(
+    to: string,
+    channel: 'sms' | 'whatsapp',
+    opts: { body?: string; contentSid?: string; contentVariables?: Record<string, string> },
+  ) {
     const sid = this.config.get<string>('TWILIO_ACCOUNT_SID');
     const token = this.config.get<string>('TWILIO_AUTH_TOKEN');
     const fromSms = this.config.get<string>('TWILIO_SMS_FROM');
@@ -97,7 +102,13 @@ export class MarketingService {
     if (!sid || !token) throw new Error('NOT_CONFIGURED');
     const from = channel === 'whatsapp' ? `whatsapp:${fromWa}` : fromSms;
     const toAddr = channel === 'whatsapp' ? `whatsapp:${to}` : to;
-    const params = new URLSearchParams({ To: toAddr, From: from || '', Body: body });
+    const params = new URLSearchParams({ To: toAddr, From: from || '' });
+    if (opts.contentSid) {
+      params.set('ContentSid', opts.contentSid);
+      if (opts.contentVariables) params.set('ContentVariables', JSON.stringify(opts.contentVariables));
+    } else {
+      params.set('Body', opts.body || '');
+    }
     const httpFetch: typeof fetch = (globalThis as any).fetch;
     const res = await httpFetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
       method: 'POST',
@@ -110,28 +121,53 @@ export class MarketingService {
     if (!res.ok) throw new Error(await res.text());
   }
 
-  private async sendMessagingCampaign(message: string, channel: 'sms' | 'whatsapp', recipients?: string[]): Promise<CampaignResult> {
+  private async sendMessagingCampaign(
+    message: string,
+    channel: 'sms' | 'whatsapp',
+    recipients?: string[],
+    lang?: 'es' | 'en',
+  ): Promise<CampaignResult> {
     if (!message?.trim()) throw new BadRequestException('El mensaje es obligatorio');
     const sid = this.config.get<string>('TWILIO_ACCOUNT_SID');
     const token = this.config.get<string>('TWILIO_AUTH_TOKEN');
     if (!sid || !token) {
       return { sent: 0, failed: 0, total: 0, error: 'Twilio no está configurado (faltan TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN).' };
     }
+
+    // WhatsApp business-initiated messages need an approved Content template.
+    const contentSid = channel === 'whatsapp'
+      ? this.config.get<string>(lang === 'en' ? 'TWILIO_WHATSAPP_CONTENT_SID_EN' : 'TWILIO_WHATSAPP_CONTENT_SID_ES')
+      : undefined;
+
+    // Build {phone, name} targets (name fills template variable {{1}}).
+    const users = await this.getRecipients();
+    const nameByPhone = new Map<string, string>();
+    users.forEach((u) => {
+      const p = u.phone && this.normalizePhone(u.phone);
+      if (p) nameByPhone.set(p, u.firstName || '');
+    });
+
     let rawPhones: string[];
     if (recipients && recipients.length) {
       rawPhones = recipients.map((p) => String(p));
     } else {
-      const users = await this.getRecipients();
       rawPhones = users.filter((u) => u.phone && u.phone.trim()).map((u) => u.phone);
     }
-    // Normalize to E.164 and drop invalid ones.
     const phones = Array.from(
       new Set(rawPhones.map((p) => this.normalizePhone(p)).filter((p): p is string => !!p)),
     );
+
     let sent = 0, failed = 0;
     for (const phone of phones) {
       try {
-        await this.sendTwilioMessage(phone, message, channel);
+        if (channel === 'whatsapp' && contentSid) {
+          await this.sendTwilioMessage(phone, channel, {
+            contentSid,
+            contentVariables: { '1': nameByPhone.get(phone) || (lang === 'en' ? 'there' : 'hola'), '2': message },
+          });
+        } else {
+          await this.sendTwilioMessage(phone, channel, { body: message });
+        }
         sent++;
       } catch {
         failed++;
@@ -144,8 +180,8 @@ export class MarketingService {
     return this.sendMessagingCampaign(message, 'sms', recipients);
   }
 
-  sendWhatsappCampaign(message: string, recipients?: string[]) {
-    return this.sendMessagingCampaign(message, 'whatsapp', recipients);
+  sendWhatsappCampaign(message: string, recipients?: string[], lang?: 'es' | 'en') {
+    return this.sendMessagingCampaign(message, 'whatsapp', recipients, lang);
   }
 
   async getActiveHomeBanner() {

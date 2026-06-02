@@ -74,6 +74,7 @@ export default function AdminMarketingPage() {
   const [emailAudience, setEmailAudience] = useState<'all' | 'specify'>('all');
   const [smsAudience, setSmsAudience] = useState<'all' | 'specify'>('all');
   const [waAudience, setWaAudience] = useState<'all' | 'specify'>('all');
+  const [waLang, setWaLang] = useState<'es' | 'en'>('es');
 
   type Recipient = { id: string; name: string; email: string; phone: string };
   const [recipientsList, setRecipientsList] = useState<Recipient[]>([]);
@@ -180,7 +181,11 @@ export default function AdminMarketingPage() {
     if (!confirm(`¿Enviar este ${channel === 'sms' ? 'SMS' : 'WhatsApp'} a ${who}?`)) return;
     setSending(channel);
     try {
-      const { data } = await api.post(`/marketing/admin/${channel}-campaign`, { message, recipients });
+      const { data } = await api.post(`/marketing/admin/${channel}-campaign`, {
+        message,
+        recipients,
+        ...(channel === 'whatsapp' ? { lang: waLang } : {}),
+      });
       if (data.error) {
         toast.error(data.error);
       } else {
@@ -567,10 +572,17 @@ export default function AdminMarketingPage() {
               <p className="text-xs text-gray-500">Mensajes directos para audiencias segmentadas.</p>
             </div>
           </div>
+          <div className="mt-4 flex items-center gap-2">
+            <span className="text-[11px] font-bold text-gray-400">Plantilla:</span>
+            <div className="flex rounded-lg border border-[rgba(246,198,95,0.18)] overflow-hidden">
+              <button type="button" onClick={() => setWaLang('es')} className={`px-3 py-1 text-xs font-bold ${waLang === 'es' ? 'bg-[#F97316] text-white' : 'text-slate-300'}`}>ES</button>
+              <button type="button" onClick={() => setWaLang('en')} className={`px-3 py-1 text-xs font-bold ${waLang === 'en' ? 'bg-[#F97316] text-white' : 'text-slate-300'}`}>EN</button>
+            </div>
+          </div>
           <select
             value={waAudience}
             onChange={(e) => setWaAudience(e.target.value as 'all' | 'specify')}
-            className="mt-4 h-11 w-full rounded-xl border border-[rgba(246,198,95,0.18)] bg-[#0b2236] px-3 text-sm text-slate-100 outline-none focus:border-[#F97316]"
+            className="mt-2 h-11 w-full rounded-xl border border-[rgba(246,198,95,0.18)] bg-[#0b2236] px-3 text-sm text-slate-100 outline-none focus:border-[#F97316]"
           >
             <option value="all" className="bg-[#0b2236] text-slate-100">Enviar a todos los usuarios</option>
             <option value="specify" className="bg-[#0b2236] text-slate-100">Especificar números</option>
