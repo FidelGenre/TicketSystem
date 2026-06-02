@@ -316,7 +316,7 @@ export default function AdminCategoriesPage() {
         <div className="hidden sm:block overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
+              <tr className="bg-white/5 border-b border-white/[0.05]">
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Categoría</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Slug</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden lg:table-cell">EN</th>
@@ -324,7 +324,7 @@ export default function AdminCategoriesPage() {
                 <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-white/[0.04]">
               {categories.map((cat) => (
                 <tr key={cat.id} className="hover:bg-gray-50 transition-colors">
                   {editingId === cat.id ? (
@@ -434,7 +434,7 @@ export default function AdminCategoriesPage() {
         </div>
 
         {/* Mobile Card View */}
-        <div className="sm:hidden divide-y divide-gray-100">
+        <div className="sm:hidden divide-y divide-white/[0.04]">
           {categories.map((cat) => (
             <div key={cat.id} className="p-4 space-y-4">
               {editingId === cat.id ? (
