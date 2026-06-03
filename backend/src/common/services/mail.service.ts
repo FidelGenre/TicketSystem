@@ -638,21 +638,21 @@ export class MailService {
                   <td align="center" style="padding:10px 16px 16px;">
                     <table role="presentation" cellpadding="0" cellspacing="0">
                       <tr>
-                        <td align="center" width="44" height="44" bgcolor="#0A375A" style="width:44px;height:44px;background:#0A375A;border-radius:12px;">
+                        <td align="center" width="44" height="44" style="width:44px;height:44px;">
                           <a href="${facebookUrl}" target="_blank" style="display:block;width:44px;height:44px;text-decoration:none;">
-                            <img src="cid:email-facebook" alt="Facebook" width="20" height="20" style="display:block;width:20px;height:20px;border:0;margin:12px auto;">
+                            <img src="cid:email-facebook" alt="Facebook" width="30" height="30" style="display:block;width:30px;height:30px;border:0;margin:7px auto;">
                           </a>
                         </td>
                         <td width="10">&nbsp;</td>
-                        <td align="center" width="44" height="44" bgcolor="#0A375A" style="width:44px;height:44px;background:#0A375A;border-radius:12px;">
+                        <td align="center" width="44" height="44" style="width:44px;height:44px;">
                           <a href="${instagramUrl}" target="_blank" style="display:block;width:44px;height:44px;text-decoration:none;">
-                            <img src="cid:email-instagram" alt="Instagram" width="20" height="20" style="display:block;width:20px;height:20px;border:0;margin:12px auto;">
+                            <img src="cid:email-instagram" alt="Instagram" width="30" height="30" style="display:block;width:30px;height:30px;border:0;margin:7px auto;">
                           </a>
                         </td>
                         <td width="10">&nbsp;</td>
-                        <td align="center" width="44" height="44" bgcolor="#0A375A" style="width:44px;height:44px;background:#0A375A;border-radius:12px;">
+                        <td align="center" width="44" height="44" style="width:44px;height:44px;">
                           <a href="${whatsappUrl}" target="_blank" style="display:block;width:44px;height:44px;text-decoration:none;">
-                            <img src="cid:email-whatsapp" alt="WhatsApp" width="20" height="20" style="display:block;width:20px;height:20px;border:0;margin:12px auto;">
+                            <img src="cid:email-whatsapp" alt="WhatsApp" width="30" height="30" style="display:block;width:30px;height:30px;border:0;margin:7px auto;">
                           </a>
                         </td>
                       </tr>
