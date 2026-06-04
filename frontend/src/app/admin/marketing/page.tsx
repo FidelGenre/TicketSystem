@@ -83,6 +83,15 @@ export default function AdminMarketingPage() {
   const [waSel, setWaSel] = useState<string[]>([]);
   const [pickerSearch, setPickerSearch] = useState<{ email: string; sms: string; whatsapp: string }>({ email: '', sms: '', whatsapp: '' });
 
+  // Styled confirmation modal (replaces native confirm()).
+  const [confirmModal, setConfirmModal] = useState<{ title: string; message: string; resolve: (v: boolean) => void } | null>(null);
+  const askConfirm = (title: string, message: string) =>
+    new Promise<boolean>((resolve) => setConfirmModal({ title, message, resolve }));
+  const closeConfirm = (value: boolean) => {
+    confirmModal?.resolve(value);
+    setConfirmModal(null);
+  };
+
   useEffect(() => {
     api.get('/marketing/admin/recipients').then((r) => setRecipientsList(r.data || [])).catch(() => {});
   }, []);
@@ -148,7 +157,7 @@ export default function AdminMarketingPage() {
       return;
     }
     const who = recipients ? `${recipients.length} destinatario(s)` : 'todos los usuarios';
-    if (!confirm(`¿Enviar esta campaña de email a ${who}?`)) return;
+    if (!(await askConfirm('Enviar campaña de email', `¿Enviar esta campaña de email a ${who}?`))) return;
     setSending('email');
     try {
       const { data } = await api.post('/marketing/admin/email-campaign', {
@@ -178,7 +187,8 @@ export default function AdminMarketingPage() {
       return;
     }
     const who = recipients ? `${recipients.length} número(s)` : 'todos los usuarios con teléfono';
-    if (!confirm(`¿Enviar este ${channel === 'sms' ? 'SMS' : 'WhatsApp'} a ${who}?`)) return;
+    const channelLabel = channel === 'sms' ? 'SMS' : 'WhatsApp';
+    if (!(await askConfirm(`Enviar ${channelLabel}`, `¿Enviar este ${channelLabel} a ${who}?`))) return;
     setSending(channel);
     try {
       const { data } = await api.post(`/marketing/admin/${channel}-campaign`, {
@@ -791,6 +801,42 @@ export default function AdminMarketingPage() {
           </div>
         </div>
       </section>
+
+      {confirmModal && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in"
+          onClick={() => closeConfirm(false)}
+        >
+          <div
+            className="w-full max-w-sm overflow-hidden rounded-3xl border border-[rgba(246,198,95,0.18)] bg-[#0b2236] shadow-[0_30px_80px_rgba(0,0,0,0.6)] animate-fade-in-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 border-b border-white/10 px-5 py-4">
+              <div className="public-premium-icon flex h-10 w-10 shrink-0 items-center justify-center">
+                <HiOutlineSpeakerphone className="h-5 w-5" />
+              </div>
+              <h3 className="text-base font-black text-white">{confirmModal.title}</h3>
+            </div>
+            <p className="px-5 py-5 text-sm leading-6 text-slate-300">{confirmModal.message}</p>
+            <div className="flex gap-3 px-5 pb-5">
+              <button
+                type="button"
+                onClick={() => closeConfirm(false)}
+                className="flex-1 rounded-xl border border-white/15 px-4 py-3 text-sm font-bold text-slate-300 transition hover:bg-white/5"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => closeConfirm(true)}
+                className="btn-primary flex-1 px-4 py-3 text-sm"
+              >
+                Enviar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
