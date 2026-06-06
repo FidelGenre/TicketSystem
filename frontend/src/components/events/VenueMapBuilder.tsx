@@ -100,6 +100,7 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
     isTableSeat?: boolean;
     tableAngle?: number;
     isRectTable?: boolean;
+    sectionRotation?: number;
   } | null>(null);
   const [selectedSeat, setSelectedSeat] = useState<{ secId: string; seatKey: string } | null>(null);
   const [hoverInfo, setHoverInfo] = useState<{
@@ -526,7 +527,7 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
       return;
     }
     if (draggingSeatRef.current) {
-      const { secId, seatKey, startMx, startMy, origXOffset, origYOffset, angleDeg, isTableSeat, tableAngle, isRectTable } = draggingSeatRef.current as any;
+      const { secId, seatKey, startMx, startMy, origXOffset, origYOffset, angleDeg, isTableSeat, tableAngle, isRectTable, sectionRotation } = draggingSeatRef.current as any;
       const scale = viewRef.current.scale;
 
       // Drag threshold: ignore tiny movements so a tap selects/edits the seat
@@ -541,8 +542,15 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
 
       const el = document.getElementById(`seat-dot-${secId}-${seatKey}`);
       if (el) {
-        const newX = origXOffset + (e.clientX - startMx) / scale;
-        const newY = origYOffset + (e.clientY - startMy) / scale;
+        // Screen-space delta, then rotate back into the section's local frame so
+        // the seat follows the cursor even when the section/table is rotated.
+        const sdx = (e.clientX - startMx) / scale;
+        const sdy = (e.clientY - startMy) / scale;
+        const rot = ((sectionRotation || 0) * Math.PI) / 180;
+        const cos = Math.cos(rot);
+        const sin = Math.sin(rot);
+        const newX = origXOffset + (sdx * cos + sdy * sin);
+        const newY = origYOffset + (-sdx * sin + sdy * cos);
         
         if (isTableSeat) {
           if (isRectTable) {
@@ -739,7 +747,10 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
       angleDeg,
       isTableSeat,
       tableAngle,
-      isRectTable
+      isRectTable,
+      // Section rotation: seats live inside the rotated section, so the drag
+      // delta must be rotated back into the section's local frame.
+      sectionRotation: sections.find((s) => s.id === secId)?.rotation || 0,
     };
 
     const viewport = viewportRef.current;
