@@ -9,6 +9,7 @@ import {
   HiOutlineChevronLeft,
   HiOutlineBriefcase,
 } from 'react-icons/hi';
+import { usePathname } from 'next/navigation';
 import { useLang } from '@/context/LanguageContext';
 import { useAuthStore } from '@/stores/auth';
 import { useSocialMatchWidgetStore } from '@/stores/socialMatchWidget';
@@ -40,6 +41,10 @@ function markAsRead(connId: string) {
 
 export default function SocialMatchWidget() {
   const { lang } = useLang();
+  const pathname = usePathname() || '';
+  // The floating cart hides on management panels; when it's gone the message
+  // button drops down to where the cart would have been.
+  const cartHidden = ['/admin', '/organizer', '/dashboard', '/login', '/register'].some((p) => pathname.includes(p));
   const { isAuthenticated } = useAuthStore();
   const { isOpen, setOpen, setUnreadCount } = useSocialMatchWidgetStore();
   const [connections, setConnections] = useState<SocialMatchConnection[]>([]);
@@ -206,7 +211,7 @@ export default function SocialMatchWidget() {
   }
 
   return (
-    <div ref={socialShellRef} className="fixed bottom-20 right-0 px-5 sm:bottom-28 sm:px-6 z-[300] flex flex-col items-end gap-3 pointer-events-none print:hidden">
+    <div ref={socialShellRef} className={`fixed right-0 z-[300] flex flex-col items-end gap-3 pointer-events-none print:hidden ${cartHidden ? 'bottom-4 px-5 sm:p-6' : 'bottom-20 px-5 sm:bottom-28 sm:px-6'}`}>
       {/* Popup panel */}
       {isOpen && (
         <div className="lp-floating-dark w-80 rounded-3xl shadow-elevated border overflow-hidden flex flex-col pointer-events-auto animate-fade-in-up">
