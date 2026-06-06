@@ -339,7 +339,7 @@ export default function HomeContent({ initialEvents, initialBanner }: HomeConten
               <HiOutlineTicket className="w-8 h-8" />
             </div>
             <h3 className="font-bold text-xl text-slate-200 mb-2">{t('noEventsCategory')}</h3>
-            <p className="text-sm text-slate-400">{lang === 'es' ? 'Probá con otra categoría o volvé pronto.' : 'Try another category or check back soon.'}</p>
+            <p className="text-sm text-slate-400">{lang === 'es' ? 'Prueba con otra categoría o vuelve pronto.' : 'Try another category or check back soon.'}</p>
           </div>
         )}
       </section>

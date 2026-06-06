@@ -599,7 +599,7 @@ export default function AdminMarketingPage() {
           </select>
           {waAudience === 'specify' && renderPicker('whatsapp', 'phone', waSel, setWaSel)}
           <p className="mt-2 text-[11px] text-gray-400">
-            Tu texto va en <span className="font-bold text-[#F97316]">{'{{2}}'}</span>. El nombre del cliente se completa solo en <span className="font-bold text-[#F97316]">{'{{1}}'}</span>. Si querés un link, escribilo dentro del mensaje.
+            Tu texto va en <span className="font-bold text-[#F97316]">{'{{2}}'}</span>. El nombre del cliente se completa solo en <span className="font-bold text-[#F97316]">{'{{1}}'}</span>. Si quieres un enlace, escríbelo dentro del mensaje.
           </p>
           <textarea
             value={whatsappMessage}

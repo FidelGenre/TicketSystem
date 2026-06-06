@@ -108,7 +108,7 @@ export default function RegisterContent() {
           <div>
             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">{t('phone')}</label>
             <input type="tel" value={form.phone} onChange={update('phone')} className="input public-premium-input" placeholder={lang === 'es' ? 'Ej: +54 9 342 610 2734' : 'E.g. +1 305 555 1234'} required />
-            <p className="mt-1.5 text-[11px] text-gray-400">{lang === 'es' ? 'Incluí el código de país (ej. +54 Argentina, +1 USA) para recibir WhatsApp/SMS.' : 'Include your country code (e.g. +54 Argentina, +1 USA) to receive WhatsApp/SMS.'}</p>
+            <p className="mt-1.5 text-[11px] text-gray-400">{lang === 'es' ? 'Incluye el código de país (ej. +54 Argentina, +1 USA) para recibir WhatsApp/SMS.' : 'Include your country code (e.g. +54 Argentina, +1 USA) to receive WhatsApp/SMS.'}</p>
           </div>
 
           {/* Email */}

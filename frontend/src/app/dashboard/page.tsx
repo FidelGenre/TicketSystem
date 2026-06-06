@@ -478,7 +478,7 @@ function DashboardPageBody() {
                   <div className="space-y-2">
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">{t('phone')}</label>
                     <input type="tel" value={profileForm.phone} onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })} className="input dashboard-premium-input bg-white border-slate-200 focus:bg-white focus:border-[#F97316] focus:ring-4 focus:ring-orange-100 rounded-2xl font-semibold" placeholder={lang === 'es' ? 'Ej: +54 9 342 610 2734' : 'E.g. +1 305 555 1234'} />
-                    <p className="text-[11px] text-gray-400">{lang === 'es' ? 'Incluí el código de país (ej. +54, +1) para recibir WhatsApp/SMS.' : 'Include your country code (e.g. +54, +1) to receive WhatsApp/SMS.'}</p>
+                    <p className="text-[11px] text-gray-400">{lang === 'es' ? 'Incluye el código de país (ej. +54, +1) para recibir WhatsApp/SMS.' : 'Include your country code (e.g. +54, +1) to receive WhatsApp/SMS.'}</p>
                   </div>
 
                   <div className="sm:col-span-2 space-y-2">
