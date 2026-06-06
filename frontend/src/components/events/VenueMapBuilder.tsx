@@ -417,49 +417,55 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
   };
 
   useEffect(() => {
-    if (!viewportRef.current) return;
-    const vw = viewportRef.current.clientWidth;
-    const vh = viewportRef.current.clientHeight;
-    if (vw === 0 || vh === 0) return; // Wait until layout is fully ready
+    let raf = 0;
+    const apply = () => {
+      // Retry until the viewport has been laid out (clientWidth can be 0 on the
+      // first frame after the tab mounts — if we bail then we'd never re-apply).
+      if (!viewportRef.current) { raf = requestAnimationFrame(apply); return; }
+      const vw = viewportRef.current.clientWidth;
+      const vh = viewportRef.current.clientHeight;
+      if (vw === 0 || vh === 0) { raf = requestAnimationFrame(apply); return; }
 
-    const hasSavedView =
-      event &&
-      typeof event.defaultViewX === 'number' &&
-      typeof event.defaultViewY === 'number' &&
-      typeof event.defaultViewZoom === 'number';
+      const hasSavedView =
+        event &&
+        typeof event.defaultViewX === 'number' &&
+        typeof event.defaultViewY === 'number' &&
+        typeof event.defaultViewZoom === 'number';
 
-    // Always prefer the saved view ("FIJAR VISTA"). Apply it even if the event
-    // prop arrives a tick after we already did the default centering — otherwise
-    // the editor re-opens at the wrong position and has to be re-arranged.
-    if (hasSavedView && !appliedSavedViewRef.current) {
-      viewRef.current = {
-        x: event.defaultViewX,
-        y: event.defaultViewY,
-        scale: event.defaultViewZoom,
-      };
-      setCustomViewport({
-        x: event.defaultViewX,
-        y: event.defaultViewY,
-        scale: event.defaultViewZoom,
-      });
-      applyTransform();
-      appliedSavedViewRef.current = true;
-      centeredRef.current = true;
-      return;
-    }
+      // Always prefer the saved view ("FIJAR VISTA") so the editor re-opens
+      // exactly where the organizer left it.
+      if (hasSavedView && !appliedSavedViewRef.current) {
+        viewRef.current = {
+          x: event.defaultViewX,
+          y: event.defaultViewY,
+          scale: event.defaultViewZoom,
+        };
+        setCustomViewport({
+          x: event.defaultViewX,
+          y: event.defaultViewY,
+          scale: event.defaultViewZoom,
+        });
+        applyTransform();
+        appliedSavedViewRef.current = true;
+        centeredRef.current = true;
+        return;
+      }
 
-    // No saved view yet — center on the stage once (don't lock out a saved view
-    // that might still load).
-    if (!centeredRef.current && !hasSavedView) {
-      const scale = 1.0;
-      viewRef.current = {
-        scale,
-        x: vw / 2 - (STAGE_X + STAGE_W / 2) * scale,
-        y: vh / 4 - STAGE_Y * scale,
-      };
-      applyTransform();
-      centeredRef.current = true;
-    }
+      // No saved view — center on the stage once (don't lock out a saved view
+      // that might still load after the event prop resolves).
+      if (!centeredRef.current && !hasSavedView) {
+        const scale = 1.0;
+        viewRef.current = {
+          scale,
+          x: vw / 2 - (STAGE_X + STAGE_W / 2) * scale,
+          y: vh / 4 - STAGE_Y * scale,
+        };
+        applyTransform();
+        centeredRef.current = true;
+      }
+    };
+    apply();
+    return () => cancelAnimationFrame(raf);
   }, [applyTransform, event]);
 
   // ── Viewport pointer events (pan + zoom) ─────────────────────────────────
