@@ -119,7 +119,7 @@ function AppContent() {
         ) : selectedEvent && loginAfterPurchase ? (
           <LoginScreen onSignIn={(user) => { setCurrentUser(user); setLoginAfterPurchase(false); setPurchaseOpen(true); }} />
         ) : selectedEvent && purchaseOpen ? (
-          <PurchaseScreen event={selectedEvent} onBack={() => setPurchaseOpen(false)} onContinue={() => { setPurchaseOpen(false); setCheckoutInfoOpen(true); }} />
+          <PurchaseScreen event={selectedEvent} user={currentUser} onBack={() => setPurchaseOpen(false)} onPaid={() => { clearFlow(); setTab('tickets'); }} />
         ) : selectedEvent ? (
           <EventDetailScreen event={selectedEvent} onBack={() => setSelectedEvent(null)} onBuy={() => { setPaymentSuccessOpen(false); setOrderSummaryOpen(false); setCheckoutInfoOpen(false); if (isLoggedIn) { setPurchaseOpen(true); } else { setLoginAfterPurchase(true); } }} />
         ) : tab === 'events' ? (

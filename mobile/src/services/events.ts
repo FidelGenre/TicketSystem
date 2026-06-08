@@ -43,6 +43,41 @@ function pickImage(...values: Array<string | undefined>) {
   return values.find(Boolean) || '';
 }
 
+export type MobileSection = {
+  id: string;
+  name: string;
+  type: string;
+  price: number;
+  available: number;
+  capacity: number;
+};
+
+/** Sections of an event with live availability, used by the purchase screen. */
+export async function getEventSections(eventId: string): Promise<MobileSection[]> {
+  const data = await apiGet<any>(`/events/${eventId}/seatmap`);
+  const sections: any[] = Array.isArray(data) ? data : data?.sections || [];
+  return sections
+    .filter((s) => s && s.sectionType !== 'stage' && s.sectionType !== 'decor')
+    .map((s) => {
+      const seats: any[] = s.seats || [];
+      const sold = seats.filter(
+        (x) => x.status === 'sold' || (x.status === 'locked' && !x.lockExpiresAt),
+      ).length;
+      const capacity =
+        s.sectionType === 'standing'
+          ? Number(s.capacity) || seats.length
+          : seats.length;
+      return {
+        id: s.id,
+        name: s.name || 'Section',
+        type: s.sectionType || 'standing',
+        price: Number(s.price || 0),
+        available: Math.max(0, capacity - sold),
+        capacity,
+      };
+    });
+}
+
 export async function getPublicEvents(): Promise<MobileEvent[]> {
   const data = await apiGet<ApiEvent[] | { data?: ApiEvent[]; events?: ApiEvent[] }>('/events');
 
