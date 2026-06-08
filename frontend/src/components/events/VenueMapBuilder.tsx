@@ -1061,6 +1061,28 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
     });
   };
 
+  // Hover card for general-admission (standing) areas: shows available / sold
+  // so the organizer can see how many GA tickets were sold at a glance.
+  const buildAreaHover = (e: React.MouseEvent, sec: Partial<VenueSection>) => {
+    const rect = viewportRef.current?.getBoundingClientRect();
+    const x = rect ? e.clientX - rect.left : 0;
+    const y = rect ? e.clientY - rect.top : 0;
+    const es = lang === 'es';
+    const cap = Math.max(0, Number(sec.capacity) || 0);
+    const sold = (sec.seats || []).filter((s) => s.status === 'sold').length;
+    const available = Math.max(0, cap - sold);
+    setHoverInfo({
+      id: `area-${sec.id}`,
+      title: es ? `Disponibles: ${available} · Vendidas: ${sold}` : `Available: ${available} · Sold: ${sold}`,
+      subtitle: sec.name || (es ? 'Área general' : 'General area'),
+      status: 'General',
+      statusClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      price: Number(sec.price || 0),
+      x,
+      y,
+    });
+  };
+
   const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
 
   return (
@@ -1972,11 +1994,14 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
                 id={`sec-${sec.id}`}
                 data-section="true"
                 onPointerDown={e => { e.stopPropagation(); setHasMoved(false); onSectionPointerDown(e, sec); }}
-                onClick={e => { 
+                onClick={e => {
                   if (hasMoved) return;
-                  e.stopPropagation(); 
-                  setSelectedId(sec.id!); 
+                  e.stopPropagation();
+                  setSelectedId(sec.id!);
                 }}
+                onMouseEnter={e => { if (isStanding) buildAreaHover(e, sec); }}
+                onMouseMove={e => { if (isStanding && !draggingRef.current) buildAreaHover(e, sec); }}
+                onMouseLeave={() => { if (isStanding) setHoverInfo(null); }}
                 style={{
                   position: 'absolute',
                   left: sec.mapX ?? ((CANVAS_W / 2) - (sec.mapWidth || 100) / 2),
