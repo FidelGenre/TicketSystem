@@ -592,13 +592,17 @@ export default function VerifyTicketPage() {
       {/* Screen-only action bar */}
       <div className="no-print w-full bg-white border-b border-gray-100 shadow-sm sticky top-0 z-10 px-4">
         <div className="max-w-2xl mx-auto py-3 flex justify-between items-center gap-3">
-          <button 
-            onClick={() => router.back()} 
-            className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors font-medium"
-          >
-            <HiOutlineArrowLeft className="w-4 h-4" /> Volver
-          </button>
-          
+          <div className="flex items-center gap-2 min-w-0">
+            <button
+              onClick={() => router.back()}
+              aria-label="Volver"
+              className="flex items-center justify-center w-8 h-8 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+            >
+              <HiOutlineArrowLeft className="w-4 h-4" />
+            </button>
+            <img src="/logo.png" alt="LPTicket" className="h-6 w-auto object-contain" />
+          </div>
+
           <div className="flex items-center gap-2">
             <button
               onClick={handleShare}
