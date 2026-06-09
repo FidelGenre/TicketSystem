@@ -608,6 +608,16 @@ export default function VerifyTicketPage() {
               <HiOutlineShare className="w-4 h-4" /> <span className="hidden sm:inline">{shareLabel}</span>
             </button>
 
+            <a
+              href={`${api.defaults.baseURL}/orders/ticket/${code}/apple-wallet`}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Apple Wallet"
+              className="flex items-center gap-2 bg-black hover:bg-gray-900 text-white text-xs font-semibold px-3 sm:px-4 py-2 rounded-xl transition-all shadow-sm"
+            >
+              <span className="text-base leading-none"></span> <span className="hidden sm:inline">Apple Wallet</span>
+            </a>
+
             <button
               onClick={handlePrint}
               aria-label="Imprimir / Guardar PDF"
