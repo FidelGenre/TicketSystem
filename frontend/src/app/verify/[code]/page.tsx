@@ -592,7 +592,7 @@ export default function VerifyTicketPage() {
       {/* Screen-only action bar */}
       <div className="no-print w-full bg-white border-b border-gray-100 shadow-sm sticky top-0 z-10 px-4">
         <div className="max-w-2xl mx-auto py-3 flex justify-between items-center gap-3">
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => router.back()}
               aria-label="Volver"
@@ -604,22 +604,24 @@ export default function VerifyTicketPage() {
             <span className="inline-block h-7 overflow-hidden shrink-0" style={{ width: 44 }}>
               <img src="/logo.png" alt="LPTicket" className="h-7 max-w-none" style={{ objectFit: 'cover', objectPosition: 'left center' }} />
             </span>
-            <span className="text-lg font-black tracking-tight text-[#0A375A] leading-none">LPTicket</span>
+            <span className="text-lg font-black tracking-tight text-[#0f172a] leading-none whitespace-nowrap">LPTicket</span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={handleShare}
-              className="flex items-center gap-2 bg-[#0a375a] hover:bg-[#0a375a] text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all shadow-sm"
+              aria-label={shareLabel}
+              className="flex items-center gap-2 bg-[#0a375a] hover:bg-[#0a2a45] text-white text-xs font-semibold px-3 sm:px-4 py-2 rounded-xl transition-all shadow-sm"
             >
-              <HiOutlineShare className="w-4 h-4" /> {shareLabel}
+              <HiOutlineShare className="w-4 h-4" /> <span className="hidden sm:inline">{shareLabel}</span>
             </button>
 
-            <button 
-              onClick={handlePrint} 
-              className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all shadow-sm"
+            <button
+              onClick={handlePrint}
+              aria-label="Imprimir / Guardar PDF"
+              className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white text-xs font-semibold px-3 sm:px-4 py-2 rounded-xl transition-all shadow-sm"
             >
-              <HiOutlinePrinter className="w-4 h-4" /> Imprimir / Guardar PDF
+              <HiOutlinePrinter className="w-4 h-4" /> <span className="hidden sm:inline">Imprimir / Guardar PDF</span>
             </button>
           </div>
         </div>
