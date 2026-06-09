@@ -685,6 +685,47 @@ export class OrdersService {
    * secret, cold-start race, etc.).
    * Verifies payment via Stripe API before issuing tickets.
    */
+  /**
+   * Re-sends the digital ticket email for the order that owns the given ticket
+   * code. Only the buyer (order owner) may trigger it. Lets users regenerate the
+   * email on demand (e.g. to receive the latest version) without buying again.
+   */
+  async resendTicketEmailByCode(code: string, requesterId: string) {
+    const ticket = await this.ticketRepo.findOne({ where: { ticketCode: code } });
+    if (!ticket) throw new NotFoundException('Entrada no encontrada');
+
+    const order = await this.orderRepo.findOne({
+      where: { id: ticket.orderId },
+      relations: ['user', 'event', 'event.organizer'],
+    });
+    if (!order || !order.user) throw new NotFoundException('Pedido no encontrado');
+    if (order.userId !== requesterId) throw new ForbiddenException('No autorizado');
+
+    const tickets = await this.ticketRepo.find({ where: { orderId: order.id } });
+    if (!tickets.length) throw new NotFoundException('No hay entradas en este pedido');
+
+    await this.mailService.sendTicketEmail(
+      order.user.email,
+      order.user.firstName,
+      order.event.title,
+      tickets,
+      {
+        venueName: order.event.venueName,
+        venueAddress: order.event.venueAddress,
+        eventDate: order.event.eventDate?.toString(),
+        eventTimezone: order.event.eventTimezone,
+        currency: order.event.currency || 'USD',
+        subtotal: Number(order.subtotal || 0),
+        lpFee: Number(order.lpFee || 0),
+        processingFee: Number(order.processingFee || 0),
+        total: Number(order.total || 0),
+        organizerEmail: order.event.organizer?.email || null,
+      },
+    );
+
+    return { success: true, email: order.user.email };
+  }
+
   async fulfillPendingOrder(orderId: string) {
     const order = await this.orderRepo.findOne({
       where: { id: orderId },

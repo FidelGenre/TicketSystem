@@ -151,6 +151,12 @@ export class OrdersController {
   }
 
   @UseGuards(AuthGuard('jwt'))
+  @Post('ticket/:code/resend-email')
+  resendTicketEmail(@Param('code') code: string, @Request() req: any) {
+    return this.ordersService.resendTicketEmailByCode(code, req.user.id);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
   @Get('ticket/:code/google-wallet')
   async getGoogleWallet(@Param('code') code: string) {
     const ticket = await this.ordersService.getTicketByCode(code);

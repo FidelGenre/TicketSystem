@@ -23,6 +23,7 @@ import {
   HiOutlineCamera,
   HiOutlineX,
   HiOutlineDownload,
+  HiOutlineMail,
   HiOutlineSparkles,
   HiOutlineTag,
 } from 'react-icons/hi';
@@ -191,6 +192,19 @@ function DashboardPageBody() {
     }
   };
 
+  const handleResendEmail = async (code: string) => {
+    const loadingToast = toast.loading(lang === 'es' ? 'Reenviando al correo...' : 'Resending email...');
+    try {
+      const { data } = await api.post(`/orders/ticket/${code}/resend-email`);
+      toast.success(
+        lang === 'es' ? `Entrada enviada a ${data?.email || 'tu correo'}` : `Ticket sent to ${data?.email || 'your email'}`,
+        { id: loadingToast },
+      );
+    } catch (err: any) {
+      toast.error(lang === 'es' ? 'No se pudo reenviar el correo' : 'Could not resend the email', { id: loadingToast });
+    }
+  };
+
   const dateFnsLocale = lang === 'es' ? es : enUS;
 
   if (isLoading || !user) return (
@@ -314,13 +328,23 @@ function DashboardPageBody() {
                         Google Wallet
                       </button>
                     </div>
-                    <button 
-                      onClick={() => window.open(`/verify/${ticket.ticketCode}`, '_blank')}
-                      className="flex items-center justify-center gap-1.5 py-1.5 text-[10px] font-medium text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                      <HiOutlineDownload className="w-3.5 h-3.5" />
-                      {t('clientDownloadPrint')}
-                    </button>
+                    <div className="flex items-center justify-center gap-3">
+                      <button
+                        onClick={() => handleResendEmail(ticket.ticketCode)}
+                        className="flex items-center justify-center gap-1.5 py-1.5 text-[10px] font-medium text-gray-400 hover:text-[#F97316] transition-colors"
+                      >
+                        <HiOutlineMail className="w-3.5 h-3.5" />
+                        {lang === 'es' ? 'Reenviar al correo' : 'Resend email'}
+                      </button>
+                      <span className="text-gray-200">|</span>
+                      <button
+                        onClick={() => window.open(`/verify/${ticket.ticketCode}`, '_blank')}
+                        className="flex items-center justify-center gap-1.5 py-1.5 text-[10px] font-medium text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        <HiOutlineDownload className="w-3.5 h-3.5" />
+                        {t('clientDownloadPrint')}
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
