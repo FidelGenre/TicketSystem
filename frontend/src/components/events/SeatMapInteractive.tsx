@@ -1074,7 +1074,7 @@ export default function SeatMapInteractive({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.96 }}
               transition={{ duration: 0.12 }}
-              className="pointer-events-none absolute z-[70] w-48 rounded-2xl border border-slate-200 bg-white/95 p-3 text-left shadow-2xl shadow-slate-900/15 backdrop-blur"
+              className="pointer-events-none absolute z-[70] w-48 rounded-2xl border border-[rgba(246,198,95,0.28)] bg-[#0b2236]/95 p-3 text-left shadow-[0_12px_30px_rgba(0,0,0,0.5)] backdrop-blur"
               style={{
                 left: Math.min(Math.max(activeSeatInfo.x + 14, 12), (containerRef.current?.clientWidth || 240) - 204),
                 top: Math.min(Math.max(activeSeatInfo.y - 18, 12), (containerRef.current?.clientHeight || 240) - 116),
@@ -1082,11 +1082,11 @@ export default function SeatMapInteractive({
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-black text-[#0A375A]">{activeSeatInfo.title}</p>
-                  <p className="truncate text-[11px] font-bold text-slate-400">{activeSeatInfo.subtitle}</p>
+                  <p className="truncate text-sm font-black text-white">{activeSeatInfo.title}</p>
+                  <p className="truncate text-[11px] font-bold text-slate-300">{activeSeatInfo.subtitle}</p>
                 </div>
                 {pinnedSeatInfo && pinnedSeatInfo.id === activeSeatInfo.id && (
-                  <span className="rounded-full bg-orange-100 px-1.5 py-0.5 text-[9px] font-black text-orange-700">
+                  <span className="rounded-full bg-orange-500/20 px-1.5 py-0.5 text-[9px] font-black text-orange-300">
                     {lang === 'es' ? 'FIJO' : 'PIN'}
                   </span>
                 )}
@@ -1095,7 +1095,7 @@ export default function SeatMapInteractive({
                 <span className={`rounded-full border px-2 py-1 text-[10px] font-black ${activeSeatInfo.statusClass}`}>
                   {activeSeatInfo.status}
                 </span>
-                <span className="text-sm font-black text-slate-900">
+                <span className="text-sm font-black text-[#F97316]">
                   ${activeSeatInfo.price.toFixed(2)}
                 </span>
               </div>

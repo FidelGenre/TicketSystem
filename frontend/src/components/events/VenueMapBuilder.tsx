@@ -2299,14 +2299,6 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
                               {isSeatWheelchair && !isHeld && !isReserved && !isSold && (
                                 <FaWheelchair className="w-[70%] h-[70%] text-white absolute inset-0 m-auto" />
                               )}
-                              <div className="absolute bottom-full mb-1 bg-gray-900 text-white text-[9px] px-1 py-0.5 rounded opacity-0 group-hover/seat:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
-                                {(() => {
-                                  const row = (('rowLabel' in seatOverride) ? seatOverride.rowLabel : undefined) || 'Mesa';
-                                  const num = (('seatNumber' in seatOverride) ? seatOverride.seatNumber : undefined) !== undefined ? (('seatNumber' in seatOverride) ? seatOverride.seatNumber : undefined) : seatNumber;
-                                  const buyer = getSeatBuyer(sec.name, row as any, num as any);
-                                  return buyer ? `${row}-${num} · ${buyer}` : `${row}-${num}`;
-                                })()}
-                              </div>
                             </div>
                           )
                         })}
