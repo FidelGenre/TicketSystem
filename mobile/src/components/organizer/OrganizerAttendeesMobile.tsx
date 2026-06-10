@@ -14,11 +14,12 @@ type Attendee = {
 
 type Props = {
   attendees: Attendee[];
+  revenueLabel?: string;
   onToggle: (id: string) => void;
   goTo: (section: 'events' | 'map' | 'blocks' | 'scan') => void;
 };
 
-export function OrganizerAttendeesMobile({ attendees, onToggle, goTo }: Props) {
+export function OrganizerAttendeesMobile({ attendees, revenueLabel, onToggle, goTo }: Props) {
   const { t } = useLanguage();
   const scanned = attendees.filter((item) => item.status === 'SCANNED').length;
   const pending = attendees.length - scanned;
@@ -29,7 +30,7 @@ export function OrganizerAttendeesMobile({ attendees, onToggle, goTo }: Props) {
         <Metric label={t('Compradores', 'Buyers')} value={String(attendees.length)} />
         <Metric label={t('Escaneados', 'Scanned')} value={String(scanned)} />
         <Metric label={t('Pendientes', 'Pending')} value={String(pending)} />
-        <Metric label={t('Ingresos', 'Revenue')} value="$1.2k" />
+        <Metric label={t('Ingresos', 'Revenue')} value={revenueLabel || '—'} />
       </View>
 
       <View style={styles.panel}>
@@ -41,6 +42,12 @@ export function OrganizerAttendeesMobile({ attendees, onToggle, goTo }: Props) {
           <Text style={styles.searchIcon}>⌕</Text>
           <Text style={styles.searchText}>{t('Buscar por nombre, email o codigo', 'Search by name, email or code')}</Text>
         </View>
+
+        {attendees.length === 0 && (
+          <View style={styles.codeRow}>
+            <Text style={styles.searchText}>{t('Aún no hay asistentes para este evento.', 'No attendees for this event yet.')}</Text>
+          </View>
+        )}
 
         {attendees.map((item) => (
           <View key={item.id} style={styles.attendeeCard}>

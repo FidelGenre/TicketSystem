@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { colors } from '../theme/colors';
-import { mockEvents } from '../data/mockEvents';
 import { VenueMapEditor } from '../components/organizer/VenueMapEditor';
 import { useLanguage } from '../i18n/LanguageContext';
 import { OrganizerDashboardMobile, OrganizerCreateEventMobile, OrganizerDetailsMobile } from '../components/organizer/OrganizerEventForms';
@@ -36,7 +35,34 @@ type OrganizerStats = {
   totalTickets?: number;
   activeEvents?: number;
   totalOrders?: number;
+  scannedTickets?: number;
+  pendingTickets?: number;
 };
+
+type MobileAttendee = {
+  id: string;
+  name: string;
+  email: string;
+  ticket: string;
+  code: string;
+  status: string;
+  total: string;
+};
+
+function toAttendee(ticket: any, index: number): MobileAttendee {
+  const u = ticket?.user || {};
+  const name = [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email || 'Invitado';
+  const seat = [ticket?.sectionName, ticket?.rowLabel, ticket?.seatNumber].filter(Boolean).join(' · ');
+  return {
+    id: String(ticket?.id || index),
+    name,
+    email: u.email || '',
+    ticket: seat || 'General',
+    code: ticket?.ticketCode || '',
+    status: ticket?.status === 'used' ? 'SCANNED' : 'PAID',
+    total: money(ticket?.price || 0),
+  };
+}
 
 function listFrom(payload: any) {
   if (Array.isArray(payload)) return payload;
@@ -128,13 +154,38 @@ export function OrganizerPanelScreen() {
     };
   }, []);
 
-  const [attendees, setAttendees] = useState([
-    { id: '1', name: 'Sundin Galue', email: 'sundin@example.com', ticket: 'General admission', code: 'LP-8A21-GEN', status: 'PAID', total: '$20.00' },
-    { id: '2', name: 'Fidel Genre', email: 'fidel@example.com', ticket: 'Mesa 8', code: 'LP-MESA8-02', status: 'SCANNED', total: '$100.00' },
-    { id: '3', name: 'Maria Lopez', email: 'maria@example.com', ticket: 'VIP', code: 'LP-VIP-19', status: 'PAID', total: '$45.00' },
-  ]);
+  const [attendees, setAttendees] = useState<MobileAttendee[]>([]);
 
-  const event = mockEvents[0];
+  const firstEventId = organizerEvents[0]?.id;
+
+  useEffect(() => {
+    if (!firstEventId) return;
+    let mounted = true;
+
+    apiGet<any>(`/orders/event/${firstEventId}/attendees`)
+      .then((data) => {
+        if (mounted) setAttendees(listFrom(data).map(toAttendee));
+      })
+      .catch(() => {});
+
+    return () => {
+      mounted = false;
+    };
+  }, [firstEventId]);
+
+  const firstEvent = organizerEvents[0];
+  const activeEvents = organizerEvents.filter((e) => e.status === 'published').length;
+  const capacity = firstEvent?.capacity ?? 0;
+  const sold = firstEvent?.sold ?? Number(organizerStats.totalTickets ?? 0);
+  const scanned = Number(organizerStats.scannedTickets ?? 0);
+  const soldPct = capacity > 0 ? Math.min(100, Math.round((sold / capacity) * 100)) : 0;
+
+  const dashMetrics = {
+    revenue: money(organizerStats.totalRevenue),
+    ticketsSold: String(organizerStats.totalTickets ?? sold),
+    activeEvents: String(activeEvents),
+    orders: String(organizerStats.totalOrders ?? 0),
+  };
 
   const toggleAccessItem = (id: string) => {
     setAccessItems((current) => current.map((item) => item.id === id ? { ...item, status: item.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE' } : item));
@@ -166,6 +217,9 @@ export function OrganizerPanelScreen() {
             eventTitle={eventTitle}
             eventVenue={eventVenue}
             eventStatus={eventStatus}
+            eventDateLabel={firstEvent?.date}
+            metrics={dashMetrics}
+            summary={{ capacity, sold, scanned, soldPct }}
             goTo={setActive}
           />
         )}
@@ -210,6 +264,7 @@ export function OrganizerPanelScreen() {
         {active === 'attendees' && (
           <OrganizerAttendeesMobile
             attendees={attendees}
+            revenueLabel={money(organizerStats.totalRevenue)}
             onToggle={toggleAttendeeStatus}
             goTo={setActive}
           />

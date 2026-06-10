@@ -15,15 +15,24 @@ type SharedProps = {
   goTo: (section: 'events' | 'create' | 'details' | 'map' | 'attendees') => void;
 };
 
-export function OrganizerDashboardMobile({ eventTitle, eventVenue, eventStatus, goTo }: Pick<SharedProps, 'eventTitle' | 'eventVenue' | 'eventStatus' | 'goTo'>) {
+type DashboardMetrics = { revenue: string; ticketsSold: string; activeEvents: string; orders: string };
+type DashboardSummary = { capacity: number; sold: number; scanned: number; soldPct: number };
+
+type DashboardProps = Pick<SharedProps, 'eventTitle' | 'eventVenue' | 'eventStatus' | 'goTo'> & {
+  eventDateLabel?: string;
+  metrics: DashboardMetrics;
+  summary: DashboardSummary;
+};
+
+export function OrganizerDashboardMobile({ eventTitle, eventVenue, eventStatus, eventDateLabel, metrics, summary, goTo }: DashboardProps) {
   const { t } = useLanguage();
   return (
     <View>
       <View style={styles.metricsGrid}>
-        <Metric label={t('Ingresos brutos', 'Gross revenue')} value="$1,240.00" tone="orange" />
-        <Metric label={t('Tickets vendidos', 'Tickets sold')} value="62" tone="navy" />
-        <Metric label={t('Eventos activos', 'Active events')} value="1" tone="green" />
-        <Metric label={t('Ordenes', 'Orders')} value="29" tone="slate" />
+        <Metric label={t('Ingresos brutos', 'Gross revenue')} value={metrics.revenue} tone="orange" />
+        <Metric label={t('Tickets vendidos', 'Tickets sold')} value={metrics.ticketsSold} tone="navy" />
+        <Metric label={t('Eventos activos', 'Active events')} value={metrics.activeEvents} tone="green" />
+        <Metric label={t('Ordenes', 'Orders')} value={metrics.orders} tone="slate" />
       </View>
 
       <View style={styles.heroPanel}>
@@ -32,19 +41,19 @@ export function OrganizerDashboardMobile({ eventTitle, eventVenue, eventStatus, 
           <View style={styles.heroTitleBlock}>
             <Text style={styles.eyebrow}>{t('EVENTO ACTIVO', 'LIVE EVENT')}</Text>
             <Text style={styles.heroTitle}>{eventTitle}</Text>
-            <Text style={styles.heroSub}>25 Jun 2026, 19:00 · {eventVenue}</Text>
+            <Text style={styles.heroSub}>{[eventDateLabel, eventVenue].filter(Boolean).join(' · ')}</Text>
           </View>
           <StatusBadge label={eventStatus === 'published' ? t('PUBLICADO', 'PUBLISHED') : t('BORRADOR', 'DRAFT')} active={eventStatus === 'published'} />
         </View>
 
         <View style={styles.progressTrack}>
-          <View style={styles.progressFill} />
+          <View style={[styles.progressFill, { width: `${summary.soldPct}%` as `${number}%` }]} />
         </View>
 
         <View style={styles.summaryRow}>
-          <Summary label={t('Capacidad', 'Capacity')} value="262" />
-          <Summary label={t('Vendidos', 'Sold')} value="62" />
-          <Summary label={t('Escaneados', 'Scanned')} value="18" />
+          <Summary label={t('Capacidad', 'Capacity')} value={String(summary.capacity)} />
+          <Summary label={t('Vendidos', 'Sold')} value={String(summary.sold)} />
+          <Summary label={t('Escaneados', 'Scanned')} value={String(summary.scanned)} />
         </View>
 
         <View style={styles.actionGrid}>
