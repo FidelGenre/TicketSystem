@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, Keyboard, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { getPublicEvents } from '../services/events';
 import { colors } from '../theme/colors';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -22,20 +22,47 @@ function getPosterImageSource(event?: MobileEvent) {
   return imageUrl ? { uri: imageUrl } : fallbackEventImage;
 }
 
-const trustItems = [
-  { icon: '▣', title: 'Secure payments', subtitle: 'Processed by Stripe' },
-  { icon: '♢', title: 'Verified tickets', subtitle: 'Protected digital entry' },
-  { icon: '⌗', title: 'Unique QR', subtitle: 'Fast door validation' },
-  { icon: '◎', title: 'Support available', subtitle: 'Before and after purchase' },
-];
-
 export function HomeScreen({ onOpenEvent }: Props) {
   const { t } = useLanguage();
   const [events, setEvents] = useState<MobileEvent[]>([]);
   const [heroIndex, setHeroIndex] = useState(0);
+  const [query, setQuery] = useState('');
+  const [place, setPlace] = useState('');
+  const [category, setCategory] = useState('All');
+  const [sortBy, setSortBy] = useState<'date' | 'price'>('date');
+
+  const trustItems = [
+    { icon: '▣', title: t('Pagos seguros', 'Secure payments'), subtitle: t('Procesado por Stripe', 'Processed by Stripe') },
+    { icon: '♢', title: t('Tickets verificados', 'Verified tickets'), subtitle: t('Entrada digital protegida', 'Protected digital entry') },
+    { icon: '⌗', title: t('QR único', 'Unique QR'), subtitle: t('Validación rápida en puerta', 'Fast door validation') },
+    { icon: '◎', title: t('Soporte disponible', 'Support available'), subtitle: t('Antes y después de la compra', 'Before and after purchase') },
+  ];
+
   const heroEvents = useMemo(() => events.filter((event) => event.bannerImageUrl || event.imageUrl), [events]);
   const safeHeroLength = Math.max(heroEvents.length, 1);
   const heroEvent = heroEvents[heroIndex % safeHeroLength] || events[0];
+
+  const categories = useMemo(() => {
+    const tags = Array.from(new Set(events.map((e) => (e.tag || '').trim()).filter(Boolean)));
+    return ['All', ...tags];
+  }, [events]);
+
+  const filteredEvents = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const p = place.trim().toLowerCase();
+    const list = events.filter((e) => {
+      const matchesQuery = !q || [e.title, e.venue, e.address, e.tag].some((v) => (v || '').toLowerCase().includes(q));
+      const matchesPlace = !p || [e.venue, e.address].some((v) => (v || '').toLowerCase().includes(p));
+      const matchesCategory = category === 'All' || (e.tag || '').toLowerCase() === category.toLowerCase();
+      return matchesQuery && matchesPlace && matchesCategory;
+    });
+    return [...list].sort((a, b) => {
+      if (sortBy === 'price') return (a.minPrice ?? 0) - (b.minPrice ?? 0);
+      const ta = a.eventDate ? new Date(a.eventDate).getTime() : Number.POSITIVE_INFINITY;
+      const tb = b.eventDate ? new Date(b.eventDate).getTime() : Number.POSITIVE_INFINITY;
+      return ta - tb;
+    });
+  }, [events, query, place, category, sortBy]);
 
   useEffect(() => {
     let mounted = true;
@@ -104,34 +131,40 @@ export function HomeScreen({ onOpenEvent }: Props) {
           <Text style={styles.fieldLabel}>{t('BUSCAR EVENTO', 'SEARCH EVENT')}</Text>
           <View style={styles.fieldRow}>
             <Text style={styles.fieldIcon}>⌕</Text>
-            <TextInput placeholder={t('Conciertos, teatro, talleres...', 'Concerts, theater, workshops...')} placeholderTextColor="#8B95A3" style={styles.fieldInput} />
+            <TextInput value={query} onChangeText={setQuery} placeholder={t('Conciertos, teatro, talleres...', 'Concerts, theater, workshops...')} placeholderTextColor="#8B95A3" style={styles.fieldInput} />
           </View>
         </View>
         <View style={styles.field}>
           <Text style={styles.fieldLabel}>{t('LUGAR', 'PLACE')}</Text>
           <View style={styles.fieldRow}>
             <Text style={styles.fieldIcon}>⌖</Text>
-            <TextInput placeholder={t('Ciudad o venue', 'City or venue')} placeholderTextColor="#8B95A3" style={styles.fieldInput} />
+            <TextInput value={place} onChangeText={setPlace} placeholder={t('Ciudad o venue', 'City or venue')} placeholderTextColor="#8B95A3" style={styles.fieldInput} />
           </View>
         </View>
-        <TouchableOpacity style={styles.searchButton}>
+        <TouchableOpacity style={styles.searchButton} onPress={() => Keyboard.dismiss()}>
           <View pointerEvents="none" style={styles.orangeButtonTop} />
           <View pointerEvents="none" style={styles.orangeButtonBottom} />
           <Text style={styles.searchText}>{t('BUSCAR', 'SEARCH')}</Text>
         </TouchableOpacity>
 
         <View style={styles.categoryRow}>
-          {['‹', 'All', 'Concert', 'Private', '›'].map((item, index) => (
-            <TouchableOpacity key={item} style={[styles.category, item === 'All' && styles.categoryActive, (index === 0 || index === 4) && styles.categoryArrow]}>
-              <Text style={[styles.categoryText, item === 'All' && styles.categoryTextActive]}>{item}</Text>
-              {item === 'All' && <View style={styles.categoryDot} />}
-            </TouchableOpacity>
-          ))}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
+            {categories.map((item) => {
+              const active = category === item;
+              const label = item === 'All' ? t('Todos', 'All') : item;
+              return (
+                <TouchableOpacity key={item} onPress={() => setCategory(item)} style={[styles.category, active && styles.categoryActive]}>
+                  <Text style={[styles.categoryText, active && styles.categoryTextActive]}>{label}</Text>
+                  {active && <View style={styles.categoryDot} />}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
-        <TouchableOpacity style={styles.sortButton}>
+        <TouchableOpacity style={styles.sortButton} onPress={() => setSortBy((s) => (s === 'date' ? 'price' : 'date'))}>
           <View pointerEvents="none" style={styles.orangeButtonTop} />
           <View pointerEvents="none" style={styles.orangeButtonBottom} />
-          <Text style={styles.sortText}>{t('ORDENAR POR', 'SORT BY')} ▼</Text>
+          <Text style={styles.sortText}>{t('ORDENAR POR', 'SORT BY')}: {sortBy === 'date' ? t('FECHA', 'DATE') : t('PRECIO', 'PRICE')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -150,10 +183,20 @@ export function HomeScreen({ onOpenEvent }: Props) {
       <View style={styles.highlights}>
         <Text style={styles.eyebrow}>{t('DESTACADOS', 'HIGHLIGHTS')}</Text>
         <Text style={styles.eventsTitle}>{t('Eventos cerca de ti', 'Events near you')}</Text>
-        <Text style={styles.eventsCount}>{events.length} available events</Text>
+        <Text style={styles.eventsCount}>{filteredEvents.length} {t('eventos disponibles', 'available events')}</Text>
       </View>
 
-      {events.map((event) => (
+      {filteredEvents.length === 0 && (
+        <View style={styles.emptyEvents}>
+          <Text style={styles.emptyEventsText}>
+            {events.length === 0
+              ? t('Cargando eventos...', 'Loading events...')
+              : t('No hay eventos que coincidan con tu búsqueda.', 'No events match your search.')}
+          </Text>
+        </View>
+      )}
+
+      {filteredEvents.map((event) => (
         <TouchableOpacity key={event.id} style={styles.eventCard} onPress={() => onOpenEvent(event)}>
           <View style={styles.eventPoster}>
             <Image source={getPosterImageSource(event)} style={styles.eventPosterImage} resizeMode="cover" />
@@ -167,7 +210,7 @@ export function HomeScreen({ onOpenEvent }: Props) {
             <Text style={styles.eventMeta}>⌖ {event.venue}</Text>
             <Text style={styles.eventAddress}>{event.address}</Text>
             <View style={styles.divider} />
-            <Text style={styles.price}>◇ From {event.price}</Text>
+            <Text style={styles.price}>◇ {t('Desde', 'From')} {event.price}</Text>
             <View style={styles.ctaRow}>
               <TouchableOpacity style={styles.shareButton}><Text style={styles.shareText}>⌯</Text></TouchableOpacity>
               <TouchableOpacity style={styles.buyButton} onPress={() => onOpenEvent(event)}>
@@ -216,7 +259,10 @@ const styles = StyleSheet.create({
   fieldInput: { flex: 1, fontSize: 16, color: 'rgba(255,255,255,0.78)', fontWeight: '400', outlineStyle: 'none' as any },
   searchButton: { height: 58, borderRadius: 8, position: 'relative', overflow: 'hidden', backgroundColor: '#F97316', borderWidth: 0, alignItems: 'center', justifyContent: 'center', shadowColor: '#F97316', shadowOpacity: 0.20, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 6 },
   searchText: { color: '#FFFFFF', fontSize: 14, fontWeight: '900', letterSpacing: 4.2, zIndex: 3 },
-  categoryRow: { paddingTop: 14, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.10)', flexDirection: 'row', gap: 8 },
+  categoryRow: { paddingTop: 14, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.10)' },
+  categoryScroll: { gap: 8, paddingRight: 8 },
+  emptyEvents: { marginHorizontal: 16, marginTop: 24, padding: 22, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.02)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)' },
+  emptyEventsText: { color: 'rgba(226,232,240,0.72)', fontSize: 15, textAlign: 'center', lineHeight: 22 },
   category: { height: 42, minWidth: 94, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(246,198,95,0.14)', backgroundColor: 'rgba(255,255,255,0.055)', alignItems: 'center', justifyContent: 'center', position: 'relative' },
   categoryActive: { borderColor: 'rgba(249,115,22,0.65)', backgroundColor: 'rgba(249,115,22,0.18)' },
   categoryArrow: { minWidth: 34, width: 34 },
