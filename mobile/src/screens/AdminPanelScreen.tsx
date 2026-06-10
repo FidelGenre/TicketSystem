@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { colors } from '../theme/colors';
-import { mockEvents } from '../data/mockEvents';
 import { useLanguage } from '../i18n/LanguageContext';
 import { apiGet } from '../services/api';
 
@@ -15,9 +14,12 @@ type AdminStats = {
   totalEvents?: number;
   publishedEvents?: number;
   totalOrders?: number;
+  paidOrders?: number;
   totalRevenue?: number;
   totalTickets?: number;
-  pendingPayouts?: number;
+  ticketSales?: number;
+  serviceFees?: number;
+  lpticketProfit?: number;
 };
 
 function listFrom(payload: any) {
@@ -140,7 +142,7 @@ export function AdminPanelScreen() {
     { id: '4', name: 'Workshop', active: false, featured: false },
   ]);
 
-  const event = adminEvents[0] || mockEvents[0];
+  const firstEvent = adminEvents[0];
 
   const updateUser = (id: string, key: keyof AdminUser, value: string | boolean) => {
     setUsers((current) => current.map((user) => user.id === id ? { ...user, [key]: value } : user));
@@ -188,16 +190,16 @@ export function AdminPanelScreen() {
         {active === 'dashboard' && (
           <>
             <View style={styles.metricsGrid}>
-              <Metric label={t('Ventas plataforma', 'Platform sales')} value={money(adminStats.totalRevenue ?? 4860)} />
-              <Metric label={t('Eventos activos', 'Active events')} value={String(adminStats.publishedEvents ?? adminStats.totalEvents ?? 12)} />
-              <Metric label={t('Usuarios', 'Users')} value={String(adminStats.totalUsers ?? 438)} />
-              <Metric label={t('Pagos pendientes', 'Pending payouts')} value={money(adminStats.pendingPayouts ?? 920)} />
+              <Metric label={t('Ventas plataforma', 'Platform sales')} value={money(adminStats.totalRevenue ?? 0)} />
+              <Metric label={t('Eventos activos', 'Active events')} value={String(adminStats.publishedEvents ?? adminStats.totalEvents ?? 0)} />
+              <Metric label={t('Usuarios', 'Users')} value={String(adminStats.totalUsers ?? 0)} />
+              <Metric label={t('Ganancia LPTicket', 'LPTicket profit')} value={money(adminStats.lpticketProfit ?? adminStats.serviceFees ?? 0)} />
             </View>
 
             <PanelCard title={t('Actividad reciente', 'Recent activity')}>
-              <Activity title={t('Nuevo evento publicado', 'New event published')} copy={event.title} />
-              <Activity title={t('Pago pendiente', 'Pending payout')} copy={t('Organizador · $320.00', 'Organizer · $320.00')} />
-              <Activity title={t('Nuevo usuario', 'New user')} copy={t('Cliente registrado hace 12 min', 'Customer registered 12 min ago')} />
+              <Activity title={t('Evento más reciente', 'Latest event')} copy={firstEvent ? adminEventTitle(firstEvent) : t('Sin eventos todavía', 'No events yet')} />
+              <Activity title={t('Órdenes pagadas', 'Paid orders')} copy={`${adminStats.paidOrders ?? adminStats.totalOrders ?? 0} ${t('órdenes', 'orders')}`} />
+              <Activity title={t('Tickets emitidos', 'Tickets issued')} copy={`${adminStats.totalTickets ?? 0} ${t('tickets', 'tickets')}`} />
             </PanelCard>
           </>
         )}
@@ -205,7 +207,10 @@ export function AdminPanelScreen() {
         {active === 'events' && (
           <>
             <PanelCard title={t('Eventos publicados', 'Published events')} eyebrow={t('EVENTOS REALES', 'LIVE EVENTS')} copy={t('Eventos cargados directamente desde el backend.', 'Events loaded directly from the backend.')} />
-            {(adminEvents.length ? adminEvents : [event]).map((item: any) => (
+            {adminEvents.length === 0 && (
+              <PanelCard title={t('Sin eventos todavía', 'No events yet')} copy={t('Cuando se publiquen eventos aparecerán aquí.', 'Published events will appear here.')} />
+            )}
+            {adminEvents.map((item: any) => (
               <PanelCard key={String(item.id || item.slug || adminEventTitle(item))} title={adminEventTitle(item)} eyebrow={(item.status || 'EVENT').toUpperCase()}>
                 <Text style={styles.copy}>{adminEventDate(item)} · {adminEventVenue(item)}</Text>
                 <View style={styles.statusRow}>
