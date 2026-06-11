@@ -1,28 +1,25 @@
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
-// Fakes the web `.page-dark-shell` radial glows with stacked concentric circles
-// (pure RN + expo-linear-gradient — works on iOS / Android / web, no SVG):
-//   base navy gradient #061b2d -> #071827 -> #05111f
-//   orange radial glow at ~10%/-top  (web: rgba(249,115,22,0.20), 28rem)
-//   blue   radial glow at ~86%/top   (web: rgba(56,189,248,0.14), 30rem)
+// Reproduces the web `.page-dark-shell` background:
+//   linear-gradient(180deg, #061b2d, #071827 46%, #05111f)
+//   radial-gradient(circle at 10% -8%, rgba(249,115,22,0.20), transparent 28rem)
+//   radial-gradient(circle at 86% 3%,  rgba(56,189,248,0.14), transparent 30rem)
+//
+// The radial glows are faked with many dense concentric circles of low opacity
+// (alpha compounds toward the centre -> smooth falloff). Pure RN, works on web.
 
 type Layer = { d: number; o: number };
 
-const ORANGE: Layer[] = [
-  { d: 960, o: 0.05 },
-  { d: 760, o: 0.05 },
-  { d: 560, o: 0.06 },
-  { d: 380, o: 0.07 },
-  { d: 230, o: 0.08 },
-];
-
-const BLUE: Layer[] = [
-  { d: 900, o: 0.04 },
-  { d: 680, o: 0.045 },
-  { d: 460, o: 0.05 },
-  { d: 300, o: 0.05 },
-];
+// Build `count` concentric circles from `maxD` down to ~8%, each at `opacity`.
+function buildGlow(maxD: number, count: number, opacity: number): Layer[] {
+  const out: Layer[] = [];
+  for (let i = 0; i < count; i++) {
+    const d = maxD * (1 - (i / count) * 0.92);
+    out.push({ d, o: opacity });
+  }
+  return out;
+}
 
 function Glow({ color, cx, cy, layers }: { color: string; cx: number; cy: number; layers: Layer[] }) {
   return (
@@ -49,6 +46,10 @@ function Glow({ color, cx, cy, layers }: { color: string; cx: number; cy: number
 export function ScreenBackground() {
   const { width } = useWindowDimensions();
 
+  // 28rem / 30rem ≈ 448 / 480 px radius -> ~900 / 960 px diameter
+  const orange = buildGlow(900, 16, 0.018);
+  const blue = buildGlow(960, 14, 0.012);
+
   return (
     <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.clip]}>
       <LinearGradient
@@ -56,8 +57,8 @@ export function ScreenBackground() {
         locations={[0, 0.46, 1]}
         style={StyleSheet.absoluteFill}
       />
-      <Glow color="#F97316" cx={width * 0.1} cy={-70} layers={ORANGE} />
-      <Glow color="#38bdf8" cx={width * 0.86} cy={20} layers={BLUE} />
+      <Glow color="#F97316" cx={width * 0.1} cy={width * -0.08} layers={orange} />
+      <Glow color="#38bdf8" cx={width * 0.86} cy={width * 0.03} layers={blue} />
     </View>
   );
 }
