@@ -97,7 +97,7 @@ function AppContent() {
     <SafeAreaView style={styles.safe}>
       <StatusBar style="light" />
       <View style={styles.app}>
-        {!scanOpen && <AppHeader onOpenMenu={() => setMenuOpen(true)} onOpenScan={() => setScanOpen(true)} onOpenCart={() => goToTab('tickets')} />}
+        {!scanOpen && <AppHeader onOpenMenu={() => setMenuOpen(true)} onOpenScan={() => setScanOpen(true)} onOpenAccount={() => goToTab('profile')} />}
 
         {!scanOpen && canOrganize && !selectedEvent && (
           <View style={styles.modeSwitch}>

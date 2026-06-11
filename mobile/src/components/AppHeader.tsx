@@ -5,9 +5,9 @@ import { useLanguage } from '../i18n/LanguageContext';
 
 const logo = require('../../assets/lpticket-logo.png');
 
-type Props = { onOpenMenu: () => void; onOpenScan: () => void; onOpenCart: () => void };
+type Props = { onOpenMenu: () => void; onOpenScan: () => void; onOpenAccount: () => void };
 
-export function AppHeader({ onOpenMenu, onOpenScan, onOpenCart }: Props) {
+export function AppHeader({ onOpenMenu, onOpenScan, onOpenAccount }: Props) {
   const { lang, setLang } = useLanguage();
 
   return (
@@ -31,8 +31,8 @@ export function AppHeader({ onOpenMenu, onOpenScan, onOpenCart }: Props) {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.cartButton} onPress={onOpenCart}>
-          <Ionicons name="cart-outline" size={21} color={colors.white} />
+        <TouchableOpacity style={styles.accountButton} onPress={onOpenAccount}>
+          <Ionicons name="person-outline" size={19} color={colors.white} />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.menuButton} onPress={onOpenMenu}>
@@ -65,28 +65,28 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 6, flexShrink: 0, transform: [{ translateX: -4 }] },
   langSwitch: {
     flexDirection: 'row',
-    borderRadius: 12,
+    borderRadius: 8,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
+    borderColor: 'rgba(255,255,255,0.20)',
     height: 34,
     backgroundColor: '#030B14',
     transform: [{ translateY: -25 }],
   },
   langButton: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 13,
     paddingVertical: 9,
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   langButtonActive: {
-    backgroundColor: 'rgba(255,255,255,0.025)',
+    backgroundColor: '#F97316',
   },
   langText: {
-    color: 'rgba(226,232,240,0.58)',
-    fontWeight: '700',
-    fontSize: 12,
+    color: 'rgba(255,255,255,0.70)',
+    fontWeight: '800',
+    fontSize: 11,
   },
   langTextActive: {
     color: '#FFFFFF',
@@ -103,12 +103,12 @@ const styles = StyleSheet.create({
     transform: [{ translateY: -25 }],
   },
   scanText: { color: '#FFFFFF', fontSize: 12, lineHeight: 14, fontWeight: '900', letterSpacing: 0.8 },
-  cartButton: {
+  accountButton: {
     width: 38,
     height: 34,
-    borderRadius: 13,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
+    borderColor: 'rgba(255,255,255,0.20)',
     backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
@@ -118,9 +118,9 @@ const styles = StyleSheet.create({
   menuButton: {
     width: 38,
     height: 34,
-    borderRadius: 13,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
+    borderColor: 'rgba(255,255,255,0.20)',
     backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
