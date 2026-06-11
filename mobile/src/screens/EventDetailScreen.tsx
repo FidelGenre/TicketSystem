@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { useLanguage } from '../i18n/LanguageContext';
 import { MobileEvent } from '../types/event';
@@ -193,6 +194,7 @@ export function EventDetailScreen({ event, onBack, onBuy }: Props) {
       <View style={styles.hero}>
         <Image source={imageSource} style={styles.heroImage} resizeMode="cover" />
         <View style={styles.categoryBadge}>
+          <View style={styles.categoryDot} />
           <Text style={styles.categoryText}>{detail.tag}</Text>
         </View>
       </View>
@@ -202,12 +204,12 @@ export function EventDetailScreen({ event, onBack, onBuy }: Props) {
         <Text style={styles.title}>{detail.title}</Text>
 
         <View style={styles.infoRow}>
-          <Text style={styles.infoIcon}>▣</Text>
+          <Ionicons name="calendar-outline" size={18} color={colors.orange} style={styles.infoIcon} />
           <Text style={styles.infoText}>{detail.date}</Text>
         </View>
 
         <View style={styles.infoRow}>
-          <Text style={styles.infoIcon}>⌖</Text>
+          <Ionicons name="location-outline" size={18} color={colors.orange} style={styles.infoIcon} />
           <View style={styles.infoCopy}>
             <Text style={styles.infoText}>{detail.venue}</Text>
             {!!detail.address && <Text style={styles.address}>{detail.address}</Text>}
@@ -252,7 +254,7 @@ export function EventDetailScreen({ event, onBack, onBuy }: Props) {
 
         <View style={styles.actions}>
           <TouchableOpacity style={styles.shareButton}>
-            <Text style={styles.shareText}>⌯</Text>
+            <Ionicons name="share-social-outline" size={22} color="#FFFFFF" />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.buyButton} onPress={onBuy}>
@@ -303,14 +305,16 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 14,
     left: 14,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: 'rgba(3,11,20,0.72)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    borderRadius: 8,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    backgroundColor: '#FFFFFF',
   },
-  categoryText: { color: '#FFFFFF', fontSize: 11, fontWeight: '900', letterSpacing: 1.4 },
+  categoryDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#F97316' },
+  categoryText: { color: '#0A375A', fontSize: 10, fontWeight: '900', letterSpacing: 0.8, textTransform: 'uppercase' },
   panel: {
     marginTop: 14,
     borderRadius: 16,
@@ -322,7 +326,7 @@ const styles = StyleSheet.create({
   eyebrow: { color: colors.orange, fontSize: 11, fontWeight: '900', letterSpacing: 3, marginBottom: 9 },
   title: { color: '#FFFFFF', fontSize: 30, fontWeight: '900', lineHeight: 35, marginBottom: 18 },
   infoRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 12 },
-  infoIcon: { color: colors.orange, fontSize: 19, width: 22, textAlign: 'center' },
+  infoIcon: { width: 22, textAlign: 'center', marginTop: 1 },
   infoCopy: { flex: 1 },
   infoText: { color: 'rgba(255,255,255,0.86)', fontSize: 15, lineHeight: 21, fontWeight: '600' },
   address: { color: 'rgba(203,213,225,0.68)', fontSize: 13, lineHeight: 19, fontWeight: '400', marginTop: 2 },
