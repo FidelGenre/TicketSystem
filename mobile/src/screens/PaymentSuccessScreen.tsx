@@ -27,7 +27,7 @@ export function PaymentSuccessScreen({ event, user, onViewTickets, onHome }: Pro
 
         <View style={styles.ticket}>
           <View style={styles.qr}>
-            <Text style={styles.qrText}>QR</Text>
+            <Text style={styles.qrText}>Qr</Text>
           </View>
 
           <View style={styles.ticketInfo}>
@@ -77,19 +77,19 @@ const styles = StyleSheet.create({
   check: {
     color: '#10b981',
     fontSize: 40,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   eyebrow: {
     color: colors.orange,
     fontSize: 12,
-    letterSpacing: 3,
-    fontWeight: '800',
+    letterSpacing: 0,
+    fontWeight: '700',
     marginBottom: 8,
   },
   title: {
     color: colors.textPrimary,
     fontSize: 28,
-    fontWeight: '800',
+    fontWeight: '700',
     textAlign: 'center',
     marginBottom: 10,
   },
@@ -123,8 +123,8 @@ const styles = StyleSheet.create({
   qrText: {
     color: '#FFFFFF',
     fontSize: 24,
-    letterSpacing: 2,
-    fontWeight: '900',
+    letterSpacing: 0,
+    fontWeight: '700',
   },
   ticketInfo: {
     flex: 1,
@@ -133,14 +133,14 @@ const styles = StyleSheet.create({
   ticketLabel: {
     color: colors.textFaint,
     fontSize: 11,
-    letterSpacing: 2,
-    fontWeight: '800',
+    letterSpacing: 0,
+    fontWeight: '700',
     marginBottom: 6,
   },
   eventTitle: {
     color: colors.textPrimary,
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: '700',
     marginBottom: 6,
   },
   eventMeta: {
@@ -161,8 +161,8 @@ const styles = StyleSheet.create({
   primaryText: {
     color: '#FFFFFF',
     fontSize: 14,
-    letterSpacing: 2,
-    fontWeight: '900',
+    letterSpacing: 0,
+    fontWeight: '700',
   },
   secondaryButton: {
     width: '100%',
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
   secondaryText: {
     color: colors.textPrimary,
     fontSize: 13,
-    letterSpacing: 1.5,
-    fontWeight: '900',
+    letterSpacing: 0,
+    fontWeight: '700',
   },
 });

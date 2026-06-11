@@ -207,14 +207,14 @@ const styles = StyleSheet.create({
   eyebrow: {
     color: colors.orange,
     fontSize: 12,
-    letterSpacing: 3,
-    fontWeight: '800',
+    letterSpacing: 0,
+    fontWeight: '700',
     marginBottom: 8,
   },
   title: {
     color: '#FFFFFF',
     fontSize: 34,
-    fontWeight: '800',
+    fontWeight: '700',
     marginBottom: 8,
   },
   copy: {
@@ -264,8 +264,8 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#FFFFFF',
     fontSize: 14,
-    letterSpacing: 2,
-    fontWeight: '900',
+    letterSpacing: 0,
+    fontWeight: '700',
   },
   secondaryButton: {
     height: 54,
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
   secondaryText: {
     color: '#FFFFFF',
     fontSize: 13,
-    letterSpacing: 1.5,
-    fontWeight: '900',
+    letterSpacing: 0,
+    fontWeight: '700',
   },
 });

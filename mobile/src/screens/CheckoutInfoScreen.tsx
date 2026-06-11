@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   eyebrow: {
     color: colors.orange,
     fontSize: 12,
-    letterSpacing: 3,
+    letterSpacing: 0,
     fontWeight: '700',
     marginBottom: 3,
   },
@@ -175,10 +175,9 @@ const styles = StyleSheet.create({
   eventLabel: {
     color: colors.textFaint,
     fontSize: 12,
-    letterSpacing: 2,
+    letterSpacing: 0,
     fontWeight: '700',
     marginBottom: 8,
-    textTransform: 'uppercase',
   },
   eventTitle: {
     color: colors.textPrimary,
@@ -200,7 +199,7 @@ const styles = StyleSheet.create({
   dot: {
     color: colors.orange,
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   formCard: {
     backgroundColor: colors.card,
@@ -213,8 +212,8 @@ const styles = StyleSheet.create({
   sectionLabel: {
     color: colors.textPrimary,
     fontSize: 13,
-    letterSpacing: 2.5,
-    fontWeight: '800',
+    letterSpacing: 0,
+    fontWeight: '700',
     marginBottom: 2,
   },
   field: {
@@ -247,7 +246,7 @@ const styles = StyleSheet.create({
   noticeTitle: {
     color: colors.textPrimary,
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '700',
     marginBottom: 4,
   },
   noticeText: {
@@ -267,7 +266,7 @@ const styles = StyleSheet.create({
   continueText: {
     color: '#FFFFFF',
     fontSize: 14,
-    letterSpacing: 2,
-    fontWeight: '800',
+    letterSpacing: 0,
+    fontWeight: '700',
   },
 });

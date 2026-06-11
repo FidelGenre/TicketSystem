@@ -170,7 +170,7 @@ export function TicketsScreen() {
                     <Image source={{ uri: ticket.qrData }} style={styles.qrImage} resizeMode="contain" />
                   ) : (
                     <View style={styles.qrFallback}>
-                      <Text style={styles.qrFallbackText}>QR</Text>
+                      <Text style={styles.qrFallbackText}>Qr</Text>
                     </View>
                   )}
                 </View>
@@ -218,34 +218,34 @@ function ActionButton({ label, primary, onPress }: { label: string; primary?: bo
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#030B14' },
-  content: { paddingHorizontal: 18, paddingTop: 18, paddingBottom: 128 },
+  content: { paddingHorizontal: 18, paddingTop: 78, paddingBottom: 128 },
   hero: { marginBottom: 18 },
-  eyebrow: { color: '#F97316', fontSize: 12, fontWeight: '900', letterSpacing: 5 },
-  title: { color: '#FFFFFF', fontSize: 34, lineHeight: 38, fontWeight: '900', marginTop: 10 },
+  eyebrow: { color: '#F97316', fontSize: 12, fontWeight: '700', letterSpacing: 0 },
+  title: { color: '#FFFFFF', fontSize: 34, lineHeight: 38, fontWeight: '700', marginTop: 10 },
   subtitle: { color: 'rgba(226,232,240,0.70)', fontSize: 16, lineHeight: 23, marginTop: 10 },
   emptyCard: { borderRadius: 26, padding: 24, backgroundColor: 'rgba(8,31,51,0.58)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
-  emptyTitle: { color: '#FFFFFF', fontSize: 22, fontWeight: '900' },
+  emptyTitle: { color: '#FFFFFF', fontSize: 22, fontWeight: '700' },
   emptyCopy: { color: 'rgba(226,232,240,0.68)', fontSize: 15, marginTop: 8 },
   ticketCard: { borderRadius: 30, padding: 18, marginBottom: 18, backgroundColor: 'rgba(8,31,51,0.72)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.13)' },
   ticketTop: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   ticketInfo: { flex: 1 },
-  ticketEyebrow: { color: '#F97316', fontSize: 11, fontWeight: '900', letterSpacing: 3.5 },
-  eventTitle: { color: '#FFFFFF', fontSize: 28, lineHeight: 32, fontWeight: '900', marginTop: 8 },
+  ticketEyebrow: { color: '#F97316', fontSize: 11, fontWeight: '700', letterSpacing: 0 },
+  eventTitle: { color: '#FFFFFF', fontSize: 28, lineHeight: 32, fontWeight: '700', marginTop: 8 },
   eventMeta: { color: 'rgba(226,232,240,0.72)', fontSize: 14, lineHeight: 21, marginTop: 4 },
   statusPill: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
-  statusText: { fontSize: 11, fontWeight: '900', letterSpacing: 2 },
+  statusText: { fontSize: 11, fontWeight: '700', letterSpacing: 0 },
   ticketBody: { flexDirection: 'row', gap: 16, marginTop: 18, alignItems: 'center' },
   qrBox: { width: 118, height: 118, borderRadius: 20, backgroundColor: '#FFFFFF', padding: 10, alignItems: 'center', justifyContent: 'center' },
   qrImage: { width: '100%', height: '100%' },
   qrFallback: { width: '100%', height: '100%', borderRadius: 14, backgroundColor: '#030B14', alignItems: 'center', justifyContent: 'center' },
-  qrFallbackText: { color: '#FFFFFF', fontSize: 28, fontWeight: '900' },
+  qrFallbackText: { color: '#FFFFFF', fontSize: 28, fontWeight: '700' },
   ticketDetails: { flex: 1, gap: 10 },
   detail: { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)', paddingBottom: 8 },
-  detailLabel: { color: 'rgba(226,232,240,0.48)', fontSize: 10, fontWeight: '900', letterSpacing: 2 },
+  detailLabel: { color: 'rgba(226,232,240,0.48)', fontSize: 10, fontWeight: '700', letterSpacing: 0 },
   detailValue: { color: '#FFFFFF', fontSize: 14, fontWeight: '700', marginTop: 3 },
   actions: { gap: 10, marginTop: 18 },
   actionButton: { height: 48, borderRadius: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)', backgroundColor: 'rgba(255,255,255,0.04)' },
   actionButtonPrimary: { backgroundColor: '#F97316', borderColor: '#FB923C' },
-  actionText: { color: '#FFFFFF', fontSize: 12, fontWeight: '900', letterSpacing: 2.8 },
+  actionText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700', letterSpacing: 0 },
   actionTextPrimary: { color: '#FFFFFF' },
 });

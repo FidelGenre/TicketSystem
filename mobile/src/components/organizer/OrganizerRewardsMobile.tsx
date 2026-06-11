@@ -2,28 +2,20 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '../../theme/colors';
 import { useLanguage } from '../../i18n/LanguageContext';
 
-type RewardStats = { balance: number; totalPaid: number; totalEarned: number; activeCodes: number };
-
 type Props = {
   goTo: (section: 'attendees' | 'events' | 'details') => void;
-  stats?: RewardStats;
 };
 
-function money(value: number) {
-  return `$${Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-export function OrganizerRewardsMobile({ goTo, stats }: Props) {
+export function OrganizerRewardsMobile({ goTo }: Props) {
   const { t } = useLanguage();
-  const s = stats || { balance: 0, totalPaid: 0, totalEarned: 0, activeCodes: 0 };
 
   return (
     <View>
       <View style={styles.metricsGrid}>
-        <Metric label={t('Balance actual', 'Current balance')} value={money(s.balance)} />
-        <Metric label={t('Codigos activos', 'Active codes')} value={String(s.activeCodes)} />
-        <Metric label={t('Pagado historico', 'Total paid')} value={money(s.totalPaid)} />
-        <Metric label={t('Ganado total', 'Total earned')} value={money(s.totalEarned)} />
+        <Metric label={t('Balance actual', 'Current balance')} value="$320.00" />
+        <Metric label={t('Codigos activos', 'Active codes')} value="2" />
+        <Metric label={t('Pagado historico', 'Total paid')} value="$540.00" />
+        <Metric label={t('Pendiente', 'Pending')} value="$120.00" />
       </View>
 
       <View style={styles.panel}>
@@ -39,21 +31,21 @@ export function OrganizerRewardsMobile({ goTo, stats }: Props) {
         <RewardCard
           title={t('Balance disponible', 'Available balance')}
           copy={t('Ingreso estimado listo para conciliacion y pagos.', 'Estimated revenue ready for reconciliation and payouts.')}
-          value={money(s.balance)}
+          value="$320.00"
           tone="orange"
         />
 
         <RewardCard
           title={t('Codigos especiales', 'Special codes')}
           copy={t('Codigos de descuento, acceso privado o recompensas.', 'Discount, private access or reward codes.')}
-          value={String(s.activeCodes)}
+          value="2"
           tone="navy"
         />
 
         <RewardCard
           title={t('Historial de pagos', 'Payout history')}
           copy={t('Resumen de pagos realizados al organizador.', 'Summary of payouts sent to the organizer.')}
-          value={money(s.totalPaid)}
+          value="$540.00"
           tone="green"
         />
 
@@ -102,8 +94,8 @@ function Button({ label, muted, onPress }: { label: string; muted?: boolean; onP
 const styles = StyleSheet.create({
   metricsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 14 },
   metric: { width: '48%', backgroundColor: colors.card, borderRadius: 22, borderWidth: 1, borderColor: colors.goldBorder, padding: 16 },
-  metricValue: { color: colors.orange, fontSize: 25, fontWeight: '900', marginBottom: 4 },
-  metricLabel: { color: colors.textFaint, fontSize: 12, fontWeight: '900' },
+  metricValue: { color: colors.orange, fontSize: 25, fontWeight: '700', marginBottom: 4 },
+  metricLabel: { color: colors.textFaint, fontSize: 12, fontWeight: '700' },
   panel: {
     backgroundColor: colors.card,
     borderRadius: 28,
@@ -116,8 +108,8 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 10 },
   },
-  eyebrow: { color: colors.orange, fontSize: 12, letterSpacing: 3, fontWeight: '900', marginBottom: 8 },
-  title: { color: colors.textPrimary, fontSize: 26, fontWeight: '900', marginBottom: 8 },
+  eyebrow: { color: colors.orange, fontSize: 12, letterSpacing: 0, fontWeight: '700', marginBottom: 8 },
+  title: { color: colors.textPrimary, fontSize: 26, fontWeight: '700', marginBottom: 8 },
   copy: { color: colors.textFaint, fontSize: 14, lineHeight: 21, fontWeight: '400', marginBottom: 16 },
   rewardCard: {
     backgroundColor: colors.card,
@@ -133,14 +125,14 @@ const styles = StyleSheet.create({
   rewardIcon: { width: 52, height: 52, borderRadius: 8, backgroundColor: colors.orange, alignItems: 'center', justifyContent: 'center' },
   rewardIconNavy: { backgroundColor: colors.navy },
   rewardIconGreen: { backgroundColor: '#16a34a' },
-  rewardIconText: { color: '#FFFFFF', fontSize: 13, fontWeight: '900' },
+  rewardIconText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
   rewardMain: { flex: 1 },
-  rewardTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '900', marginBottom: 4 },
+  rewardTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '700', marginBottom: 4 },
   rewardCopy: { color: colors.textFaint, fontSize: 12, lineHeight: 18, fontWeight: '700' },
-  rewardValue: { color: colors.orange, fontSize: 16, fontWeight: '900' },
+  rewardValue: { color: colors.orange, fontSize: 16, fontWeight: '700' },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 6 },
   button: { minHeight: 46, borderRadius: 8, backgroundColor: colors.orange, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 15, flexGrow: 1 },
-  buttonMuted: { backgroundColor: '#F9FAFB' },
-  buttonText: { color: '#FFFFFF', fontSize: 12, letterSpacing: 1.3, fontWeight: '900' },
-  buttonTextMuted: { color: colors.textPrimary },
+  buttonMuted: { backgroundColor: '#030B14', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' },
+  buttonText: { color: '#FFFFFF', fontSize: 14, letterSpacing: 0, fontWeight: '700' },
+  buttonTextMuted: { color: '#F8FAFC' },
 });

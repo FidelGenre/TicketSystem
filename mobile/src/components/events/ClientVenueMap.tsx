@@ -538,7 +538,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   controlButton: { width: 46, height: 42, alignItems: 'center', justifyContent: 'center' },
-  controlText: { color: 'rgba(226,232,240,0.82)', fontSize: 22, fontWeight: '800' },
+  controlText: { color: 'rgba(226,232,240,0.82)', fontSize: 22, fontWeight: '700' },
   controlDivider: { width: 1, height: 24, backgroundColor: 'rgba(255,255,255,0.22)' },
   helpText: {
     color: 'rgba(226,232,240,0.62)',
@@ -598,27 +598,24 @@ const styles = StyleSheet.create({
   },
   stageName: {
     color: '#60A5FA',
-    fontWeight: '900',
-    letterSpacing: 3,
-    textTransform: 'uppercase',
+    fontWeight: '700',
+    letterSpacing: 0,
   },
   stageSub: {
     color: '#94A3B8',
-    fontWeight: '800',
-    letterSpacing: 1.5,
+    fontWeight: '700',
+    letterSpacing: 0,
     marginTop: 1,
   },
   decorName: {
     color: '#FFFFFF',
-    fontWeight: '900',
-    letterSpacing: 1.6,
-    textTransform: 'uppercase',
+    fontWeight: '700',
+    letterSpacing: 0,
   },
   standingName: {
     color: '#FFFFFF',
-    fontWeight: '900',
-    letterSpacing: 1.6,
-    textTransform: 'uppercase',
+    fontWeight: '700',
+    letterSpacing: 0,
   },
   tableCore: {
     position: 'absolute',
@@ -629,9 +626,8 @@ const styles = StyleSheet.create({
   },
   tableLabel: {
     color: '#64748B',
-    fontWeight: '900',
+    fontWeight: '700',
     textAlign: 'center',
-    textTransform: 'uppercase',
   },
   seatDot: {
     position: 'absolute',
@@ -666,6 +662,6 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.14)',
     backgroundColor: 'rgba(255,255,255,0.035)',
   },
-  emptyTitle: { color: '#FFFFFF', fontSize: 18, fontWeight: '900' },
+  emptyTitle: { color: '#FFFFFF', fontSize: 18, fontWeight: '700' },
   emptyCopy: { color: 'rgba(226,232,240,0.72)', fontSize: 13, lineHeight: 20, marginTop: 8 },
 });

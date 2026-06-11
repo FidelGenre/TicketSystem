@@ -20,7 +20,7 @@ export function AppFooter() {
 
       <View style={styles.columns}>
         <View style={styles.column}>
-          <Text style={styles.footerHead}>LPTICKET</Text>
+          <Text style={styles.footerHead}>Lpticket</Text>
           <Text style={styles.footerLink}>{t('Sobre nosotros', 'About Us')}</Text>
         </View>
 
@@ -32,7 +32,7 @@ export function AppFooter() {
         </View>
 
         <View style={styles.column}>
-          <Text style={styles.footerHead}>LEGAL</Text>
+          <Text style={styles.footerHead}>Legal</Text>
           <Text style={styles.footerLink}>{t('Términos legales', 'Legal Terms')}</Text>
           <Text style={styles.footerLink}>{t('Privacidad', 'Privacy')}</Text>
           <Text style={styles.footerLink}>{t('Soporte', 'Support')}</Text>
@@ -45,7 +45,7 @@ export function AppFooter() {
           <Text style={styles.footerLink}>1325 Main St Suite 203, Katy, TX 77494</Text>
           <Text style={styles.footerSmall}>{t('TELÉFONO', 'PHONE')}</Text>
           <Text style={styles.footerLink}>832.379.0809</Text>
-          <Text style={styles.footerSmall}>EMAIL</Text>
+          <Text style={styles.footerSmall}>Email</Text>
           <Text style={styles.footerLink}>info@lpticket.com</Text>
         </View>
       </View>
@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
   socialText: {
     color: 'rgba(255,255,255,0.82)',
     fontSize: 17,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   footerLine: {
     height: 1,
@@ -118,8 +118,8 @@ const styles = StyleSheet.create({
   footerHead: {
     color: 'rgba(255,255,255,0.90)',
     fontSize: 14,
-    fontWeight: '900',
-    letterSpacing: 1.4,
+    fontWeight: '700',
+    letterSpacing: 0,
     marginBottom: 6,
   },
   footerLink: {
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.28)',
     fontSize: 9,
     fontWeight: '400',
-    letterSpacing: 1.6,
+    letterSpacing: 0,
     marginTop: 8,
   },
   disclaimer: {
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.18)',
     fontSize: 10,
     lineHeight: 18,
-    letterSpacing: 3,
+    letterSpacing: 0,
     fontWeight: '400',
     textAlign: 'center',
     marginTop: 34,

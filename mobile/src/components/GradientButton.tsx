@@ -60,9 +60,9 @@ const styles = StyleSheet.create({
   },
   text: {
     color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 2.6,
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0,
     textShadowColor: 'rgba(0,0,0,0.24)',
     textShadowRadius: 8,
     textShadowOffset: { width: 0, height: 1 },

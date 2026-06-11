@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
   },
   backIcon: { color: colors.textPrimary, fontSize: 34, lineHeight: 36, fontWeight: '300' },
   headerTextWrap: { flex: 1 },
-  eyebrow: { color: colors.orange, fontSize: 12, letterSpacing: 3, fontWeight: '700', marginBottom: 3 },
+  eyebrow: { color: colors.orange, fontSize: 12, letterSpacing: 0, fontWeight: '700', marginBottom: 3 },
   title: { color: colors.textPrimary, fontSize: 24, fontWeight: '700' },
   content: { padding: 18, paddingBottom: 34 },
   eventCard: {
@@ -156,8 +156,8 @@ const styles = StyleSheet.create({
   eventBadgeText: {
     color: colors.textPrimary,
     fontSize: 11,
-    letterSpacing: 1.4,
-    fontWeight: '800',
+    letterSpacing: 0,
+    fontWeight: '700',
   },
   eventTitle: { color: '#FFFFFF', fontSize: 24, fontWeight: '700', marginBottom: 8 },
   eventMeta: { color: '#cbd5e1', fontSize: 15, fontWeight: '400', lineHeight: 21 },
@@ -172,8 +172,8 @@ const styles = StyleSheet.create({
   cardLabel: {
     color: colors.textFaint,
     fontSize: 12,
-    letterSpacing: 2.5,
-    fontWeight: '800',
+    letterSpacing: 0,
+    fontWeight: '700',
     marginBottom: 13,
   },
   ticketRow: {
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 14,
   },
-  ticketName: { color: colors.textPrimary, fontSize: 18, fontWeight: '800', marginBottom: 5 },
+  ticketName: { color: colors.textPrimary, fontSize: 18, fontWeight: '700', marginBottom: 5 },
   ticketPrice: { color: colors.textFaint, fontSize: 14, fontWeight: '600' },
   stepper: {
     flexDirection: 'row',
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   stepText: { color: colors.textPrimary, fontSize: 22, fontWeight: '600', lineHeight: 24 },
-  quantity: { minWidth: 18, textAlign: 'center', color: colors.textPrimary, fontSize: 17, fontWeight: '800' },
+  quantity: { minWidth: 18, textAlign: 'center', color: colors.textPrimary, fontSize: 17, fontWeight: '700' },
   buyerName: { color: colors.textPrimary, fontSize: 20, fontWeight: '700', marginBottom: 6 },
   buyerMeta: { color: colors.textFaint, fontSize: 15, fontWeight: '400', marginTop: 2 },
   row: { flexDirection: 'row', justifyContent: 'space-between', gap: 16, paddingVertical: 9 },
@@ -209,8 +209,8 @@ const styles = StyleSheet.create({
   rowValue: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
   divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.1)', marginVertical: 10 },
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 16, alignItems: 'center' },
-  totalLabel: { color: colors.textPrimary, fontSize: 18, fontWeight: '800' },
-  totalValue: { color: colors.orange, fontSize: 20, fontWeight: '800' },
+  totalLabel: { color: colors.textPrimary, fontSize: 18, fontWeight: '700' },
+  totalValue: { color: colors.orange, fontSize: 20, fontWeight: '700' },
   notice: {
     backgroundColor: '#fff7ed',
     borderRadius: 16,
@@ -229,9 +229,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  noticeIconText: { color: colors.orange, fontSize: 18, fontWeight: '900' },
+  noticeIconText: { color: colors.orange, fontSize: 18, fontWeight: '700' },
   noticeCopy: { flex: 1 },
-  noticeTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '800', marginBottom: 5 },
+  noticeTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '700', marginBottom: 5 },
   noticeText: { color: colors.textFaint, fontSize: 14, lineHeight: 21, fontWeight: '400' },
   payButton: {
     height: 58,
@@ -240,5 +240,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  payText: { color: '#FFFFFF', fontSize: 14, letterSpacing: 2, fontWeight: '800' },
+  payText: { color: '#FFFFFF', fontSize: 14, letterSpacing: 0, fontWeight: '700' },
 });

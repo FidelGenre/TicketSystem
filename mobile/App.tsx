@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
   modeText: {
     color: 'rgba(226,232,240,0.62)',
     fontSize: 13,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   modeTextActive: {
     color: '#FFFFFF',
@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
   },
   navSlidingLine: {
     position: 'absolute',
-    top: 17,
+    top: 15,
     left: 0,
     width: 18,
     height: 2,
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
   },
   navText: {
     color: 'rgba(226,232,240,0.48)',
-    fontWeight: '800',
+    fontWeight: '600',
     fontSize: 10,
     lineHeight: 12,
   },

@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
-import { GradientButton } from '../components/GradientButton';
 import { useLanguage } from '../i18n/LanguageContext';
 import { MobileEvent } from '../types/event';
 import { apiGet, getImageUrl } from '../services/api';
@@ -195,7 +193,6 @@ export function EventDetailScreen({ event, onBack, onBuy }: Props) {
       <View style={styles.hero}>
         <Image source={imageSource} style={styles.heroImage} resizeMode="cover" />
         <View style={styles.categoryBadge}>
-          <View style={styles.categoryDot} />
           <Text style={styles.categoryText}>{detail.tag}</Text>
         </View>
       </View>
@@ -205,12 +202,12 @@ export function EventDetailScreen({ event, onBack, onBuy }: Props) {
         <Text style={styles.title}>{detail.title}</Text>
 
         <View style={styles.infoRow}>
-          <Ionicons name="calendar-outline" size={18} color={colors.orange} style={styles.infoIcon} />
+          <Text style={styles.infoIcon}>▣</Text>
           <Text style={styles.infoText}>{detail.date}</Text>
         </View>
 
         <View style={styles.infoRow}>
-          <Ionicons name="location-outline" size={18} color={colors.orange} style={styles.infoIcon} />
+          <Text style={styles.infoIcon}>⌖</Text>
           <View style={styles.infoCopy}>
             <Text style={styles.infoText}>{detail.venue}</Text>
             {!!detail.address && <Text style={styles.address}>{detail.address}</Text>}
@@ -255,16 +252,14 @@ export function EventDetailScreen({ event, onBack, onBuy }: Props) {
 
         <View style={styles.actions}>
           <TouchableOpacity style={styles.shareButton}>
-            <Ionicons name="share-social-outline" size={22} color="#FFFFFF" />
+            <Text style={styles.shareText}>⌯</Text>
           </TouchableOpacity>
 
-          <GradientButton
-            onPress={onBuy}
-            height={56}
-            style={styles.buyButton}
-            textStyle={styles.buyText}
-            label={t('COMPRAR TICKETS', 'BUY TICKETS')}
-          />
+          <TouchableOpacity style={styles.buyButton} onPress={onBuy}>
+            <View pointerEvents="none" style={styles.orangeButtonTop} />
+            <View pointerEvents="none" style={styles.orangeButtonBottom} />
+            <Text style={styles.buyText}>{t('COMPRAR TICKETS', 'BUY TICKETS')}</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </ScrollView>
@@ -283,7 +278,7 @@ function Legend({ color, label }: { color: string; label: string }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#030B14' },
-  content: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 130, backgroundColor: '#030B14' },
+  content: { paddingHorizontal: 16, paddingTop: 72, paddingBottom: 130, backgroundColor: '#030B14' },
   backButton: {
     alignSelf: 'flex-start',
     marginBottom: 14,
@@ -294,7 +289,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.14)',
     backgroundColor: 'rgba(255,255,255,0.035)',
   },
-  backText: { color: '#FFFFFF', fontWeight: '800', fontSize: 14 },
+  backText: { color: '#FFFFFF', fontWeight: '700', fontSize: 14 },
   hero: {
     height: 330,
     borderRadius: 16,
@@ -308,16 +303,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 14,
     left: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    borderRadius: 8,
-    paddingHorizontal: 11,
-    paddingVertical: 7,
-    backgroundColor: '#FFFFFF',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(3,11,20,0.72)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
   },
-  categoryDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#F97316' },
-  categoryText: { color: '#0A375A', fontSize: 10, fontWeight: '900', letterSpacing: 0.8, textTransform: 'uppercase' },
+  categoryText: { color: '#FFFFFF', fontSize: 11, fontWeight: '700', letterSpacing: 0 },
   panel: {
     marginTop: 14,
     borderRadius: 16,
@@ -326,22 +319,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(148,163,184,0.18)',
   },
-  eyebrow: { color: colors.orange, fontSize: 11, fontWeight: '900', letterSpacing: 3, marginBottom: 9 },
-  title: { color: '#FFFFFF', fontSize: 30, fontWeight: '900', lineHeight: 35, marginBottom: 18 },
+  eyebrow: { color: colors.orange, fontSize: 11, fontWeight: '700', letterSpacing: 0, marginBottom: 9 },
+  title: { color: '#FFFFFF', fontSize: 30, fontWeight: '700', lineHeight: 35, marginBottom: 18 },
   infoRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 12 },
-  infoIcon: { width: 22, textAlign: 'center', marginTop: 1 },
+  infoIcon: { color: colors.orange, fontSize: 19, width: 22, textAlign: 'center' },
   infoCopy: { flex: 1 },
   infoText: { color: 'rgba(255,255,255,0.86)', fontSize: 15, lineHeight: 21, fontWeight: '600' },
   address: { color: 'rgba(203,213,225,0.68)', fontSize: 13, lineHeight: 19, fontWeight: '400', marginTop: 2 },
   divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.10)', marginVertical: 20 },
-  sectionTitle: { color: '#FFFFFF', fontSize: 18, fontWeight: '900', marginBottom: 8 },
+  sectionTitle: { color: '#FFFFFF', fontSize: 18, fontWeight: '700', marginBottom: 8 },
   description: { color: 'rgba(203,213,225,0.78)', fontSize: 15, lineHeight: 23, fontWeight: '400' },
 
   seatMapHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 12, overflow: 'hidden' },
   seatMapHeaderCopy: { flex: 1, paddingRight: 8 },
   mapSubtitle: { color: 'rgba(203,213,225,0.68)', fontSize: 13, lineHeight: 19, fontWeight: '400', marginTop: 4 },
   selectedPill: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#F97316', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 3 },
-  selectedPillText: { color: '#FFFFFF', fontSize: 15, fontWeight: '900' },
+  selectedPillText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
   mapPanel: { borderRadius: 16, backgroundColor: 'rgba(8,31,51,0.66)', borderWidth: 1, borderColor: 'rgba(148,163,184,0.22)', padding: 14, overflow: 'hidden' },
   legendRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -350,22 +343,22 @@ const styles = StyleSheet.create({
   mapScroller: { gap: 12, paddingRight: 4 },
   sectionCard: { width: 286, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.035)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', padding: 13 },
   sectionTop: { marginBottom: 12 },
-  sectionName: { color: '#FFFFFF', fontSize: 17, fontWeight: '900' },
+  sectionName: { color: '#FFFFFF', fontSize: 17, fontWeight: '700' },
   sectionMeta: { color: 'rgba(203,213,225,0.68)', fontSize: 12, fontWeight: '500', marginTop: 4 },
   seatGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
   seat: { width: 42, height: 34, borderRadius: 9, backgroundColor: 'rgba(34,197,94,0.88)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.70)', alignItems: 'center', justifyContent: 'center' },
   seatSelected: { backgroundColor: '#F97316', borderColor: '#FFFFFF' },
   seatDisabled: { backgroundColor: 'rgba(100,116,139,0.55)', borderColor: 'rgba(148,163,184,0.38)' },
-  seatText: { color: '#FFFFFF', fontSize: 9, fontWeight: '900' },
+  seatText: { color: '#FFFFFF', fontSize: 9, fontWeight: '700' },
   seatTextSelected: { color: '#FFFFFF' },
   seatTextDisabled: { color: 'rgba(226,232,240,0.44)' },
   generalAdmission: { height: 52, flex: 1, borderRadius: 12, backgroundColor: '#F97316', alignItems: 'center', justifyContent: 'center' },
-  generalAdmissionText: { color: '#FFFFFF', fontSize: 13, fontWeight: '900', letterSpacing: 1.4 },
+  generalAdmissionText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700', letterSpacing: 0 },
   selectionSummary: { marginTop: 14, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.10)', paddingTop: 13, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  selectionText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
-  selectionTotal: { color: '#F97316', fontSize: 20, fontWeight: '900' },
+  selectionText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
+  selectionTotal: { color: '#F97316', fontSize: 20, fontWeight: '700' },
   mapEmpty: { borderRadius: 15, padding: 16, backgroundColor: 'rgba(8,31,51,0.52)', borderWidth: 1, borderColor: 'rgba(148,163,184,0.18)' },
-  mapEmptyTitle: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
+  mapEmptyTitle: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
   mapEmptyText: { color: 'rgba(203,213,225,0.68)', fontSize: 13, lineHeight: 19, fontWeight: '400', marginTop: 5 },
 
   priceBox: {
@@ -377,7 +370,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(249,115,22,0.18)',
   },
   priceLabel: { color: 'rgba(203,213,225,0.70)', fontSize: 12, fontWeight: '700', marginBottom: 5 },
-  price: { color: '#FFFFFF', fontSize: 24, fontWeight: '900' },
+  price: { color: '#FFFFFF', fontSize: 24, fontWeight: '700' },
   actions: { flexDirection: 'row', gap: 12, marginTop: 18 },
   shareButton: {
     width: 56,
@@ -389,8 +382,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  shareText: { color: '#FFFFFF', fontSize: 25, fontWeight: '800' },
-  buyButton: { flex: 1 },
+  shareText: { color: '#FFFFFF', fontSize: 25, fontWeight: '700' },
+  buyButton: {
+    flex: 1,
+    height: 56,
+    borderRadius: 8,
+    position: 'relative',
+    overflow: 'hidden',
+    backgroundColor: '#F97316',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#F97316',
+    shadowOpacity: 0.20,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 6,
+  },
   orangeButtonTop: {
     position: 'absolute',
     top: 4,
@@ -410,5 +417,5 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(154,52,18,0.22)',
     zIndex: 1,
   },
-  buyText: { color: '#FFFFFF', fontSize: 13, fontWeight: '900', letterSpacing: 2.8, zIndex: 3 },
+  buyText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700', letterSpacing: 0, zIndex: 3 },
 });

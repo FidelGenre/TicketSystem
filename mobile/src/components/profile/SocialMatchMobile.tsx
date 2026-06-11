@@ -88,8 +88,8 @@ export function SocialMatchMobile() {
   if (eligibleEvents.length === 0) {
     return (
       <View style={styles.emptyCard}>
-        <View style={styles.emptyIcon}><Text style={styles.emptyIconText}>SM</Text></View>
-        <Text style={styles.emptyTitle}>Social Match</Text>
+        <View style={styles.emptyIcon}><Text style={styles.emptyIconText}>Sm</Text></View>
+        <Text style={styles.emptyTitle}>Social match</Text>
         <Text style={styles.emptyCopy}>{t('Compra un ticket para activar Social Match en ese evento.', 'Buy a ticket to activate Social Match for that event.')}</Text>
       </View>
     );
@@ -98,9 +98,9 @@ export function SocialMatchMobile() {
   return (
     <View>
       <View style={styles.heroCard}>
-        <View style={styles.heroIcon}><Text style={styles.heroIconText}>SM</Text></View>
+        <View style={styles.heroIcon}><Text style={styles.heroIconText}>Sm</Text></View>
         <View style={styles.heroCopy}>
-          <Text style={styles.eyebrow}>SOCIAL MATCH</Text>
+          <Text style={styles.eyebrow}>Social match</Text>
           <Text style={styles.title}>{t('Conexiones del evento', 'Event connections')}</Text>
           <Text style={styles.copy}>{t('Conecta con asistentes compatibles en eventos donde ya tienes ticket.', 'Connect with compatible attendees at events where you already have a ticket.')}</Text>
         </View>
@@ -180,7 +180,11 @@ export function SocialMatchMobile() {
                 <Text style={styles.suggestionName}>{suggestion.name}</Text>
                 <Text style={styles.suggestionMeta}>{suggestion.meta}</Text>
                 <View style={styles.tagRow}>
-                  {suggestion.tags.map((tag) => <Text key={tag} style={styles.tag}>{tag}</Text>)}
+                  {suggestion.tags.map((tag) => (
+                    <View key={tag} style={styles.tag}>
+                      <Text style={styles.tagText}>{tag}</Text>
+                    </View>
+                  ))}
                 </View>
               </View>
               <TouchableOpacity style={styles.connectButton}>
@@ -203,14 +207,14 @@ export function SocialMatchMobile() {
             {connection.status === 'incoming' && (
               <View style={styles.connectionActions}>
                 <TouchableOpacity onPress={() => updateConnection(connection.id, 'accepted')} style={styles.acceptButton}><Text style={styles.acceptText}>{t('ACEPTAR', 'ACCEPT')}</Text></TouchableOpacity>
-                <TouchableOpacity onPress={() => updateConnection(connection.id, 'declined')} style={styles.rejectButton}><Text style={styles.rejectText}>NO</Text></TouchableOpacity>
+                <TouchableOpacity onPress={() => updateConnection(connection.id, 'declined')} style={styles.rejectButton}><Text style={styles.rejectText}>No</Text></TouchableOpacity>
               </View>
             )}
             {connection.status === 'outgoing' && (
               <TouchableOpacity onPress={() => updateConnection(connection.id, 'cancelled')} style={styles.rejectButton}><Text style={styles.rejectText}>{t('CANCELAR', 'CANCEL')}</Text></TouchableOpacity>
             )}
             {connection.status === 'accepted' && (
-              <TouchableOpacity onPress={() => setActiveChatId(connection.id)} style={styles.chatButton}><Text style={styles.chatText}>CHAT</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setActiveChatId(connection.id)} style={styles.chatButton}><Text style={styles.chatText}>Chat</Text></TouchableOpacity>
             )}
           </View>
         ))}
@@ -220,7 +224,7 @@ export function SocialMatchMobile() {
         <View style={styles.card}>
           <View style={styles.chatHeader}>
             <View>
-              <Text style={styles.sectionLabel}>CHAT</Text>
+              <Text style={styles.sectionLabel}>Chat</Text>
               <Text style={styles.chatName}>{activeConnection.name}</Text>
             </View>
             <TouchableOpacity onPress={() => setActiveChatId(null)} style={styles.closeChat}><Text style={styles.closeChatText}>{t('CERRAR', 'CLOSE')}</Text></TouchableOpacity>
@@ -275,10 +279,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  heroIconText: { color: '#F8FAFC', fontSize: 17, fontWeight: '900' },
+  heroIconText: { color: '#F8FAFC', fontSize: 17, fontWeight: '700' },
   heroCopy: { flex: 1 },
-  eyebrow: { color: colors.orange, fontSize: 11, letterSpacing: 2.5, fontWeight: '900', marginBottom: 6 },
-  title: { color: '#FFFFFF', fontSize: 24, fontWeight: '900', marginBottom: 6 },
+  eyebrow: { color: colors.orange, fontSize: 11, letterSpacing: 0, fontWeight: '700', marginBottom: 6 },
+  title: { color: '#FFFFFF', fontSize: 24, fontWeight: '700', marginBottom: 6 },
   copy: { color: '#cbd5e1', fontSize: 13, lineHeight: 19, fontWeight: '400' },
   card: {
     backgroundColor: 'rgba(255,255,255,0.018)',
@@ -288,7 +292,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 14,
   },
-  sectionLabel: { color: colors.orange, fontSize: 11, letterSpacing: 2.6, fontWeight: '900', marginBottom: 12 },
+  sectionLabel: { color: colors.orange, fontSize: 11, letterSpacing: 0, fontWeight: '700', marginBottom: 12 },
   eventRail: { gap: 10, paddingRight: 4 },
   eventChip: {
     width: 230,
@@ -299,7 +303,7 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   eventChipActive: { backgroundColor: 'rgba(255,255,255,0.025)', borderColor: colors.navy },
-  eventTitle: { color: '#F8FAFC', fontSize: 15, fontWeight: '900', marginBottom: 4 },
+  eventTitle: { color: '#F8FAFC', fontSize: 15, fontWeight: '700', marginBottom: 4 },
   eventTitleActive: { color: '#FFFFFF' },
   eventMeta: { color: 'rgba(226,232,240,0.64)', fontSize: 12, fontWeight: '400' },
   eventMetaActive: { color: '#cbd5e1' },
@@ -316,7 +320,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   activationActive: { backgroundColor: 'rgba(255,255,255,0.025)', borderColor: colors.navy },
-  activationTitle: { color: 'rgba(226,232,240,0.64)', fontSize: 12, letterSpacing: 1.3, fontWeight: '900', marginBottom: 3 },
+  activationTitle: { color: 'rgba(226,232,240,0.64)', fontSize: 12, letterSpacing: 0, fontWeight: '700', marginBottom: 3 },
   activationTitleActive: { color: '#FFFFFF' },
   activationSub: { color: 'rgba(226,232,240,0.52)', fontSize: 12, fontWeight: '400' },
   activationSubActive: { color: '#cbd5e1' },
@@ -324,15 +328,18 @@ const styles = StyleSheet.create({
   switchKnobActive: { backgroundColor: colors.orange },
   chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 9, marginBottom: 16 },
   interestChip: {
-    borderRadius: 999,
+    width: '48%',
+    height: 44,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.14)',
     backgroundColor: '#030B14',
     paddingHorizontal: 13,
-    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   interestChipActive: { backgroundColor: 'rgba(255,255,255,0.025)', borderColor: colors.navy },
-  interestText: { color: 'rgba(226,232,240,0.64)', fontSize: 12, fontWeight: '900' },
+  interestText: { color: 'rgba(226,232,240,0.64)', fontSize: 12, fontWeight: '700' },
   interestTextActive: { color: '#FFFFFF' },
   inputGroup: { gap: 7, marginBottom: 12 },
   inputLabel: { color: 'rgba(226,232,240,0.64)', fontSize: 13, fontWeight: '400' },
@@ -360,17 +367,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   toggleCopy: { flex: 1, paddingRight: 12 },
-  toggleTitle: { color: '#F8FAFC', fontSize: 15, fontWeight: '900', marginBottom: 4 },
+  toggleTitle: { color: '#F8FAFC', fontSize: 15, fontWeight: '700', marginBottom: 4 },
   toggleSub: { color: 'rgba(226,232,240,0.64)', fontSize: 12, lineHeight: 17, fontWeight: '400' },
   toggleTrack: { width: 48, height: 28, borderRadius: 999, backgroundColor: '#cbd5e1', padding: 3 },
   toggleTrackActive: { backgroundColor: colors.orange },
   toggleDot: { width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(255,255,255,0.018)' },
   toggleDotActive: { transform: [{ translateX: 20 }] },
   summaryCard: {
-    backgroundColor: '#fff7ed',
-    borderRadius: 20,
+    backgroundColor: '#030B14',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#FED7AA',
+    borderColor: 'rgba(255,255,255,0.14)',
     padding: 16,
     marginBottom: 14,
   },
@@ -389,21 +396,33 @@ const styles = StyleSheet.create({
   scoreBadge: {
     width: 52,
     height: 52,
-    borderRadius: 17,
-    backgroundColor: '#fff7ed',
+    borderRadius: 16,
+    backgroundColor: '#030B14',
     borderWidth: 1,
-    borderColor: '#FED7AA',
+    borderColor: 'rgba(249,115,22,0.42)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  scoreText: { color: colors.orange, fontSize: 14, fontWeight: '900' },
+  scoreText: { color: colors.orange, fontSize: 14, fontWeight: '700' },
   suggestionCopy: { flex: 1 },
-  suggestionName: { color: '#F8FAFC', fontSize: 16, fontWeight: '900', marginBottom: 3 },
+  suggestionName: { color: '#F8FAFC', fontSize: 16, fontWeight: '700', marginBottom: 3 },
   suggestionMeta: { color: 'rgba(226,232,240,0.64)', fontSize: 12, fontWeight: '400', marginBottom: 7 },
-  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
-  tag: { color: '#F8FAFC', backgroundColor: '#eaf2f8', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 4, fontSize: 10, fontWeight: '900' },
-  connectButton: { backgroundColor: colors.orange, borderRadius: 13, paddingHorizontal: 10, height: 38, alignItems: 'center', justifyContent: 'center' },
-  connectText: { color: '#FFFFFF', fontSize: 10, letterSpacing: 1, fontWeight: '900' },
+  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center' },
+  tag: {
+    minWidth: 58,
+    height: 32,
+    backgroundColor: '#030B14',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  tagText: { color: '#F8FAFC', fontSize: 10, fontWeight: '700', textAlign: 'center' },
+  connectButton: { width: 118, backgroundColor: colors.orange, borderRadius: 16, paddingHorizontal: 10, height: 44, alignItems: 'center', justifyContent: 'center' },
+  connectText: { color: '#FFFFFF', fontSize: 14, letterSpacing: 0, fontWeight: '700' },
   connectionCard: {
     borderRadius: 20,
     borderWidth: 1,
@@ -416,21 +435,21 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   connectionAvatar: { width: 46, height: 46, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.025)', alignItems: 'center', justifyContent: 'center' },
-  connectionAvatarText: { color: '#FFFFFF', fontSize: 13, fontWeight: '900' },
+  connectionAvatarText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
   connectionCopy: { flex: 1 },
-  connectionName: { color: '#F8FAFC', fontSize: 15, fontWeight: '900', marginBottom: 3 },
+  connectionName: { color: '#F8FAFC', fontSize: 15, fontWeight: '700', marginBottom: 3 },
   connectionMeta: { color: 'rgba(226,232,240,0.64)', fontSize: 11, fontWeight: '400' },
   connectionActions: { flexDirection: 'row', gap: 6 },
-  acceptButton: { backgroundColor: 'rgba(255,255,255,0.025)', height: 36, borderRadius: 12, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center' },
-  acceptText: { color: '#FFFFFF', fontSize: 10, fontWeight: '900' },
-  rejectButton: { backgroundColor: '#eaf2f8', height: 36, borderRadius: 12, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center' },
-  rejectText: { color: '#F8FAFC', fontSize: 10, fontWeight: '900' },
-  chatButton: { backgroundColor: colors.orange, height: 36, borderRadius: 12, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' },
-  chatText: { color: '#FFFFFF', fontSize: 10, fontWeight: '900' },
+  acceptButton: { width: 78, height: 40, borderRadius: 16, backgroundColor: colors.orange, alignItems: 'center', justifyContent: 'center' },
+  acceptText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
+  rejectButton: { width: 78, height: 40, borderRadius: 16, backgroundColor: '#030B14', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' },
+  rejectText: { color: '#F8FAFC', fontSize: 12, fontWeight: '700' },
+  chatButton: { width: 78, height: 40, borderRadius: 16, backgroundColor: colors.orange, alignItems: 'center', justifyContent: 'center' },
+  chatText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
   chatHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  chatName: { color: '#F8FAFC', fontSize: 20, fontWeight: '900' },
-  closeChat: { backgroundColor: '#eaf2f8', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9 },
-  closeChatText: { color: '#F8FAFC', fontSize: 10, fontWeight: '900' },
+  chatName: { color: '#F8FAFC', fontSize: 20, fontWeight: '700' },
+  closeChat: { backgroundColor: '#030B14', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', paddingHorizontal: 12, paddingVertical: 9 },
+  closeChatText: { color: '#F8FAFC', fontSize: 10, fontWeight: '700' },
   messagesBox: { backgroundColor: '#030B14', borderRadius: 16, padding: 12, gap: 9, marginBottom: 12 },
   messageBubble: { maxWidth: '82%', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 10 },
   messageMine: { alignSelf: 'flex-end', backgroundColor: 'rgba(255,255,255,0.025)' },
@@ -451,10 +470,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   sendButton: { width: 76, borderRadius: 8, backgroundColor: colors.orange, alignItems: 'center', justifyContent: 'center' },
-  sendText: { color: '#FFFFFF', fontSize: 11, letterSpacing: 1, fontWeight: '900' },
+  sendText: { color: '#FFFFFF', fontSize: 14, letterSpacing: 0, fontWeight: '700' },
   emptyCard: { backgroundColor: 'rgba(255,255,255,0.018)', borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', padding: 24, alignItems: 'center' },
   emptyIcon: { width: 60, height: 60, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.025)', alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
-  emptyIconText: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
-  emptyTitle: { color: '#F8FAFC', fontSize: 24, fontWeight: '900', marginBottom: 8 },
+  emptyIconText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  emptyTitle: { color: '#F8FAFC', fontSize: 24, fontWeight: '700', marginBottom: 8 },
   emptyCopy: { color: 'rgba(226,232,240,0.64)', fontSize: 14, fontWeight: '400', textAlign: 'center', lineHeight: 21 },
 });

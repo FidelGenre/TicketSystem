@@ -11,6 +11,11 @@ type LanguageContextValue = {
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
+function sentenceCase(value: string) {
+  const lower = value.toLocaleLowerCase();
+  return lower.replace(/^(\s*)(\p{L})/u, (_, space: string, first: string) => `${space}${first.toLocaleUpperCase()}`);
+}
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLang] = useState<AppLanguage>('en');
 
@@ -19,7 +24,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       lang,
       setLang,
       isEs: lang === 'es',
-      t: (es: string, en: string) => (lang === 'es' ? es : en),
+      t: (es: string, en: string) => sentenceCase(lang === 'es' ? es : en),
     }),
     [lang]
   );

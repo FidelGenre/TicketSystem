@@ -18,7 +18,7 @@ export function AboutScreen({ onBack }: Props) {
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
       <TouchableOpacity onPress={onBack} style={styles.back}><Text style={styles.backText}>‹ {t('Volver', 'Back')}</Text></TouchableOpacity>
       <Text style={styles.eyebrow}>{t('QUIÉNES SOMOS', 'ABOUT US')}</Text>
-      <Text style={styles.title}>LP Ticket</Text>
+      <Text style={styles.title}>Lp ticket</Text>
       <Text style={styles.copy}>
         {t(
           'LP Ticket es la plataforma para descubrir, comprar y vivir eventos: conciertos, fiestas, eventos privados y más. Conectamos a organizadores con su público de forma simple, segura y moderna.',
@@ -51,17 +51,17 @@ export function AboutScreen({ onBack }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#030B14' },
-  content: { padding: 18, paddingTop: 18, paddingBottom: 120 },
+  content: { padding: 18, paddingTop: 78, paddingBottom: 120 },
   back: { alignSelf: 'flex-start', marginBottom: 14 },
   backText: { color: '#CBD5E1', fontSize: 15, fontWeight: '700' },
-  eyebrow: { color: colors.orange, fontSize: 12, letterSpacing: 3, fontWeight: '900', marginBottom: 8 },
-  title: { color: '#FFFFFF', fontSize: 34, fontWeight: '900', marginBottom: 10 },
+  eyebrow: { color: colors.orange, fontSize: 12, letterSpacing: 0, fontWeight: '700', marginBottom: 8 },
+  title: { color: '#FFFFFF', fontSize: 34, fontWeight: '700', marginBottom: 10 },
   copy: { color: '#CBD5E1', fontSize: 15, lineHeight: 23, marginBottom: 18 },
   card: { flexDirection: 'row', gap: 14, alignItems: 'flex-start', backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', padding: 16, marginBottom: 12 },
   cardIcon: { fontSize: 26 },
-  cardTitle: { color: '#FFFFFF', fontSize: 17, fontWeight: '900', marginBottom: 4 },
+  cardTitle: { color: '#FFFFFF', fontSize: 17, fontWeight: '700', marginBottom: 4 },
   cardCopy: { color: '#CBD5E1', fontSize: 14, lineHeight: 20 },
   missionCard: { marginTop: 6, backgroundColor: 'rgba(249,115,22,0.10)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(249,115,22,0.3)', padding: 20 },
-  missionLabel: { color: colors.orange, fontSize: 11, letterSpacing: 2, fontWeight: '900', marginBottom: 8 },
-  missionCopy: { color: '#FFFFFF', fontSize: 18, fontWeight: '800', lineHeight: 26 },
+  missionLabel: { color: colors.orange, fontSize: 11, letterSpacing: 0, fontWeight: '700', marginBottom: 8 },
+  missionCopy: { color: '#FFFFFF', fontSize: 18, fontWeight: '700', lineHeight: 26 },
 });

@@ -124,7 +124,6 @@ export function OrganizerPanelScreen() {
   ]);
   const [organizerEvents, setOrganizerEvents] = useState<ReturnType<typeof toOrganizerEvent>[]>([]);
   const [organizerStats, setOrganizerStats] = useState<OrganizerStats>({});
-  const [rewardStats, setRewardStats] = useState({ balance: 0, totalPaid: 0, totalEarned: 0, activeCodes: 0 });
 
   useEffect(() => {
     let mounted = true;
@@ -149,31 +148,6 @@ export function OrganizerPanelScreen() {
         if (mounted) setOrganizerStats(data || {});
       })
       .catch(() => {});
-
-    Promise.allSettled([
-      apiGet<any>('/special-codes/me'),
-      apiGet<any>('/special-codes/my-payouts'),
-    ]).then(([meRes, payoutsRes]) => {
-      if (!mounted) return;
-
-      const activeCodes = meRes.status === 'fulfilled'
-        ? listFrom(meRes.value).filter((c: any) => c.isActive !== false).length
-        : 0;
-
-      let balance = 0;
-      let totalPaid = 0;
-      let totalEarned = 0;
-      if (payoutsRes.status === 'fulfilled') {
-        for (const entry of listFrom(payoutsRes.value)) {
-          balance += Number(entry.balance || 0);
-          totalPaid += Number(entry.totalPaid || 0);
-          totalEarned += Number(entry.totalEarned || 0);
-        }
-      }
-
-      const round2 = (v: number) => Math.round(v * 100) / 100;
-      setRewardStats({ balance: round2(balance), totalPaid: round2(totalPaid), totalEarned: round2(totalEarned), activeCodes });
-    });
 
     return () => {
       mounted = false;
@@ -305,7 +279,7 @@ export function OrganizerPanelScreen() {
         )}
 
         {active === 'rewards' && (
-          <OrganizerRewardsMobile goTo={setActive} stats={rewardStats} />
+          <OrganizerRewardsMobile goTo={setActive} />
         )}
 
       </ScrollView>
@@ -372,7 +346,7 @@ function Attendee({ name, ticket, status, onToggle }: { name: string; ticket: st
           <Text style={styles.attendeePrimaryText}>{status === 'SCANNED' ? 'UNDO SCAN' : 'CHECK IN'}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.attendeeSecondary}>
-          <Text style={styles.attendeeSecondaryText}>RESEND</Text>
+          <Text style={styles.attendeeSecondaryText}>Resend</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -461,71 +435,71 @@ const styles = StyleSheet.create({
   tabs: { height: 82, paddingHorizontal: 16, gap: 8, alignItems: 'center' },
   tab: { height: 40, paddingHorizontal: 14, borderRadius: 8, backgroundColor: 'rgba(8,31,51,0.72)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', justifyContent: 'center' },
   tabActive: { backgroundColor: colors.orange, borderColor: colors.orange },
-  tabText: { color: '#CBD5E1', fontSize: 13, fontWeight: '800' },
+  tabText: { color: '#CBD5E1', fontSize: 13, fontWeight: '700' },
   tabTextActive: { color: '#FFFFFF' },
   content: { paddingHorizontal: 18, paddingTop: 20, paddingBottom: 140 },
-  eyebrow: { color: colors.orange, fontSize: 13, letterSpacing: 4, fontWeight: '900', marginBottom: 8 },
-  title: { color: '#F8FAFC', fontSize: 32, fontWeight: '800', marginBottom: 8 },
+  eyebrow: { color: colors.orange, fontSize: 13, letterSpacing: 0, fontWeight: '700', marginBottom: 8 },
+  title: { color: '#F8FAFC', fontSize: 32, fontWeight: '700', marginBottom: 8 },
   subtitle: { color: '#CBD5E1', fontSize: 16, lineHeight: 23, fontWeight: '400', marginBottom: 18 },
   metricsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 14 },
   metric: { width: '48%', backgroundColor: 'rgba(8,31,51,0.82)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', padding: 16 },
-  metricValue: { color: colors.orange, fontSize: 24, fontWeight: '900', marginBottom: 4 },
-  metricLabel: { color: '#CBD5E1', fontSize: 13, fontWeight: '800' },
+  metricValue: { color: colors.orange, fontSize: 24, fontWeight: '700', marginBottom: 4 },
+  metricLabel: { color: '#CBD5E1', fontSize: 13, fontWeight: '700' },
   panelCard: { backgroundColor: 'rgba(8,31,51,0.82)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', padding: 20, marginBottom: 16, shadowColor: '#000000', shadowOpacity: 0.22, shadowRadius: 18, shadowOffset: { width: 0, height: 10 } },
-  formEyebrow: { color: colors.orange, fontSize: 12, letterSpacing: 3, fontWeight: '900', marginBottom: 8 },
-  panelTitle: { color: '#F8FAFC', fontSize: 26, fontWeight: '900', marginBottom: 8 },
-  eventName: { color: colors.textPrimary, fontSize: 22, fontWeight: '900', marginBottom: 6 },
+  formEyebrow: { color: colors.orange, fontSize: 12, letterSpacing: 0, fontWeight: '700', marginBottom: 8 },
+  panelTitle: { color: '#F8FAFC', fontSize: 26, fontWeight: '700', marginBottom: 8 },
+  eventName: { color: colors.textPrimary, fontSize: 22, fontWeight: '700', marginBottom: 6 },
   copy: { color: '#CBD5E1', fontSize: 15, lineHeight: 22, fontWeight: '400', marginBottom: 14 },
   progressTrack: { height: 10, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.1)', marginVertical: 14, overflow: 'hidden' },
   progressFill: { width: '24%', height: '100%', backgroundColor: colors.orange },
   eventCard: { backgroundColor: colors.card, borderRadius: 24, borderWidth: 1, borderColor: colors.goldBorder, padding: 18, marginBottom: 14 },
   cardHeader: { flexDirection: 'row', gap: 14, alignItems: 'center', marginBottom: 16 },
   avatar: { width: 56, height: 56, borderRadius: 16, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
+  avatarText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
   cardMain: { flex: 1 },
-  cardTitle: { color: colors.textPrimary, fontSize: 20, fontWeight: '900', marginBottom: 4 },
+  cardTitle: { color: colors.textPrimary, fontSize: 20, fontWeight: '700', marginBottom: 4 },
   cardSub: { color: colors.textFaint, fontSize: 14, fontWeight: '400' },
   statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   statusPill: { height: 32, borderRadius: 999, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' },
   statusGreen: { backgroundColor: '#DCFCE7' },
   statusOrange: { backgroundColor: '#FFF7ED' },
   statusGray: { backgroundColor: '#F3F4F6' },
-  statusText: { fontSize: 10, fontWeight: '900', letterSpacing: 1 },
+  statusText: { fontSize: 10, fontWeight: '700', letterSpacing: 0 },
   statusTextGreen: { color: '#15803d' },
   statusTextOrange: { color: colors.orange },
   statusTextGray: { color: colors.textFaint },
   actionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 6 },
   actionButton: { height: 44, borderRadius: 8, backgroundColor: colors.orange, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 },
   actionButtonMuted: { backgroundColor: colors.cardSoft },
-  actionButtonText: { color: '#FFFFFF', fontSize: 12, fontWeight: '900' },
+  actionButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
   actionButtonTextMuted: { color: colors.textPrimary },
   fieldLabel: { color: colors.textFaint, fontSize: 13, fontWeight: '400', marginBottom: 8 },
-  input: { height: 58, borderRadius: 17, borderWidth: 1, borderColor: colors.goldBorder, backgroundColor: colors.card, paddingHorizontal: 16, color: colors.textPrimary, fontSize: 16, fontWeight: '800', marginBottom: 16 },
+  input: { height: 58, borderRadius: 17, borderWidth: 1, borderColor: colors.goldBorder, backgroundColor: colors.card, paddingHorizontal: 16, color: colors.textPrimary, fontSize: 16, fontWeight: '700', marginBottom: 16 },
   segmentGroup: { flexDirection: 'row', gap: 10, marginBottom: 16 },
   segment: { flex: 1, height: 48, borderRadius: 15, backgroundColor: colors.cardSoft, borderWidth: 1, borderColor: colors.goldBorder, alignItems: 'center', justifyContent: 'center' },
   segmentActive: { backgroundColor: colors.navy, borderColor: colors.navy },
   segmentActiveOrange: { backgroundColor: colors.orange, borderColor: colors.orange },
-  segmentText: { color: colors.textFaint, fontSize: 13, fontWeight: '900' },
+  segmentText: { color: colors.textFaint, fontSize: 13, fontWeight: '700' },
   segmentTextActive: { color: '#FFFFFF' },
   formActions: { marginTop: 4, gap: 10 },
   primaryButton: { height: 56, borderRadius: 8, backgroundColor: colors.orange, alignItems: 'center', justifyContent: 'center' },
-  primaryButtonText: { color: '#FFFFFF', fontSize: 13, letterSpacing: 1.8, fontWeight: '900' },
-  secondaryButton: { height: 54, borderRadius: 16, backgroundColor: colors.cardSoft, alignItems: 'center', justifyContent: 'center' },
-  secondaryButtonText: { color: colors.textPrimary, fontSize: 13, letterSpacing: 1.4, fontWeight: '900' },
+  primaryButtonText: { color: '#FFFFFF', fontSize: 14, letterSpacing: 0, fontWeight: '700' },
+  secondaryButton: { height: 54, borderRadius: 16, backgroundColor: '#030B14', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' },
+  secondaryButtonText: { color: '#F8FAFC', fontSize: 13, letterSpacing: 0, fontWeight: '700' },
   mapPreview: { height: 230, backgroundColor: colors.cardSoft, borderRadius: 20, borderWidth: 1, borderColor: colors.goldBorder, marginTop: 8, marginBottom: 16, position: 'relative', overflow: 'hidden' },
   stage: { position: 'absolute', top: 24, left: 30, right: 30, height: 38, borderRadius: 10, backgroundColor: '#10b981', alignItems: 'center', justifyContent: 'center' },
-  stageText: { color: '#FFFFFF', fontSize: 11, fontWeight: '900', letterSpacing: 1.5 },
+  stageText: { color: '#FFFFFF', fontSize: 11, fontWeight: '700', letterSpacing: 0 },
   table: { position: 'absolute', top: 92, left: 38, width: 92, height: 70, borderRadius: 14, backgroundColor: colors.card, borderWidth: 2, borderColor: colors.orange, alignItems: 'center', justifyContent: 'center' },
   tableTwo: { left: undefined, right: 38, borderColor: '#6366f1' },
-  tableText: { color: colors.textPrimary, fontSize: 13, fontWeight: '900' },
+  tableText: { color: colors.textPrimary, fontSize: 13, fontWeight: '700' },
   bar: { position: 'absolute', left: 70, right: 70, bottom: 26, height: 42, borderRadius: 12, backgroundColor: colors.orange, alignItems: 'center', justifyContent: 'center' },
   listCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, backgroundColor: colors.cardSoft, borderRadius: 16, borderWidth: 1, borderColor: colors.goldBorder, padding: 14, marginTop: 10 },
-  listTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '900' },
+  listTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '700' },
   listSub: { color: colors.textFaint, fontSize: 13, fontWeight: '400', marginTop: 3 },
-  listValue: { color: colors.orange, fontSize: 20, fontWeight: '900' },
+  listValue: { color: colors.orange, fontSize: 20, fontWeight: '700' },
   scanBox: { backgroundColor: colors.navy, borderRadius: 24, padding: 22, alignItems: 'center' },
-  scanIcon: { color: colors.orange, fontSize: 42, fontWeight: '900', marginBottom: 8 },
-  scanTitle: { color: '#FFFFFF', fontSize: 24, fontWeight: '900', marginBottom: 6 },
+  scanIcon: { color: colors.orange, fontSize: 42, fontWeight: '700', marginBottom: 8 },
+  scanTitle: { color: '#FFFFFF', fontSize: 24, fontWeight: '700', marginBottom: 6 },
 searchBox: {
     height: 54,
     borderRadius: 17,
@@ -541,7 +515,7 @@ searchBox: {
   searchIcon: {
     color: colors.textPrimary,
     fontSize: 22,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   searchText: {
     color: '#9CA3AF',
@@ -573,7 +547,7 @@ searchBox: {
   attendeeAvatarText: {
     color: '#FFFFFF',
     fontSize: 14,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   attendeeCopy: { flex: 1 },
   attendeeActions: {
@@ -591,8 +565,8 @@ searchBox: {
   attendeePrimaryText: {
     color: '#FFFFFF',
     fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 1,
+    fontWeight: '700',
+    letterSpacing: 0,
   },
   attendeeSecondary: {
     width: 98,
@@ -605,8 +579,8 @@ searchBox: {
   attendeeSecondaryText: {
     color: colors.textPrimary,
     fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 1,
+    fontWeight: '700',
+    letterSpacing: 0,
   },
 accessCard: {
     backgroundColor: colors.cardSoft,
@@ -633,7 +607,7 @@ accessCard: {
   accessIconText: {
     color: '#FFFFFF',
     fontSize: 13,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   attendeeSecondaryWide: {
     height: 44,

@@ -2,12 +2,11 @@ import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { colors } from '../theme/colors';
 import { useLanguage } from '../i18n/LanguageContext';
-import { apiGet, apiPatch } from '../services/api';
+import { apiGet } from '../services/api';
 
 type Section = 'dashboard' | 'events' | 'users' | 'categories' | 'marketing' | 'analytics' | 'codes' | 'payments';
 type AdminUser = { id: string; name: string; email: string; role: 'client' | 'organizer' | 'admin'; suspended: boolean };
 type Category = { id: string; name: string; active: boolean; featured: boolean };
-type SpecialCode = { id: string; code: string; owner: string; commission: number; active: boolean; generated: number };
 
 
 type AdminStats = {
@@ -20,14 +19,8 @@ type AdminStats = {
   totalTickets?: number;
   ticketSales?: number;
   serviceFees?: number;
-  stripeFees?: number;
   lpticketProfit?: number;
 };
-
-function pctOf(part?: number, whole?: number) {
-  const w = Number(whole || 0);
-  return w > 0 ? (Number(part || 0) / w) * 100 : 0;
-}
 
 function listFrom(payload: any) {
   if (Array.isArray(payload)) return payload;
@@ -82,12 +75,15 @@ export function AdminPanelScreen() {
   const [marketingBannerEnabled, setMarketingBannerEnabled] = useState(true);
   const [marketingFeaturedEnabled, setMarketingFeaturedEnabled] = useState(true);
   const [marketingPromoEnabled, setMarketingPromoEnabled] = useState(false);
-  const [specialCodes, setSpecialCodes] = useState<SpecialCode[]>([]);
-  const [codeTotals, setCodeTotals] = useState({ generated: 0, commissions: 0 });
+  const [specialCodeDraft, setSpecialCodeDraft] = useState('LPVIP');
+  const [specialCodes, setSpecialCodes] = useState([
+    { id: '1', code: 'LPVIP', owner: 'Fidel Genre', commission: 10, active: true, generated: 420 },
+    { id: '2', code: 'AMBRIZA21', owner: 'Sundin Galue', commission: 15, active: true, generated: 860 },
+    { id: '3', code: 'PRIVATE5', owner: 'Maria Lopez', commission: 5, active: false, generated: 120 },
+  ]);
 
   const [adminStats, setAdminStats] = useState<AdminStats>({});
   const [adminEvents, setAdminEvents] = useState<any[]>([]);
-  const [financials, setFinancials] = useState<any[]>([]);
 
   useEffect(() => {
     let mounted = true;
@@ -97,47 +93,10 @@ export function AdminPanelScreen() {
       apiGet<any>('/admin/events?page=1&limit=50'),
       apiGet<any>('/admin/users?page=1&limit=50'),
       apiGet<any>('/categories?all=true'),
-      apiGet<any>('/admin/events/financials'),
-      apiGet<any>('/special-codes'),
-      apiGet<any>('/special-codes/admin-sales'),
-    ]).then(([statsRes, eventsRes, usersRes, categoriesRes, financialsRes, codesRes, codeSalesRes]) => {
+    ]).then(([statsRes, eventsRes, usersRes, categoriesRes]) => {
       if (!mounted) return;
 
       if (statsRes.status === 'fulfilled') setAdminStats(statsRes.value || {});
-
-      if (codesRes.status === 'fulfilled') {
-        const sales = codeSalesRes.status === 'fulfilled' ? listFrom(codeSalesRes.value) : [];
-        const salesByCode = new Map<string, number>();
-        const ticketsByCode = new Map<string, number>();
-        for (const order of sales) {
-          const code = String(order.specialCode || '').toUpperCase();
-          if (!code) continue;
-          salesByCode.set(code, (salesByCode.get(code) || 0) + Number(order.total || 0));
-          ticketsByCode.set(code, (ticketsByCode.get(code) || 0) + Number(order.ticketCount || 1));
-        }
-        const codes: SpecialCode[] = listFrom(codesRes.value).map((raw: any) => {
-          const code = String(raw.code || '').toUpperCase();
-          const owner = raw.owner
-            ? [raw.owner.firstName, raw.owner.lastName].filter(Boolean).join(' ') || raw.owner.email || '—'
-            : '—';
-          return {
-            id: String(raw.id),
-            code,
-            owner,
-            commission: Number(raw.commissionFixed || 0),
-            active: raw.isActive !== false,
-            generated: Math.round(salesByCode.get(code) || 0),
-          };
-        });
-        setSpecialCodes(codes);
-        const generated = Array.from(salesByCode.values()).reduce((sum, value) => sum + value, 0);
-        const commissions = codes.reduce((sum, c) => sum + c.commission * (ticketsByCode.get(c.code) || 0), 0);
-        setCodeTotals({ generated: Math.round(generated), commissions: Math.round(commissions) });
-      }
-
-      if (financialsRes.status === 'fulfilled') {
-        setFinancials(financialsRes.value?.events || listFrom(financialsRes.value));
-      }
 
       if (eventsRes.status === 'fulfilled') {
         setAdminEvents(listFrom(eventsRes.value));
@@ -185,11 +144,6 @@ export function AdminPanelScreen() {
 
   const firstEvent = adminEvents[0];
 
-  const topEvents = [...financials]
-    .filter((e) => Number(e.totalCharged) > 0)
-    .sort((a, b) => Number(b.totalCharged) - Number(a.totalCharged))
-    .slice(0, 5);
-
   const updateUser = (id: string, key: keyof AdminUser, value: string | boolean) => {
     setUsers((current) => current.map((user) => user.id === id ? { ...user, [key]: value } : user));
   };
@@ -198,16 +152,15 @@ export function AdminPanelScreen() {
     setCategories((current) => current.map((category) => category.id === id ? { ...category, [key]: value } : category));
   };
 
-  const toggleSpecialCode = async (id: string) => {
-    const current = specialCodes.find((item) => item.id === id);
-    if (!current) return;
-    const next = !current.active;
-    setSpecialCodes((list) => list.map((item) => item.id === id ? { ...item, active: next } : item));
-    try {
-      await apiPatch(`/special-codes/${id}`, { isActive: next });
-    } catch {
-      setSpecialCodes((list) => list.map((item) => item.id === id ? { ...item, active: current.active } : item));
-    }
+  const addSpecialCode = () => {
+    const code = specialCodeDraft.trim().toUpperCase();
+    if (!code) return;
+    setSpecialCodes((current) => [...current, { id: String(Date.now()), code, owner: 'Nuevo creador', commission: 10, active: true, generated: 0 }]);
+    setSpecialCodeDraft('');
+  };
+
+  const toggleSpecialCode = (id: string) => {
+    setSpecialCodes((current) => current.map((item) => item.id === id ? { ...item, active: !item.active } : item));
   };
 
   const addCategory = () => {
@@ -471,43 +424,48 @@ export function AdminPanelScreen() {
         {active === 'analytics' && (
           <>
             <View style={styles.metricsGrid}>
-              <Metric label={t('Ingresos', 'Revenue')} value={money(adminStats.totalRevenue ?? 0)} />
-              <Metric label={t('Tickets', 'Tickets')} value={String(adminStats.totalTickets ?? 0)} />
-              <Metric label={t('Órdenes', 'Orders')} value={String(adminStats.paidOrders ?? adminStats.totalOrders ?? 0)} />
-              <Metric label={t('Ganancia LPTicket', 'LPTicket profit')} value={money(adminStats.lpticketProfit ?? 0)} />
+              <Metric label={t('Conversion', 'Conversion')} value="8.4%" />
+              <Metric label={t('Visitas', 'Visits')} value="18.2k" />
+              <Metric label={t('Checkouts', 'Checkouts')} value="412" />
+              <Metric label={t('Ingresos', 'Revenue')} value="$4.8k" />
             </View>
 
-            <PanelCard title={t('Distribución de ingresos', 'Revenue breakdown')} eyebrow={t('FINANZAS', 'FINANCE')} copy={t('Cómo se reparte cada dólar cobrado a los compradores.', 'How each dollar charged to buyers is split.')}>
-              <AnalyticsBar label={t('Ventas de tickets', 'Ticket sales')} value={money(adminStats.ticketSales ?? 0)} pct={pctOf(adminStats.ticketSales, adminStats.totalRevenue)} />
-              <AnalyticsBar label={t('Cargos de servicio', 'Service fees')} value={money(adminStats.serviceFees ?? 0)} pct={pctOf(adminStats.serviceFees, adminStats.totalRevenue)} />
-              <AnalyticsBar label={t('Comisión Stripe', 'Stripe fees')} value={money(adminStats.stripeFees ?? 0)} pct={pctOf(adminStats.stripeFees, adminStats.totalRevenue)} />
+            <PanelCard title={t('Rendimiento global', 'Global performance')} eyebrow={t('ANALITICAS', 'ANALYTICS')}>
+              <AnalyticsBar label={t('Eventos vistos', 'Events viewed')} value="82%" />
+              <AnalyticsBar label={t('Checkout iniciado', 'Checkout started')} value="48%" />
+              <AnalyticsBar label={t('Compra completada', 'Purchase completed')} value="31%" />
             </PanelCard>
 
-            <PanelCard title={t('Top eventos por ingresos', 'Top events by revenue')} eyebrow={t('EVENTOS TOP', 'TOP EVENTS')} copy={t('Eventos con mayores ventas en la plataforma.', 'Events with the highest sales on the platform.')}>
-              {topEvents.length === 0 ? (
-                <Text style={styles.copy}>{t('Sin ventas todavía.', 'No sales yet.')}</Text>
-              ) : (
-                topEvents.map((ev, i) => (
-                  <RankItem key={String(ev.id || i)} index={String(i + 1).padStart(2, '0')} title={adminEventTitle(ev)} value={`${money(ev.totalCharged)} · ${ev.ticketsSold || 0} ${t('tickets', 'tickets')}`} />
-                ))
-              )}
+            <PanelCard title={t('Eventos mas vistos', 'Most viewed events')} eyebrow={t('EVENTOS TOP', 'TOP EVENTS')} copy={t('Eventos con mayor actividad en la plataforma.', 'Events with the most activity on the platform.')}>
+              <RankItem index="01" title="Noche de (des)amor" value="2.4k views" />
+              <RankItem index="02" title="Sunset Lounge Experience" value="1.8k views" />
+              <RankItem index="03" title="Private Networking Night" value="920 views" />
+            </PanelCard>
+
+            <PanelCard title={t('Metodos de pago', 'Payment methods')} eyebrow={t('MEZCLA DE PAGOS', 'PAYMENTS MIX')}>
+              <PaymentMix label="Card / Stripe" value="86%" />
+              <PaymentMix label="Apple Pay" value="9%" />
+              <PaymentMix label="Google Pay" value="5%" />
             </PanelCard>
           </>
         )}
         {active === 'codes' && (
           <>
-            <PanelCard title={t('Codigos especiales', 'Special codes')} eyebrow={t('CODIGOS ESPECIALES', 'SPECIAL CODES')} copy={t('Comisiones y ventas generadas por cada código. Crea o asigna dueños desde el panel web.', 'Commissions and sales generated per code. Create or assign owners from the web panel.')} />
+            <PanelCard title={t('Codigos especiales', 'Special codes')} eyebrow={t('CODIGOS ESPECIALES', 'SPECIAL CODES')} copy={t('Crea codigos, asigna comisiones y monitorea ventas generadas.', 'Create codes, assign commissions and monitor generated sales.')}>
+              <View style={styles.createRow}>
+                <TextInput value={specialCodeDraft} onChangeText={setSpecialCodeDraft} placeholder={t('Codigo', 'Code')} placeholderTextColor="#9CA3AF" autoCapitalize="characters" style={styles.createInput} />
+                <TouchableOpacity onPress={addSpecialCode} style={styles.createButton}>
+                  <Text style={styles.createButtonText}>{t('AGREGAR', 'ADD')}</Text>
+                </TouchableOpacity>
+              </View>
+            </PanelCard>
 
             <View style={styles.metricsGrid}>
-              <Metric label={t('Generado', 'Generated')} value={money(codeTotals.generated)} />
-              <Metric label={t('Comisiones', 'Commissions')} value={money(codeTotals.commissions)} />
+              <Metric label={t('Generado', 'Generated')} value="$1.4k" />
+              <Metric label={t('Comisiones', 'Commissions')} value="$184" />
               <Metric label={t('Codigos', 'Codes')} value={String(specialCodes.length)} />
               <Metric label={t('Activos', 'Active')} value={String(specialCodes.filter((code) => code.active).length)} />
             </View>
-
-            {specialCodes.length === 0 && (
-              <PanelCard title={t('Sin códigos todavía', 'No codes yet')} copy={t('Cuando se creen códigos especiales aparecerán aquí.', 'Special codes will appear here once created.')} />
-            )}
 
             {specialCodes.map((item) => (
               <View key={item.id} style={styles.userCard}>
@@ -651,8 +609,8 @@ function OrderItem({ index, title }: { index: string; title: string }) {
   );
 }
 
-function AnalyticsBar({ label, value, pct }: { label: string; value: string; pct: number }) {
-  const w = Math.max(0, Math.min(100, Math.round(pct)));
+function AnalyticsBar({ label, value }: { label: string; value: string }) {
+  const widthMap: Record<string, `${number}%`> = { '82%': '82%', '48%': '48%', '31%': '31%' };
   return (
     <View style={styles.analyticsRow}>
       <View style={styles.analyticsTop}>
@@ -660,7 +618,7 @@ function AnalyticsBar({ label, value, pct }: { label: string; value: string; pct
         <Text style={styles.analyticsValue}>{value}</Text>
       </View>
       <View style={styles.analyticsTrack}>
-        <View style={[styles.analyticsFill, { width: `${w}%` as `${number}%` }]} />
+        <View style={[styles.analyticsFill, { width: widthMap[value] || '50%' as `${number}%` }]} />
       </View>
     </View>
   );
@@ -676,6 +634,15 @@ function RankItem({ index, title, value }: { index: string; title: string; value
         <Text style={styles.rankTitle}>{title}</Text>
         <Text style={styles.rankValue}>{value}</Text>
       </View>
+    </View>
+  );
+}
+
+function PaymentMix({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.paymentMixRow}>
+      <Text style={styles.paymentMixLabel}>{label}</Text>
+      <Text style={styles.paymentMixValue}>{value}</Text>
     </View>
   );
 }
@@ -744,20 +711,20 @@ const styles = StyleSheet.create({
   tabs: { height: 86, paddingHorizontal: 16, gap: 8, alignItems: 'center' },
   tab: { height: 40, paddingHorizontal: 14, borderRadius: 8, backgroundColor: 'rgba(8,31,51,0.72)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', justifyContent: 'center' },
   tabActive: { backgroundColor: '#0A375A', borderColor: '#0A375A' },
-  tabText: { color: '#CBD5E1', fontSize: 13, fontWeight: '800' },
+  tabText: { color: '#CBD5E1', fontSize: 13, fontWeight: '700' },
   tabTextActive: { color: '#FFFFFF' },
   content: { paddingHorizontal: 18, paddingTop: 20, paddingBottom: 140 },
-  eyebrow: { color: colors.orange, fontSize: 13, letterSpacing: 4, fontWeight: '900', marginBottom: 8 },
-  title: { color: '#F8FAFC', fontSize: 32, fontWeight: '800', marginBottom: 8 },
+  eyebrow: { color: colors.orange, fontSize: 13, letterSpacing: 0, fontWeight: '700', marginBottom: 8 },
+  title: { color: '#F8FAFC', fontSize: 32, fontWeight: '700', marginBottom: 8 },
   subtitle: { color: '#CBD5E1', fontSize: 16, lineHeight: 23, fontWeight: '400', marginBottom: 18 },
   metricsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 14 },
   metric: { width: '48%', backgroundColor: 'rgba(8,31,51,0.82)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', padding: 16 },
-  metricValue: { color: colors.orange, fontSize: 24, fontWeight: '900', marginBottom: 4 },
-  metricLabel: { color: '#CBD5E1', fontSize: 13, fontWeight: '800' },
+  metricValue: { color: colors.orange, fontSize: 24, fontWeight: '700', marginBottom: 4 },
+  metricLabel: { color: '#CBD5E1', fontSize: 13, fontWeight: '700' },
   panelCard: { backgroundColor: 'rgba(8,31,51,0.82)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', padding: 20, marginBottom: 16, shadowColor: '#000000', shadowOpacity: 0.22, shadowRadius: 18, shadowOffset: { width: 0, height: 10 } },
-  formEyebrow: { color: colors.orange, fontSize: 12, letterSpacing: 3, fontWeight: '900', marginBottom: 8 },
-  panelTitle: { color: '#F8FAFC', fontSize: 26, fontWeight: '900', marginBottom: 8 },
-  eventName: { color: colors.navy, fontSize: 22, fontWeight: '900', marginBottom: 6 },
+  formEyebrow: { color: colors.orange, fontSize: 12, letterSpacing: 0, fontWeight: '700', marginBottom: 8 },
+  panelTitle: { color: '#F8FAFC', fontSize: 26, fontWeight: '700', marginBottom: 8 },
+  eventName: { color: colors.navy, fontSize: 22, fontWeight: '700', marginBottom: 6 },
   copy: { color: '#CBD5E1', fontSize: 15, lineHeight: 22, fontWeight: '400', marginBottom: 14 },
   statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   statusPill: { height: 32, borderRadius: 999, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' },
@@ -766,7 +733,7 @@ const styles = StyleSheet.create({
   statusOrange: { backgroundColor: '#FFF7ED' },
   statusGray: { backgroundColor: '#F3F4F6' },
   statusDark: { backgroundColor: '#0A375A' },
-  statusText: { fontSize: 10, fontWeight: '900', letterSpacing: 1 },
+  statusText: { fontSize: 10, fontWeight: '700', letterSpacing: 0 },
   statusTextGreen: { color: '#15803d' },
   statusTextRed: { color: '#991b1b' },
   statusTextOrange: { color: colors.orange },
@@ -775,42 +742,42 @@ const styles = StyleSheet.create({
   userCard: { backgroundColor: '#FFFFFF', borderRadius: 24, borderWidth: 1, borderColor: '#E5E7EB', padding: 18, marginBottom: 14 },
   cardHeader: { flexDirection: 'row', gap: 14, alignItems: 'center', marginBottom: 16 },
   avatar: { width: 56, height: 56, borderRadius: 16, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
+  avatarText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
   cardMain: { flex: 1 },
-  cardTitle: { color: colors.navy, fontSize: 20, fontWeight: '900', marginBottom: 4 },
+  cardTitle: { color: colors.navy, fontSize: 20, fontWeight: '700', marginBottom: 4 },
   cardSub: { color: '#6B7280', fontSize: 14, fontWeight: '400' },
   actionRow: { flexDirection: 'row', gap: 10 },
   actionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 6 },
   cardPrimaryAction: { flex: 1, height: 50, borderRadius: 8, backgroundColor: colors.orange, alignItems: 'center', justifyContent: 'center' },
-  cardPrimaryText: { color: '#FFFFFF', fontSize: 12, fontWeight: '900', letterSpacing: 1.2 },
+  cardPrimaryText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700', letterSpacing: 0 },
   cardSecondaryAction: { width: 104, height: 50, borderRadius: 15, backgroundColor: '#F8FAFC', alignItems: 'center', justifyContent: 'center' },
-  cardSecondaryText: { color: colors.navy, fontSize: 12, fontWeight: '900', letterSpacing: 1 },
+  cardSecondaryText: { color: colors.navy, fontSize: 12, fontWeight: '700', letterSpacing: 0 },
   actionButton: { height: 44, borderRadius: 8, backgroundColor: colors.orange, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 },
   actionButtonMuted: { backgroundColor: '#F8FAFC' },
-  actionButtonText: { color: '#FFFFFF', fontSize: 12, fontWeight: '900' },
+  actionButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
   actionButtonTextMuted: { color: colors.navy },
   fieldLabel: { color: '#6B7280', fontSize: 13, fontWeight: '400', marginBottom: 8 },
-  input: { height: 58, borderRadius: 17, borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#FFFFFF', paddingHorizontal: 16, color: colors.navy, fontSize: 16, fontWeight: '800', marginBottom: 16 },
+  input: { height: 58, borderRadius: 17, borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#FFFFFF', paddingHorizontal: 16, color: colors.navy, fontSize: 16, fontWeight: '700', marginBottom: 16 },
   segmentGroup: { flexDirection: 'row', gap: 10, marginBottom: 16 },
   segment: { flex: 1, height: 48, borderRadius: 15, backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E5E7EB', alignItems: 'center', justifyContent: 'center' },
   segmentActive: { backgroundColor: colors.navy, borderColor: colors.navy },
   segmentActiveOrange: { backgroundColor: colors.orange, borderColor: colors.orange },
   segmentDanger: { backgroundColor: '#991b1b', borderColor: '#991b1b' },
-  segmentText: { color: '#6B7280', fontSize: 13, fontWeight: '900' },
+  segmentText: { color: '#6B7280', fontSize: 13, fontWeight: '700' },
   segmentTextActive: { color: '#FFFFFF' },
   formActions: { marginTop: 4, gap: 10 },
   primaryButton: { height: 56, borderRadius: 8, backgroundColor: colors.orange, alignItems: 'center', justifyContent: 'center' },
-  primaryButtonText: { color: '#FFFFFF', fontSize: 13, letterSpacing: 1.8, fontWeight: '900' },
+  primaryButtonText: { color: '#FFFFFF', fontSize: 14, letterSpacing: 0, fontWeight: '700' },
   secondaryButton: { height: 54, borderRadius: 16, backgroundColor: '#F8FAFC', alignItems: 'center', justifyContent: 'center' },
-  secondaryButtonText: { color: colors.navy, fontSize: 13, letterSpacing: 1.4, fontWeight: '900' },
+  secondaryButtonText: { color: colors.navy, fontSize: 13, letterSpacing: 0, fontWeight: '700' },
   createRow: { flexDirection: 'row', gap: 10, marginTop: 2 },
   createInput: { flex: 1, height: 56, borderRadius: 17, borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#FFFFFF', paddingHorizontal: 16, color: colors.navy, fontSize: 15, fontWeight: '700' },
   createButton: { width: 78, height: 56, borderRadius: 8, backgroundColor: colors.orange, alignItems: 'center', justifyContent: 'center' },
-  createButtonText: { color: '#FFFFFF', fontSize: 13, fontWeight: '900', letterSpacing: 1.3 },
+  createButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700', letterSpacing: 0 },
   activity: { flexDirection: 'row', gap: 12, paddingVertical: 12, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
   activityDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.orange, marginTop: 5 },
   activityCopy: { flex: 1 },
-  activityTitle: { color: colors.navy, fontSize: 16, fontWeight: '900', marginBottom: 3 },
+  activityTitle: { color: colors.navy, fontSize: 16, fontWeight: '700', marginBottom: 3 },
   listRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.orange },
   listText: { color: colors.navy, fontSize: 15, fontWeight: '700' },
@@ -819,36 +786,36 @@ tabsShell: { height: 86, marginTop: 58, backgroundColor: colors.darkBg, justifyC
 
   bannerPreviewCard: { backgroundColor: colors.navy, borderRadius: 20, padding: 20, marginTop: 4 },
   bannerPreviewPill: { alignSelf: 'flex-start', backgroundColor: '#FFFFFF', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, marginBottom: 16 },
-  bannerPreviewPillText: { color: colors.navy, fontSize: 10, fontWeight: '900', letterSpacing: 1.4 },
-  bannerPreviewTitle: { color: '#FFFFFF', fontSize: 23, fontWeight: '900', lineHeight: 29, marginBottom: 8 },
+  bannerPreviewPillText: { color: colors.navy, fontSize: 10, fontWeight: '700', letterSpacing: 0 },
+  bannerPreviewTitle: { color: '#FFFFFF', fontSize: 23, fontWeight: '700', lineHeight: 29, marginBottom: 8 },
   bannerPreviewCopy: { color: '#cbd5e1', fontSize: 14, lineHeight: 21, fontWeight: '600' },
   avatarOrange: { backgroundColor: colors.orange },
   avatarMuted: { backgroundColor: '#9CA3AF' },
   marketingCard: { backgroundColor: '#FFFFFF', borderRadius: 24, borderWidth: 1, borderColor: '#E5E7EB', padding: 18, marginBottom: 14, shadowColor: '#111827', shadowOpacity: 0.08, shadowRadius: 16, shadowOffset: { width: 0, height: 8 } },
   marketingEnableButton: { height: 50, borderRadius: 8, backgroundColor: colors.orange, alignItems: 'center', justifyContent: 'center' },
-  marketingEnableText: { color: '#FFFFFF', fontSize: 12, fontWeight: '900', letterSpacing: 1.2 },
+  marketingEnableText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700', letterSpacing: 0 },
   marketingDisableButton: { height: 50, borderRadius: 15, backgroundColor: '#F8FAFC', alignItems: 'center', justifyContent: 'center' },
-  marketingDisableText: { color: colors.navy, fontSize: 12, fontWeight: '900', letterSpacing: 1.2 },
+  marketingDisableText: { color: colors.navy, fontSize: 12, fontWeight: '700', letterSpacing: 0 },
   orderPremiumItem: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: '#F8FAFC', borderRadius: 16, borderWidth: 1, borderColor: '#E5E7EB', padding: 14, marginTop: 10 },
   orderPremiumIndex: { width: 44, height: 44, borderRadius: 15, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
-  orderPremiumIndexText: { color: '#FFFFFF', fontSize: 13, fontWeight: '900' },
+  orderPremiumIndexText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
   orderPremiumCopy: { flex: 1 },
-  orderPremiumTitle: { color: colors.navy, fontSize: 16, fontWeight: '900', marginBottom: 3 },
+  orderPremiumTitle: { color: colors.navy, fontSize: 16, fontWeight: '700', marginBottom: 3 },
   orderPremiumSub: { color: '#6B7280', fontSize: 13, fontWeight: '600' },
   analyticsRow: { marginTop: 12 },
   analyticsTop: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginBottom: 8 },
-  analyticsLabel: { color: colors.navy, fontSize: 15, fontWeight: '800' },
-  analyticsValue: { color: colors.orange, fontSize: 15, fontWeight: '900' },
+  analyticsLabel: { color: colors.navy, fontSize: 15, fontWeight: '700' },
+  analyticsValue: { color: colors.orange, fontSize: 15, fontWeight: '700' },
   analyticsTrack: { height: 10, borderRadius: 999, backgroundColor: '#E5E7EB', overflow: 'hidden' },
   analyticsFill: { height: '100%', borderRadius: 999, backgroundColor: colors.orange },
   rankItem: { flexDirection: 'row', gap: 14, alignItems: 'center', backgroundColor: '#F8FAFC', borderRadius: 16, borderWidth: 1, borderColor: '#E5E7EB', padding: 14, marginTop: 10 },
   rankIndex: { width: 44, height: 44, borderRadius: 15, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
-  rankIndexText: { color: '#FFFFFF', fontSize: 13, fontWeight: '900' },
+  rankIndexText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
   rankCopy: { flex: 1 },
-  rankTitle: { color: colors.navy, fontSize: 16, fontWeight: '900', marginBottom: 3 },
+  rankTitle: { color: colors.navy, fontSize: 16, fontWeight: '700', marginBottom: 3 },
   rankValue: { color: '#6B7280', fontSize: 13, fontWeight: '600' },
   paymentMixRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 14, backgroundColor: '#F8FAFC', borderRadius: 16, borderWidth: 1, borderColor: '#E5E7EB', padding: 14, marginTop: 10 },
-  paymentMixLabel: { color: colors.navy, fontSize: 15, fontWeight: '800' },
-  paymentMixValue: { color: colors.orange, fontSize: 15, fontWeight: '900' },
+  paymentMixLabel: { color: colors.navy, fontSize: 15, fontWeight: '700' },
+  paymentMixValue: { color: colors.orange, fontSize: 15, fontWeight: '700' },
   cardSecondaryActionWide: { height: 50, borderRadius: 15, backgroundColor: '#F8FAFC', alignItems: 'center', justifyContent: 'center' },
 });

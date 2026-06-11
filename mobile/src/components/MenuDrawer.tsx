@@ -38,12 +38,9 @@ export function MenuDrawer({ visible, onClose, onGoEvents, onGoTickets, onGoProf
           <View style={styles.handle} />
 
           <Text style={styles.eyebrow}>{t('MENÚ', 'MENU')}</Text>
-          <Text style={styles.title}>LPTicket</Text>
+          <Text style={styles.title}>Lpticket</Text>
 
           <View style={styles.links}>
-            <TouchableOpacity style={styles.link} onPress={() => go(onGoEvents)}>
-              <Text style={styles.linkText}>{t('Eventos', 'Events')}</Text>
-            </TouchableOpacity>
 
             <TouchableOpacity style={styles.link} onPress={() => go(onGoAiChat)}>
               <Text style={styles.linkText}>{t('Chat IA', 'AI Assistant')}</Text>
@@ -117,15 +114,15 @@ const styles = StyleSheet.create({
   },
   eyebrow: {
     color: colors.orange,
-    fontSize: 12,
-    letterSpacing: 3,
-    fontWeight: '900',
+    fontSize: 10,
+    letterSpacing: 0,
+    fontWeight: '600',
     marginBottom: 6,
   },
   title: {
     color: '#FFFFFF',
-    fontSize: 30,
-    fontWeight: '800',
+    fontSize: 28,
+    fontWeight: '600',
     marginBottom: 18,
   },
   links: {
@@ -142,8 +139,8 @@ const styles = StyleSheet.create({
   },
   linkText: {
     color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '800',
+    fontSize: 15,
+    fontWeight: '600',
   },
   organizerLink: {
     backgroundColor: colors.navy,
@@ -151,8 +148,8 @@ const styles = StyleSheet.create({
   },
   organizerText: {
     color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '800',
+    fontSize: 15,
+    fontWeight: '600',
   },
   adminLink: {
     backgroundColor: '#0A375A',
@@ -160,8 +157,8 @@ const styles = StyleSheet.create({
   },
   adminText: {
     color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '800',
+    fontSize: 15,
+    fontWeight: '600',
   },
   logoutLink: {
     backgroundColor: 'rgba(248,113,113,0.08)',
@@ -169,8 +166,8 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     color: '#FCA5A5',
-    fontSize: 17,
-    fontWeight: '800',
+    fontSize: 15,
+    fontWeight: '600',
   },
   closeButton: {
     height: 54,
@@ -182,8 +179,8 @@ const styles = StyleSheet.create({
   },
   closeText: {
     color: '#FFFFFF',
-    fontSize: 13,
-    letterSpacing: 2,
-    fontWeight: '900',
+    fontSize: 15,
+    letterSpacing: 0,
+    fontWeight: '600',
   },
 });

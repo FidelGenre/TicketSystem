@@ -8,7 +8,7 @@ export function SocialScreen() {
   return (
     <ScrollView style={styles.root} showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
       <View style={styles.header}>
-        <Text style={styles.eyebrow}>SOCIAL MATCH</Text>
+        <Text style={styles.eyebrow}>Social match</Text>
         <Text style={styles.title}>{t('Conexiones del evento', 'Event connections')}</Text>
         <Text style={styles.subtitle}>
           {t('Encuentra asistentes compatibles, solicitudes y chats de tus eventos.', 'Find compatible attendees, requests and chats from your events.')}
@@ -22,7 +22,7 @@ export function SocialScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#030B14' },
-  content: { paddingHorizontal: 18, paddingTop: 18, paddingBottom: 132 },
+  content: { paddingHorizontal: 18, paddingTop: 78, paddingBottom: 132 },
   header: {
     marginBottom: 16,
     borderRadius: 22,
@@ -34,15 +34,15 @@ const styles = StyleSheet.create({
   eyebrow: {
     color: '#F97316',
     fontSize: 12,
-    letterSpacing: 3.2,
-    fontWeight: '900',
+    letterSpacing: 0,
+    fontWeight: '700',
     marginBottom: 8,
   },
   title: {
     color: '#FFFFFF',
     fontSize: 30,
     lineHeight: 34,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   subtitle: {
     color: 'rgba(226,232,240,0.66)',
