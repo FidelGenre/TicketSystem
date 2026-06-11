@@ -1,19 +1,30 @@
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../theme/colors';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLanguage } from '../i18n/LanguageContext';
 
-const logo = require('../../assets/lpticket-logo.png');
+// Same asset as the web header (/logo.png): color icon + white "LPTicket" text.
+const logo = require('../../assets/logo-header.png');
 
 type Props = { onOpenMenu: () => void; onOpenScan: () => void; onOpenAccount: () => void };
 
-// Mirrors the web's mobile header: logo left, then lang switch (active = orange),
-// account icon and hamburger — one compact 64px row, no dead space below.
+// Mirrors the web's mobile header (max-width 1023px overrides):
+// 84px row over the dark bg with a warm orange glow on the right,
+// 116x38 lang pill (active = solid orange), 32px glass buttons,
+// orange hamburger icon.
 export function AppHeader({ onOpenMenu, onOpenScan, onOpenAccount }: Props) {
   const { lang, setLang } = useLanguage();
 
   return (
     <View style={styles.header}>
+      <LinearGradient
+        pointerEvents="none"
+        colors={['rgba(249,115,22,0)', 'rgba(249,115,22,0.06)', 'rgba(249,115,22,0.16)']}
+        locations={[0, 0.55, 1]}
+        start={{ x: 0, y: 0.5 }}
+        end={{ x: 1, y: 0.5 }}
+        style={StyleSheet.absoluteFill}
+      />
       <Image source={logo} style={styles.logo} resizeMode="contain" />
 
       <View style={styles.actions}>
@@ -34,11 +45,11 @@ export function AppHeader({ onOpenMenu, onOpenScan, onOpenAccount }: Props) {
         </View>
 
         <TouchableOpacity style={styles.iconButton} onPress={onOpenAccount}>
-          <Ionicons name="person-outline" size={18} color={colors.white} />
+          <Ionicons name="person-outline" size={16} color="rgba(255,255,255,0.92)" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.iconButton} onPress={onOpenMenu}>
-          <Ionicons name="menu-outline" size={23} color={colors.white} />
+        <TouchableOpacity style={[styles.iconButton, styles.menuButton]} onPress={onOpenMenu}>
+          <Ionicons name="menu-outline" size={21} color="#ff7a00" />
         </TouchableOpacity>
       </View>
     </View>
@@ -47,7 +58,7 @@ export function AppHeader({ onOpenMenu, onOpenScan, onOpenAccount }: Props) {
 
 const styles = StyleSheet.create({
   header: {
-    height: 72,
+    height: 84,
     backgroundColor: '#030B14',
     paddingHorizontal: 16,
     flexDirection: 'row',
@@ -55,21 +66,22 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     zIndex: 10,
   },
-  logo: { width: 132, height: 34, tintColor: '#FFFFFF', marginLeft: -4 },
+  logo: { width: 131, height: 33 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 9, flexShrink: 0 },
   langSwitch: {
     flexDirection: 'row',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.22)',
+    width: 116,
     height: 38,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(117,132,153,0.34)',
     padding: 3,
-    gap: 3,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.035)',
   },
   langButton: {
-    paddingHorizontal: 15,
-    borderRadius: 9,
+    flex: 1,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -77,22 +89,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#F97316',
   },
   langText: {
-    color: 'rgba(255,255,255,0.72)',
+    color: 'rgba(255,255,255,0.68)',
     fontWeight: '800',
-    fontSize: 12,
+    fontSize: 11.5,
   },
   langTextActive: {
     color: '#FFFFFF',
   },
   iconButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.22)',
-    backgroundColor: 'transparent',
+    borderColor: 'rgba(117,132,153,0.24)',
+    backgroundColor: 'rgba(255,255,255,0.035)',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
+  },
+  menuButton: {
+    borderColor: 'rgba(255,122,0,0.45)',
   },
 });
