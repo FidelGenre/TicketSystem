@@ -26,8 +26,8 @@ type Props = {
 type IconName = keyof typeof Ionicons.glyphMap;
 
 export function MenuDrawer({
-  visible, onClose, onGoEvents, onGoTickets, onGoProfile, onGoAiChat,
-  onGoOrganizer, onGoAdmin, onGoContact, onGoAbout, onGoSupport, onLogout,
+  visible, onClose, onGoEvents, onGoTickets, onGoProfile, onGoScan, onGoAiChat,
+  onGoSocialMatch, onGoOrganizer, onGoAdmin, onGoContact, onGoAbout, onGoSupport, onLogout,
   canOrganize, canAdmin,
 }: Props) {
   const { t } = useLanguage();
@@ -61,6 +61,8 @@ export function MenuDrawer({
           {/* Account / actions — with orange icons */}
           <LinearGradient colors={['rgba(18,29,44,0.96)', 'rgba(7,14,23,0.96)']} style={styles.card}>
             <Row icon="chatbubble-ellipses-outline" label={t('Chat IA', 'AI Assistant')} onPress={() => go(onGoAiChat)} />
+            <Row icon="people-outline" label={t('Match Social', 'Social Match')} onPress={() => go(onGoSocialMatch)} />
+            <Row icon="qr-code-outline" label={t('Escanear', 'Scan')} onPress={() => go(onGoScan)} />
             <Row icon="person-outline" label={t('Mi Perfil', 'My Profile')} onPress={() => go(onGoProfile)} />
             {canOrganize && (
               <Row icon="settings-outline" label={t('Panel Organizador', 'Organizer Panel')} onPress={() => go(onGoOrganizer)} />
