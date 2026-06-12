@@ -152,8 +152,15 @@ export class OrdersController {
 
   @UseGuards(AuthGuard('jwt'))
   @Post('ticket/:code/resend-email')
-  resendTicketEmail(@Param('code') code: string, @Request() req: any) {
-    return this.ordersService.resendTicketEmailByCode(code, req.user.id);
+  resendTicketEmail(
+    @Param('code') code: string,
+    @Request() req: any,
+    @Body() body: { email?: string },
+  ) {
+    return this.ordersService.resendTicketEmailByCode(code, req.user.id, {
+      overrideEmail: body?.email,
+      isAdmin: req.user.role === 'admin',
+    });
   }
 
   @UseGuards(AuthGuard('jwt'))

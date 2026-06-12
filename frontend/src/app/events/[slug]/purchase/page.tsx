@@ -8,6 +8,7 @@ import Link from 'next/link';
 import api, { getImageUrl } from '@/lib/api';
 import { formatSeatLabel } from '@/lib/seatLabel';
 import { formatDateInTimezone } from '@/lib/dateUtils';
+import { suggestEmailFix } from '@/lib/emailTypo';
 import { useAuthStore } from '@/stores/auth';
 import type { Event } from '@/types';
 import { VenueSection, Seat, SeatStatus } from '@/types';
@@ -641,6 +642,23 @@ export default function PurchasePage() {
                   <label className="block text-xs font-medium text-gray-600 mb-1">{lang === 'es' ? 'Correo electrónico:' : 'Email Address:'}</label>
                   <input className="input purchase-premium-input text-sm" type="email" value={personalInfo.email}
                     onChange={(e) => setPersonalInfo((p) => ({ ...p, email: e.target.value }))} required />
+                  {(() => {
+                    const sug = suggestEmailFix(personalInfo.email);
+                    if (!sug) return null;
+                    return (
+                      <p className="mt-1.5 text-xs text-[#F97316] font-semibold">
+                        {lang === 'es' ? '¿Quisiste decir' : 'Did you mean'}{' '}
+                        <button
+                          type="button"
+                          onClick={() => setPersonalInfo((p) => ({ ...p, email: sug }))}
+                          className="underline font-bold hover:text-[#c93f00]"
+                        >
+                          {sug}
+                        </button>
+                        ? {lang === 'es' ? 'Tu entrada se enviará a este correo.' : 'Your ticket will be sent to this email.'}
+                      </p>
+                    );
+                  })()}
                 </div>
                 <div className="sm:col-span-2">
                   <label className="block text-xs font-medium text-gray-600 mb-1">{lang === 'es' ? 'Teléfono:' : 'Phone:'}</label>

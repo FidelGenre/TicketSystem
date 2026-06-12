@@ -9,6 +9,7 @@ import { Order, OrderStatus, Ticket, TicketStatus, Seat, SeatStatus, Event, Venu
 import { nanoid } from 'nanoid';
 import * as QRCode from 'qrcode';
 import { MailService } from '../common/services/mail.service';
+import { isValidEmailFormat, suggestEmailFix } from '../common/utils/email-typo';
 
 /**
  * Service constants for fee calculation.
@@ -345,6 +346,17 @@ export class OrdersService {
 
     const checkoutBuyerEmail = buyerEmail?.trim();
     const checkoutBuyerName = buyerName?.trim();
+
+    // Guard against common email typos that bounce (e.g. icloud.con -> NXDOMAIN).
+    if (checkoutBuyerEmail) {
+      if (!isValidEmailFormat(checkoutBuyerEmail)) {
+        throw new BadRequestException('El correo no es válido. Revísalo antes de pagar.');
+      }
+      const suggestion = suggestEmailFix(checkoutBuyerEmail);
+      if (suggestion) {
+        throw new BadRequestException(`Revisa tu correo: ¿quisiste decir ${suggestion}?`);
+      }
+    }
 
     const session = await this.stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -690,7 +702,11 @@ export class OrdersService {
    * code. Only the buyer (order owner) may trigger it. Lets users regenerate the
    * email on demand (e.g. to receive the latest version) without buying again.
    */
-  async resendTicketEmailByCode(code: string, requesterId: string) {
+  async resendTicketEmailByCode(
+    code: string,
+    requesterId: string,
+    options?: { overrideEmail?: string; isAdmin?: boolean },
+  ) {
     const ticket = await this.ticketRepo.findOne({ where: { ticketCode: code } });
     if (!ticket) throw new NotFoundException('Entrada no encontrada');
 
@@ -699,13 +715,31 @@ export class OrdersService {
       relations: ['user', 'event', 'event.organizer'],
     });
     if (!order || !order.user) throw new NotFoundException('Pedido no encontrado');
-    if (order.userId !== requesterId) throw new ForbiddenException('No autorizado');
+    const isOwner = order.userId === requesterId;
+    const isOrganizer = !!requesterId && order.event?.organizerId === requesterId;
+    if (!isOwner && !isOrganizer && !options?.isAdmin) {
+      throw new ForbiddenException('No autorizado');
+    }
+
+    // Optionally send to a corrected address (e.g. buyer typed icloud.con).
+    let targetEmail = order.user.email;
+    if (options?.overrideEmail) {
+      const fixed = options.overrideEmail.trim();
+      if (!isValidEmailFormat(fixed)) {
+        throw new BadRequestException('El correo de destino no es válido.');
+      }
+      const suggestion = suggestEmailFix(fixed);
+      if (suggestion) {
+        throw new BadRequestException(`Revisa el correo: ¿quisiste decir ${suggestion}?`);
+      }
+      targetEmail = fixed;
+    }
 
     const tickets = await this.ticketRepo.find({ where: { orderId: order.id } });
     if (!tickets.length) throw new NotFoundException('No hay entradas en este pedido');
 
     await this.mailService.sendTicketEmail(
-      order.user.email,
+      targetEmail,
       order.user.firstName,
       order.event.title,
       tickets,
@@ -723,7 +757,7 @@ export class OrdersService {
       },
     );
 
-    return { success: true, email: order.user.email };
+    return { success: true, email: targetEmail };
   }
 
   async fulfillPendingOrder(orderId: string) {

@@ -9,6 +9,7 @@ import { parseSafeDate, formatDateInTimezone, getTimezoneAbbr } from '@/lib/date
 import { useAuthStore } from '@/stores/auth';
 import { useLang } from '@/context/LanguageContext';
 import { formatSeatLabel } from '@/lib/seatLabel';
+import { suggestEmailFix } from '@/lib/emailTypo';
 import { Event, SalesReport, VenueSection } from '@/types';
 import { useCategories } from '@/context/CategoryContext';
 import { format, type Locale } from 'date-fns';
@@ -943,6 +944,29 @@ export default function EventDetailPage() {
     }
   };
 
+  const resendTicketToEmail = async (ticketCode?: string, currentEmail?: string) => {
+    if (!ticketCode) return;
+    const fixed = suggestEmailFix(currentEmail || '') || (currentEmail || '');
+    const to = window.prompt(
+      lang === 'es'
+        ? 'Reenviar la entrada a este correo (corrígelo si está mal escrito):'
+        : 'Resend the ticket to this email (fix it if it was mistyped):',
+      fixed,
+    );
+    if (!to || !to.trim()) return;
+    try {
+      const { data } = await api.post(`/orders/ticket/${ticketCode}/resend-email`, { email: to.trim() });
+      toast.success(
+        lang === 'es' ? `Entrada enviada a ${data.email}` : `Ticket sent to ${data.email}`,
+      );
+    } catch (err: any) {
+      toast.error(
+        err?.response?.data?.message ||
+          (lang === 'es' ? 'No se pudo reenviar la entrada' : 'Could not resend the ticket'),
+      );
+    }
+  };
+
   const exportCSV = () => {
     const csv = [
       `${t('orgAttendeeName')},${t('orgAttendeeEmail')},${t('orgAttendeeSection')},${t('orgAttendeeRow')},${t('orgAttendeeSeat')},${t('orgAttendeeCode')},${t('orgAttendeeStatus')}`,
@@ -1854,7 +1878,14 @@ export default function EventDetailPage() {
                         </div>
 
                         {/* Modal Footer */}
-                        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-end">
+                        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-3">
+                          <button
+                            onClick={() => resendTicketToEmail(selectedGroup.tickets[0]?.ticketCode, selectedGroup.email)}
+                            className="px-5 py-2.5 rounded-xl text-xs font-bold bg-[#F97316] text-white hover:bg-[#c93f00] transition-all shadow-sm cursor-pointer"
+                            title={lang === 'es' ? 'Reenviar la entrada (puedes corregir el correo)' : 'Resend the ticket (you can fix the email)'}
+                          >
+                            {lang === 'es' ? '✉ Reenviar entrada' : '✉ Resend ticket'}
+                          </button>
                           <button
                             onClick={() => setExpandedAttendee(null)}
                             className="px-5 py-2.5 rounded-xl text-xs font-bold bg-gray-900 text-white hover:bg-gray-800 transition-all shadow-sm cursor-pointer"
