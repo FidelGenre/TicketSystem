@@ -654,6 +654,9 @@ export default function EventDetailPage() {
   const [blockingActionLoading, setBlockingActionLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [expandedAttendee, setExpandedAttendee] = useState<string | null>(null);
+  const [resendCode, setResendCode] = useState<string | null>(null);
+  const [resendEmail, setResendEmail] = useState('');
+  const [resendBusy, setResendBusy] = useState(false);
 
   // Email Reminder States
   const [showReminderModal, setShowReminderModal] = useState(false);
@@ -944,26 +947,26 @@ export default function EventDetailPage() {
     }
   };
 
-  const resendTicketToEmail = async (ticketCode?: string, currentEmail?: string) => {
+  const openResend = (ticketCode?: string, currentEmail?: string) => {
     if (!ticketCode) return;
-    const fixed = suggestEmailFix(currentEmail || '') || (currentEmail || '');
-    const to = window.prompt(
-      lang === 'es'
-        ? 'Reenviar la entrada a este correo (corrígelo si está mal escrito):'
-        : 'Resend the ticket to this email (fix it if it was mistyped):',
-      fixed,
-    );
-    if (!to || !to.trim()) return;
+    setResendCode(ticketCode);
+    setResendEmail(suggestEmailFix(currentEmail || '') || currentEmail || '');
+  };
+
+  const submitResend = async () => {
+    if (!resendCode || !resendEmail.trim()) return;
+    setResendBusy(true);
     try {
-      const { data } = await api.post(`/orders/ticket/${ticketCode}/resend-email`, { email: to.trim() });
-      toast.success(
-        lang === 'es' ? `Entrada enviada a ${data.email}` : `Ticket sent to ${data.email}`,
-      );
+      const { data } = await api.post(`/orders/ticket/${resendCode}/resend-email`, { email: resendEmail.trim() });
+      toast.success(lang === 'es' ? `Entrada enviada a ${data.email}` : `Ticket sent to ${data.email}`);
+      setResendCode(null);
     } catch (err: any) {
       toast.error(
         err?.response?.data?.message ||
           (lang === 'es' ? 'No se pudo reenviar la entrada' : 'Could not resend the ticket'),
       );
+    } finally {
+      setResendBusy(false);
     }
   };
 
@@ -1880,17 +1883,71 @@ export default function EventDetailPage() {
                         {/* Modal Footer */}
                         <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-3">
                           <button
-                            onClick={() => resendTicketToEmail(selectedGroup.tickets[0]?.ticketCode, selectedGroup.email)}
-                            className="px-5 py-2.5 rounded-xl text-xs font-bold bg-[#F97316] text-white hover:bg-[#c93f00] transition-all shadow-sm cursor-pointer"
+                            onClick={() => openResend(selectedGroup.tickets[0]?.ticketCode, selectedGroup.email)}
+                            className="btn-primary !rounded-xl !px-5 !py-2.5 text-xs font-black inline-flex items-center gap-1.5 cursor-pointer"
                             title={lang === 'es' ? 'Reenviar la entrada (puedes corregir el correo)' : 'Resend the ticket (you can fix the email)'}
                           >
-                            {lang === 'es' ? '✉ Reenviar entrada' : '✉ Resend ticket'}
+                            <HiOutlineMail className="w-4 h-4" />
+                            {lang === 'es' ? 'Reenviar entrada' : 'Resend ticket'}
                           </button>
                           <button
                             onClick={() => setExpandedAttendee(null)}
                             className="px-5 py-2.5 rounded-xl text-xs font-bold bg-gray-900 text-white hover:bg-gray-800 transition-all shadow-sm cursor-pointer"
                           >
                             {lang === 'es' ? 'Cerrar' : 'Close'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  , document.body)}
+
+                  {resendCode && createPortal(
+                    <div
+                      className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in"
+                      onClick={() => !resendBusy && setResendCode(null)}
+                    >
+                      <div
+                        className="w-full max-w-sm bg-white rounded-3xl shadow-[0_24px_70px_rgba(0,0,0,0.3)] overflow-hidden"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="px-6 pt-6 pb-4">
+                          <div className="w-12 h-12 rounded-2xl bg-orange-50 text-[#F97316] flex items-center justify-center mb-4">
+                            <HiOutlineMail className="w-6 h-6" />
+                          </div>
+                          <h2 className="text-lg font-black text-gray-900">{lang === 'es' ? 'Reenviar entrada' : 'Resend ticket'}</h2>
+                          <p className="text-sm text-gray-500 mt-1">
+                            {lang === 'es'
+                              ? 'Confirma o corrige el correo. La entrada (con su QR) se enviará a esta dirección.'
+                              : 'Confirm or fix the email. The ticket (with its QR) will be sent to this address.'}
+                          </p>
+                          <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-5 mb-1.5">
+                            {lang === 'es' ? 'Correo de destino' : 'Destination email'}
+                          </label>
+                          <input
+                            type="email"
+                            autoFocus
+                            value={resendEmail}
+                            onChange={(e) => setResendEmail(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') submitResend(); }}
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm text-gray-900 focus:border-[#F97316] focus:ring-2 focus:ring-orange-100 outline-none transition-all"
+                            placeholder="nombre@icloud.com"
+                          />
+                        </div>
+                        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-3">
+                          <button
+                            onClick={() => setResendCode(null)}
+                            disabled={resendBusy}
+                            className="px-4 py-2.5 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 transition-all cursor-pointer disabled:opacity-50"
+                          >
+                            {lang === 'es' ? 'Cancelar' : 'Cancel'}
+                          </button>
+                          <button
+                            onClick={submitResend}
+                            disabled={resendBusy || !resendEmail.trim()}
+                            className="btn-primary !rounded-xl !px-5 !py-2.5 text-xs font-black inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-60"
+                          >
+                            <HiOutlineMail className="w-4 h-4" />
+                            {resendBusy ? (lang === 'es' ? 'Enviando...' : 'Sending...') : (lang === 'es' ? 'Enviar' : 'Send')}
                           </button>
                         </div>
                       </div>
