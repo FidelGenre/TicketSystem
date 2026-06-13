@@ -1012,10 +1012,13 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
   }, 0);
 
   // Sold / blocked / available counts for the organizer header.
-  const soldCount = sections.reduce(
-    (sum: number, section) => sum + ((section.seats || []).filter((seat) => seat.status === 'sold').length),
-    0
-  );
+  // Seated sections: count sold seats. Standing (GA) sections have no seats, so use
+  // the backend's `soldTickets` (count of tickets issued for that area).
+  const soldCount = sections.reduce((sum: number, section) => {
+    const seatSold = (section.seats || []).filter((seat) => seat.status === 'sold').length;
+    const gaSold = section.sectionType === 'standing' ? (Number((section as any).soldTickets) || 0) : 0;
+    return sum + seatSold + gaSold;
+  }, 0);
   const blockedCount = Math.max(0, fullCapacity - mapCapacity);
   const availableCount = Math.max(0, mapCapacity - soldCount);
 
@@ -1085,7 +1088,10 @@ export default function VenueMapBuilder({ eventId, initialSections, onSaved, onC
     const y = rect ? e.clientY - rect.top : 0;
     const es = lang === 'es';
     const cap = Math.max(0, Number(sec.capacity) || 0);
-    const sold = (sec.seats || []).filter((s) => s.status === 'sold').length;
+    // General-admission areas have no seats — their sales live as Ticket rows, which
+    // the backend reports as `soldTickets`. Fall back to seat status for safety.
+    const seatSold = (sec.seats || []).filter((s) => s.status === 'sold').length;
+    const sold = Math.max(Number((sec as any).soldTickets) || 0, seatSold);
     const available = Math.max(0, cap - sold);
     setHoverInfo({
       id: `area-${sec.id}`,

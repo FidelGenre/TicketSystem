@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, ILike } from 'typeorm';
 import * as fs from 'fs';
 import * as path from 'path';
-import { Event, EventStatus, EventCategory, VenueSection, Seat, SeatStatus, User, Ticket, Order, EventCategoryEntity } from '../database/entities';
+import { Event, EventStatus, EventCategory, VenueSection, Seat, SeatStatus, User, Ticket, TicketStatus, Order, EventCategoryEntity } from '../database/entities';
 import { CreateEventDto, UpdateEventDto, EventQueryDto } from './dto/event.dto';
 
 /**
@@ -22,6 +22,8 @@ export class EventsService {
     private readonly sectionRepo: Repository<VenueSection>,
     @InjectRepository(Seat)
     private readonly seatRepo: Repository<Seat>,
+    @InjectRepository(Ticket)
+    private readonly ticketRepo: Repository<Ticket>,
   ) {}
 
   /**
@@ -720,9 +722,25 @@ export class EventsService {
       order: { rowLabel: 'ASC', seatNumber: 'ASC' },
     });
 
+    // Count sold tickets per section. Seated sections track sales via seat status,
+    // but general-admission (standing) areas have no seats — their sales only exist
+    // as Ticket rows, so we count those to report "Vendidas" correctly.
+    const ticketRows = await this.ticketRepo
+      .createQueryBuilder('t')
+      .select('t.sectionId', 'sectionId')
+      .addSelect('COUNT(t.id)', 'count')
+      .where('t.sectionId IN (:...ids)', { ids: sectionIds })
+      .andWhere('t.status IN (:...st)', { st: [TicketStatus.ACTIVE, TicketStatus.USED] })
+      .groupBy('t.sectionId')
+      .getRawMany();
+    const soldBySection = new Map<string, number>(
+      ticketRows.map((r: any) => [r.sectionId, Number(r.count) || 0]),
+    );
+
     return sections.map(section => ({
       ...section,
       seats: allSeats.filter(s => s.sectionId === section.id),
+      soldTickets: soldBySection.get(section.id) || 0,
     }));
   }
 
