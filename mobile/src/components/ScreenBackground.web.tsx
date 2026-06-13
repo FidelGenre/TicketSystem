@@ -35,11 +35,11 @@ export function ScreenBackground() {
       styleEl.id = 'lp-web-bg';
       document.head.appendChild(styleEl);
     }
+    // Only html/body/#root carry the base color and stay clear for the fixed bg.
+    // Do NOT blanket-transparent deep descendants — that was overriding solid
+    // surfaces like the bottom tab bar. Screens are already transparent at the RN level.
     styleEl.innerHTML = `
-      html, body { background-color: #050b12 !important; }
-      #root > div, #root > div > div, #root > div > div > div {
-        background-color: transparent !important;
-      }
+      html, body, #root { background-color: #050b12 !important; }
     `;
   }, []);
 
