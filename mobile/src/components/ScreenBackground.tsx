@@ -22,11 +22,11 @@ export function ScreenBackground() {
       />
       <Svg style={StyleSheet.absoluteFill} width={width} height={height}>
         <Defs>
-          <RadialGradient id="lp-orange" cx={width * 0.78} cy={height * 0.12} r={orangeR} gradientUnits="userSpaceOnUse">
+          <RadialGradient id="lp-orange" cx={width * 0.78} cy={height * 0.40} r={orangeR} gradientUnits="userSpaceOnUse">
             <Stop offset="0" stopColor="#ff6b00" stopOpacity={0.18} />
             <Stop offset="1" stopColor="#ff6b00" stopOpacity={0} />
           </RadialGradient>
-          <RadialGradient id="lp-blue" cx={width * 0.16} cy={height * 0.02} r={blueR} gradientUnits="userSpaceOnUse">
+          <RadialGradient id="lp-blue" cx={width * 0.16} cy={height * 0.07} r={blueR} gradientUnits="userSpaceOnUse">
             <Stop offset="0" stopColor="#416e9b" stopOpacity={0.16} />
             <Stop offset="1" stopColor="#416e9b" stopOpacity={0} />
           </RadialGradient>

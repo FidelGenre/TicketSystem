@@ -16,8 +16,8 @@ const bgStyle: CSSProperties = {
   backgroundImage: [
     'linear-gradient(90deg, rgba(148,163,184,0.025) 1px, transparent 1px)',
     'linear-gradient(180deg, rgba(148,163,184,0.019) 1px, transparent 1px)',
-    'radial-gradient(circle at 78% 12%, rgba(255,107,0,0.18), transparent 27rem)',
-    'radial-gradient(circle at 16% 2%, rgba(65,110,155,0.16), transparent 24rem)',
+    'radial-gradient(circle at 78% 40%, rgba(255,107,0,0.18), transparent 27rem)',
+    'radial-gradient(circle at 16% 7%, rgba(65,110,155,0.16), transparent 24rem)',
     'linear-gradient(180deg, #050b12 0%, #07111d 46%, #050b12 100%)',
   ].join(','),
   backgroundSize: '92px 92px, 92px 92px, auto, auto, auto',
