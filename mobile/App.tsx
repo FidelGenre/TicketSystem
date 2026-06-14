@@ -98,7 +98,7 @@ function AppContent() {
   // Bottom tab bar swaps with the mode: client tools vs organizer tools.
   const navItems = viewMode === 'organizer'
     ? [
-        { key: 'panel', label: t('Panel', 'Panel'), icon: 'grid', active: tab === 'organizer' && organizerSection === 'dashboard', onPress: () => goOrganizerSection('dashboard') },
+        { key: 'panel', label: t('Panel', 'Dashboard'), icon: 'grid', active: tab === 'organizer' && organizerSection === 'dashboard', onPress: () => goOrganizerSection('dashboard') },
         { key: 'oevents', label: t('Eventos', 'Events'), icon: 'calendar', active: tab === 'organizer' && organizerSection === 'events', onPress: () => goOrganizerSection('events') },
         { key: 'ocreate', label: t('Crear', 'Create'), icon: 'add-circle', active: tab === 'organizer' && organizerSection === 'create', onPress: () => goOrganizerSection('create') },
         { key: 'oscan', label: 'Scan', icon: 'scan', active: tab === 'scan', onPress: () => goToTab('scan') },
