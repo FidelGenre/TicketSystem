@@ -61,7 +61,7 @@ export function MenuDrawer({
               </View>
               <Switch
                 value={viewMode === 'organizer'}
-                onValueChange={(on) => { onClose(); onSetMode(on ? 'organizer' : 'client'); }}
+                onValueChange={(on) => onSetMode(on ? 'organizer' : 'client')}
                 trackColor={{ false: 'rgba(255,255,255,0.18)', true: '#F97316' }}
                 thumbColor="#FFFFFF"
                 ios_backgroundColor="rgba(255,255,255,0.18)"
