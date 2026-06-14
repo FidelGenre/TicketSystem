@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { colors } from '../theme/colors';
 import { useLanguage } from '../i18n/LanguageContext';
+import { GradientButton } from '../components/GradientButton';
 
 type Props = {
   onBack: () => void;
@@ -81,11 +82,13 @@ export function ScanScreen({ onBack: _onBack }: Props) {
           <Text style={styles.badgeText}>{t('MODO EVENTO', 'EVENT MODE')}</Text>
         </View>
 
-        <TouchableOpacity onPress={() => setSoundEnabled((current) => !current)} style={[styles.soundButton, soundEnabled && styles.soundButtonActive]}>
-          <Text style={[styles.soundText, soundEnabled && styles.soundTextActive]}>
-            {soundEnabled ? t('SONIDO', 'SOUND') : t('SILENCIO', 'MUTED')}
-          </Text>
-        </TouchableOpacity>
+        <GradientButton
+          label={soundEnabled ? t('SONIDO', 'SOUND') : t('SILENCIO', 'MUTED')}
+          onPress={() => setSoundEnabled((current) => !current)}
+          height={36}
+          style={styles.soundButton}
+          textStyle={styles.soundText}
+        />
       </View>
 
       <Text style={styles.title}>{t('Scanner de puerta', 'Door scanner')}</Text>
@@ -108,11 +111,13 @@ export function ScanScreen({ onBack: _onBack }: Props) {
             <View style={styles.cameraIcon}>
               <Text style={styles.cameraIconText}>▣</Text>
             </View>
-            <TouchableOpacity style={styles.orangeButton} onPress={() => setScanState('scanning')}>
-              <View pointerEvents="none" style={styles.orangeTopLine} />
-              <View pointerEvents="none" style={styles.orangeBottomShade} />
-              <Text style={styles.orangeButtonText}>{t('INICIAR SCANNER', 'START SCANNER')}</Text>
-            </TouchableOpacity>
+            <GradientButton
+              label={t('INICIAR SCANNER', 'START SCANNER')}
+              onPress={() => setScanState('scanning')}
+              height={56}
+              style={styles.orangeButton}
+              textStyle={styles.orangeButtonText}
+            />
           </View>
         )}
       </View>
@@ -254,19 +259,19 @@ function Stat({ label, value, tone }: { label: string; value: string; tone: 'blu
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: 'transparent' },
-  content: { paddingHorizontal: 18, paddingTop: 37, paddingBottom: 132 },
+  content: { paddingHorizontal: 18, paddingTop: 10, paddingBottom: 132 },
   bgGridA: { position: 'absolute', left: '28%', top: 0, bottom: 0, width: 1, backgroundColor: 'rgba(125,211,252,0.035)' },
   bgGridB: { position: 'absolute', left: 0, right: 0, top: 220, height: 1, backgroundColor: 'rgba(125,211,252,0.030)' },
 
-  topRow: { marginTop: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  soundButton: { width: 88, height: 36, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: '#030B14' },
-  soundButtonActive: { backgroundColor: '#F97316' },
-  soundText: { color: '#FFFFFF', fontWeight: '700', fontSize: 13, letterSpacing: 0 },
+  topRow: { height: 36, marginTop: 0, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10 },
+  soundButton: { flex: 1, borderRadius: 14 },
+  soundButtonActive: {},
+  soundText: { color: '#FFFFFF', fontWeight: '700', fontSize: 11, letterSpacing: 0 },
   soundTextActive: { color: '#FFFFFF' },
 
-  badge: { height: 36, alignSelf: 'flex-start', borderRadius: 14, backgroundColor: '#030B14', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  badgeIcon: { color: '#F97316', fontSize: 14, fontWeight: '700' },
-  badgeText: { color: '#F8FAFC', fontSize: 11, fontWeight: '700', letterSpacing: 0 },
+  badge: { flex: 1, height: 40, borderRadius: 14, backgroundColor: '#030B14', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', paddingHorizontal: 10, paddingVertical: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  badgeIcon: { color: '#F97316', fontSize: 14, lineHeight: 14, fontWeight: '700' },
+  badgeText: { color: '#F8FAFC', fontSize: 11, lineHeight: 13, fontWeight: '700', letterSpacing: 0 },
   title: { color: '#F8FAFC', fontSize: 30, lineHeight: 34, fontWeight: '700', marginTop: 14 },
   subtitle: { color: 'rgba(226,232,240,0.64)', fontSize: 13, lineHeight: 20, fontWeight: '400', marginTop: 8 },
 
@@ -281,10 +286,8 @@ const styles = StyleSheet.create({
   stopButton: { position: 'absolute', bottom: 14, alignSelf: 'center', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: '#030B14', paddingHorizontal: 18, paddingVertical: 10 },
   stopText: { color: '#FFFFFF', fontSize: 10, fontWeight: '700', letterSpacing: 0 },
 
-  orangeButton: { minHeight: 56, borderRadius: 16, backgroundColor: '#F97316', paddingHorizontal: 28, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', shadowColor: '#F97316', shadowOpacity: 0.20, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 5 },
-  orangeTopLine: { position: 'absolute', top: 4, left: 14, right: 14, height: 1, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.24)' },
-  orangeBottomShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '48%', backgroundColor: 'rgba(154,52,18,0.18)' },
-  orangeButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700', letterSpacing: 0, zIndex: 2 },
+  orangeButton: { borderRadius: 16, paddingHorizontal: 28 },
+  orangeButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700', letterSpacing: 0 },
 
   statusCard: { marginTop: 16, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
   spinner: { width: 44, height: 44, borderRadius: 22, borderWidth: 4, borderColor: '#F97316', borderTopColor: 'transparent' },

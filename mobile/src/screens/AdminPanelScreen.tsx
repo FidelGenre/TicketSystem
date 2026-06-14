@@ -3,6 +3,7 @@ import { Animated, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, Vi
 import { colors } from '../theme/colors';
 import { useLanguage } from '../i18n/LanguageContext';
 import { apiGet } from '../services/api';
+import { GradientButton } from '../components/GradientButton';
 
 type Section = 'dashboard' | 'events' | 'users' | 'categories' | 'marketing' | 'analytics' | 'codes' | 'payments';
 type AdminUser = { id: string; name: string; email: string; role: 'client' | 'organizer' | 'admin'; suspended: boolean };
@@ -297,18 +298,26 @@ export function AdminPanelScreen() {
 
                 <FieldLabel label={t('Estado', 'Status')} />
                 <View style={styles.segmentGroup}>
-                  <TouchableOpacity onPress={() => updateUser(user.id, 'suspended', false)} style={[styles.segment, !user.suspended && styles.segmentActiveOrange]}>
-                    <Text style={[styles.segmentText, !user.suspended && styles.segmentTextActive]}>{t('Activo', 'Active')}</Text>
-                  </TouchableOpacity>
+                  {!user.suspended ? (
+                    <GradientButton
+                      label={t('Activo', 'Active')}
+                      onPress={() => updateUser(user.id, 'suspended', false)}
+                      height={48}
+                      style={styles.segment}
+                      textStyle={styles.segmentTextActive}
+                    />
+                  ) : (
+                    <TouchableOpacity onPress={() => updateUser(user.id, 'suspended', false)} style={styles.segment}>
+                      <Text style={styles.segmentText}>{t('Activo', 'Active')}</Text>
+                    </TouchableOpacity>
+                  )}
                   <TouchableOpacity onPress={() => updateUser(user.id, 'suspended', true)} style={[styles.segment, user.suspended && styles.segmentDanger]}>
                     <Text style={[styles.segmentText, user.suspended && styles.segmentTextActive]}>{t('Suspendido', 'Suspended')}</Text>
                   </TouchableOpacity>
                 </View>
 
                 <View style={styles.formActions}>
-                  <TouchableOpacity onPress={() => setEditingUserId(null)} style={styles.primaryButton}>
-                    <Text style={styles.primaryButtonText}>{t('GUARDAR USUARIO', 'SAVE USER')}</Text>
-                  </TouchableOpacity>
+                  <GradientButton label={t('GUARDAR USUARIO', 'SAVE USER')} onPress={() => setEditingUserId(null)} height={56} style={styles.primaryButton} textStyle={styles.primaryButtonText} />
                   <TouchableOpacity onPress={() => setEditingUserId(null)} style={styles.secondaryButton}>
                     <Text style={styles.secondaryButtonText}>{t('CANCELAR', 'CANCEL')}</Text>
                   </TouchableOpacity>
@@ -336,9 +345,7 @@ export function AdminPanelScreen() {
                   </View>
 
                   <View style={styles.actionRow}>
-                    <TouchableOpacity onPress={() => setEditingUserId(user.id)} style={styles.cardPrimaryAction}>
-                      <Text style={styles.cardPrimaryText}>{t('EDITAR USUARIO', 'EDIT USER')}</Text>
-                    </TouchableOpacity>
+                    <GradientButton label={t('EDITAR USUARIO', 'EDIT USER')} onPress={() => setEditingUserId(user.id)} height={50} style={styles.cardPrimaryAction} textStyle={styles.cardPrimaryText} />
                     <TouchableOpacity onPress={() => updateUser(user.id, 'suspended', !user.suspended)} style={styles.cardSecondaryAction}>
                       <Text style={styles.cardSecondaryText}>{user.suspended ? 'ENABLE' : 'SUSPEND'}</Text>
                     </TouchableOpacity>
@@ -368,18 +375,26 @@ export function AdminPanelScreen() {
 
                 <FieldLabel label={t('Ubicacion en home', 'Home placement')} />
                 <View style={styles.segmentGroup}>
-                  <TouchableOpacity onPress={() => updateCategory(category.id, 'featured', true)} style={[styles.segment, category.featured && styles.segmentActiveOrange]}>
-                    <Text style={[styles.segmentText, category.featured && styles.segmentTextActive]}>{t('Destacado', 'Featured')}</Text>
-                  </TouchableOpacity>
+                  {category.featured ? (
+                    <GradientButton
+                      label={t('Destacado', 'Featured')}
+                      onPress={() => updateCategory(category.id, 'featured', true)}
+                      height={48}
+                      style={styles.segment}
+                      textStyle={styles.segmentTextActive}
+                    />
+                  ) : (
+                    <TouchableOpacity onPress={() => updateCategory(category.id, 'featured', true)} style={styles.segment}>
+                      <Text style={styles.segmentText}>{t('Destacado', 'Featured')}</Text>
+                    </TouchableOpacity>
+                  )}
                   <TouchableOpacity onPress={() => updateCategory(category.id, 'featured', false)} style={[styles.segment, !category.featured && styles.segmentActive]}>
                     <Text style={[styles.segmentText, !category.featured && styles.segmentTextActive]}>{t('Estandar', 'Standard')}</Text>
                   </TouchableOpacity>
                 </View>
 
                 <View style={styles.formActions}>
-                  <TouchableOpacity onPress={() => setEditingCategoryId(null)} style={styles.primaryButton}>
-                    <Text style={styles.primaryButtonText}>{t('GUARDAR CATEGORIA', 'SAVE CATEGORY')}</Text>
-                  </TouchableOpacity>
+                  <GradientButton label={t('GUARDAR CATEGORIA', 'SAVE CATEGORY')} onPress={() => setEditingCategoryId(null)} height={56} style={styles.primaryButton} textStyle={styles.primaryButtonText} />
                   <TouchableOpacity onPress={() => setEditingCategoryId(null)} style={styles.secondaryButton}>
                     <Text style={styles.secondaryButtonText}>{t('CANCELAR', 'CANCEL')}</Text>
                   </TouchableOpacity>
@@ -391,9 +406,7 @@ export function AdminPanelScreen() {
               <PanelCard title={t('Categorias', 'Categories')} eyebrow={t('GESTOR DE CATEGORIAS', 'CATEGORY MANAGER')} copy={t('Crea y organiza categorias para filtros, busqueda y eventos destacados.', 'Create and organize categories for filters, search and featured events.')}>
                 <View style={styles.createRow}>
                   <TextInput value={categoryDraft} onChangeText={setCategoryDraft} placeholder={t('Nueva categoria', 'New category')} placeholderTextColor="#9CA3AF" style={styles.createInput} />
-                  <TouchableOpacity onPress={addCategory} style={styles.createButton}>
-                    <Text style={styles.createButtonText}>{t('AGREGAR', 'ADD')}</Text>
-                  </TouchableOpacity>
+                  <GradientButton label={t('AGREGAR', 'ADD')} onPress={addCategory} height={56} style={styles.createButton} textStyle={styles.createButtonText} />
                 </View>
               </PanelCard>
 
@@ -415,9 +428,7 @@ export function AdminPanelScreen() {
                   </View>
 
                   <View style={styles.actionRow}>
-                    <TouchableOpacity onPress={() => setEditingCategoryId(category.id)} style={styles.cardPrimaryAction}>
-                      <Text style={styles.cardPrimaryText}>{t('EDITAR CATEGORIA', 'EDIT CATEGORY')}</Text>
-                    </TouchableOpacity>
+                    <GradientButton label={t('EDITAR CATEGORIA', 'EDIT CATEGORY')} onPress={() => setEditingCategoryId(category.id)} height={50} style={styles.cardPrimaryAction} textStyle={styles.cardPrimaryText} />
                     <TouchableOpacity onPress={() => updateCategory(category.id, 'active', !category.active)} style={styles.cardSecondaryAction}>
                       <Text style={styles.cardSecondaryText}>{category.active ? 'DISABLE' : 'ENABLE'}</Text>
                     </TouchableOpacity>
@@ -502,9 +513,7 @@ export function AdminPanelScreen() {
             <PanelCard title={t('Codigos especiales', 'Special codes')} eyebrow={t('CODIGOS ESPECIALES', 'SPECIAL CODES')} copy={t('Crea codigos, asigna comisiones y monitorea ventas generadas.', 'Create codes, assign commissions and monitor generated sales.')}>
               <View style={styles.createRow}>
                 <TextInput value={specialCodeDraft} onChangeText={setSpecialCodeDraft} placeholder={t('Codigo', 'Code')} placeholderTextColor="#9CA3AF" autoCapitalize="characters" style={styles.createInput} />
-                <TouchableOpacity onPress={addSpecialCode} style={styles.createButton}>
-                  <Text style={styles.createButtonText}>{t('AGREGAR', 'ADD')}</Text>
-                </TouchableOpacity>
+                <GradientButton label={t('AGREGAR', 'ADD')} onPress={addSpecialCode} height={56} style={styles.createButton} textStyle={styles.createButtonText} />
               </View>
             </PanelCard>
 
@@ -533,9 +542,7 @@ export function AdminPanelScreen() {
                 </View>
 
                 <View style={styles.actionRow}>
-                  <TouchableOpacity style={styles.cardPrimaryAction}>
-                    <Text style={styles.cardPrimaryText}>{t('VER VENTAS', 'VIEW SALES')}</Text>
-                  </TouchableOpacity>
+                  <GradientButton label={t('VER VENTAS', 'VIEW SALES')} height={50} style={styles.cardPrimaryAction} textStyle={styles.cardPrimaryText} />
                   <TouchableOpacity onPress={() => toggleSpecialCode(item.id)} style={styles.cardSecondaryAction}>
                     <Text style={styles.cardSecondaryText}>{item.active ? 'DISABLE' : 'ENABLE'}</Text>
                   </TouchableOpacity>
@@ -652,9 +659,13 @@ function StatusPill({ label, tone }: { label: string; tone: 'green' | 'red' | 'o
 }
 
 function ActionButton({ label, muted }: { label: string; muted?: boolean }) {
+  if (!muted) {
+    return <GradientButton label={label} height={44} style={styles.actionButton} textStyle={styles.actionButtonText} />;
+  }
+
   return (
-    <TouchableOpacity style={[styles.actionButton, muted && styles.actionButtonMuted]}>
-      <Text style={[styles.actionButtonText, muted && styles.actionButtonTextMuted]}>{label}</Text>
+    <TouchableOpacity style={[styles.actionButton, styles.actionButtonMuted]}>
+      <Text style={[styles.actionButtonText, styles.actionButtonTextMuted]}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -676,9 +687,13 @@ function MarketingRow({ title, copy, enabled, onToggle }: { title: string; copy:
         <StatusPill label={enabled ? 'ACTIVE' : 'INACTIVE'} tone={enabled ? 'green' : 'gray'} />
       </View>
 
-      <TouchableOpacity onPress={onToggle} style={enabled ? styles.marketingDisableButton : styles.marketingEnableButton}>
-        <Text style={enabled ? styles.marketingDisableText : styles.marketingEnableText}>{enabled ? 'DISABLE' : 'ENABLE'}</Text>
-      </TouchableOpacity>
+      {enabled ? (
+        <TouchableOpacity onPress={onToggle} style={styles.marketingDisableButton}>
+          <Text style={styles.marketingDisableText}>DISABLE</Text>
+        </TouchableOpacity>
+      ) : (
+        <GradientButton label="ENABLE" onPress={onToggle} height={50} style={styles.marketingEnableButton} textStyle={styles.marketingEnableText} />
+      )}
     </View>
   );
 }
@@ -797,7 +812,7 @@ function subtitleFor(section: Section, t: (es: string, en: string) => string) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: 'transparent' },
-  tabsShell: { height: 94, marginTop: 44, backgroundColor: 'transparent', justifyContent: 'center', overflow: 'visible' },
+  tabsShell: { height: 94, marginTop: 10, backgroundColor: 'transparent', justifyContent: 'center', overflow: 'visible' },
   tabsViewport: { height: 62, marginHorizontal: 16, borderRadius: 20, backgroundColor: '#030B14', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', overflow: 'hidden', shadowColor: '#000000', shadowOpacity: 0.22, shadowRadius: 16, shadowOffset: { width: 0, height: 8 } },
   tabsScroller: { height: 62, flexGrow: 0, flexShrink: 0, backgroundColor: 'transparent' },
   tabs: { height: 60, paddingLeft: 6, paddingRight: 46, gap: 6, alignItems: 'center', backgroundColor: 'transparent', position: 'relative' },

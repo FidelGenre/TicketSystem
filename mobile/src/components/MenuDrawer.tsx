@@ -1,4 +1,5 @@
-import { Image, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Image, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../i18n/LanguageContext';
 import { ScreenBackground } from './ScreenBackground';
@@ -34,6 +35,20 @@ export function MenuDrawer({
   canOrganize, canAdmin, viewMode = 'client', onSetMode,
 }: Props) {
   const { t } = useLanguage();
+  const [modeSwitchWidth, setModeSwitchWidth] = useState(0);
+  const modePillX = useRef(new Animated.Value(0)).current;
+  const modePillWidth = modeSwitchWidth > 0 ? (modeSwitchWidth - 14) / 2 : 0;
+
+  useEffect(() => {
+    Animated.spring(modePillX, {
+      toValue: viewMode === 'organizer' ? modePillWidth + 6 : 0,
+      useNativeDriver: true,
+      damping: 18,
+      stiffness: 210,
+      mass: 0.7,
+    }).start();
+  }, [modePillWidth, modePillX, viewMode]);
+
   const go = (action?: () => void) => {
     onClose();
     action?.();
@@ -54,7 +69,16 @@ export function MenuDrawer({
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           {/* Client / Organizer mode toggle */}
           {canOrganize && onSetMode && (
-            <View style={styles.modeSwitch}>
+            <View style={styles.modeSwitch} onLayout={(event) => setModeSwitchWidth(event.nativeEvent.layout.width)}>
+              {modePillWidth > 0 && (
+                <Animated.View
+                  pointerEvents="none"
+                  style={[
+                    styles.modeSlidingPill,
+                    { width: modePillWidth, transform: [{ translateX: modePillX }] },
+                  ]}
+                />
+              )}
               <TouchableOpacity
                 style={[styles.modeBtn, viewMode === 'client' && styles.modeBtnActive]}
                 onPress={() => { onClose(); onSetMode('client'); }}
@@ -112,7 +136,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 65,
   },
-  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 48, marginBottom: 12 },
+  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 48, marginBottom: 22 },
   logo: { width: 131, height: 33 },
   closeBtn: {
     width: 38, height: 38, borderRadius: 14, borderWidth: 1,
@@ -126,7 +150,17 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.14)',
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: '#030B14',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  modeSlidingPill: {
+    position: 'absolute',
+    left: 4,
+    top: 4,
+    bottom: 4,
+    borderRadius: 12,
+    backgroundColor: '#F97316',
   },
   modeBtn: {
     flex: 1,
@@ -136,8 +170,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 12,
+    zIndex: 1,
   },
-  modeBtnActive: { backgroundColor: '#F97316' },
+  modeBtnActive: {},
   modeText: { color: 'rgba(255,255,255,0.66)', fontSize: 14, fontWeight: '800' },
   modeTextActive: { color: '#FFFFFF' },
   card: {
@@ -164,12 +199,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.14)',
     backgroundColor: '#030B14',
-    marginBottom: 8,
+    marginBottom: 3,
   },
-  rowDanger: { borderColor: 'rgba(255,90,69,0.24)', backgroundColor: 'rgba(255,90,69,0.08)', marginTop: 4, marginBottom: 0 },
+  rowDanger: { borderColor: 'rgba(255,90,69,0.24)', backgroundColor: 'rgba(255,90,69,0.08)', marginTop: 5, marginBottom: 0 },
   rowFeatured: {
     borderColor: 'rgba(249,115,22,0.34)',
     backgroundColor: 'rgba(249,115,22,0.075)',
+    marginTop: 5,
     shadowColor: '#F97316',
     shadowOpacity: 0.10,
     shadowRadius: 8,

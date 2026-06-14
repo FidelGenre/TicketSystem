@@ -29,7 +29,15 @@ export function GradientButton({ label, children, onPress, style, textStyle, hei
         end={{ x: 0.5, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
-      <View pointerEvents="none" style={styles.shine} />
+      <View pointerEvents="none" style={styles.shine}>
+        <LinearGradient
+          colors={['rgba(255,235,205,0)', 'rgba(255,235,205,0.85)', 'rgba(255,235,205,0)']}
+          locations={[0, 0.5, 1]}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </View>
       {children ?? <Text style={[styles.text, textStyle]}>{label}</Text>}
     </TouchableOpacity>
   );
@@ -55,8 +63,6 @@ const styles = StyleSheet.create({
     right: 13,
     top: 6,
     height: 1,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,235,205,0.85)',
   },
   text: {
     color: '#FFFFFF',

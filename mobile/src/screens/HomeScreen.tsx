@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Image, Keyboard, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, Keyboard, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Circle, Polygon } from 'react-native-svg';
 import { GradientButton } from '../components/GradientButton';
 import { getPublicEvents } from '../services/events';
 import { colors } from '../theme/colors';
@@ -23,6 +24,18 @@ function getHeroImageSource(event?: MobileEvent) {
 function getPosterImageSource(event?: MobileEvent) {
   const imageUrl = event?.imageUrl || event?.bannerImageUrl;
   return imageUrl ? { uri: imageUrl } : fallbackEventImage;
+}
+
+function SharePointIcon() {
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24">
+      <Polygon points="8,11 17,6 18,8 9,13" fill="#FFFFFF" />
+      <Polygon points="8,13 18,17 17,19 7,15" fill="#FFFFFF" />
+      <Circle cx={7} cy={13} r={2.4} fill="#030B14" stroke="#FFFFFF" strokeWidth={1.8} />
+      <Circle cx={18} cy={7} r={2.4} fill="#030B14" stroke="#FFFFFF" strokeWidth={1.8} />
+      <Circle cx={18} cy={18} r={2.4} fill="#030B14" stroke="#FFFFFF" strokeWidth={1.8} />
+    </Svg>
+  );
 }
 
 function categoryEmoji(item: string) {
@@ -48,6 +61,7 @@ function categoryDesc(item: string, t: (es: string, en: string) => string) {
 
 export function HomeScreen({ onOpenEvent }: Props) {
   const { t } = useLanguage();
+  const { width } = useWindowDimensions();
   const [events, setEvents] = useState<MobileEvent[]>([]);
   const [heroIndex, setHeroIndex] = useState(0);
   const [query, setQuery] = useState('');
@@ -66,6 +80,7 @@ export function HomeScreen({ onOpenEvent }: Props) {
   const heroEvents = useMemo(() => events.filter((event) => event.bannerImageUrl || event.imageUrl), [events]);
   const safeHeroLength = Math.max(heroEvents.length, 1);
   const heroEvent = heroEvents[heroIndex % safeHeroLength] || events[0];
+  const heroHeight = Math.max(120, Math.round((width - 32) / 2.63));
 
   const categories = useMemo(() => {
     const tags = Array.from(new Set(events.map((e) => (e.tag || '').trim()).filter(Boolean)));
@@ -160,13 +175,29 @@ export function HomeScreen({ onOpenEvent }: Props) {
       <View pointerEvents="none" style={styles.bgAccentBlue} />
       <View pointerEvents="none" style={styles.bgGridA} />
       <View pointerEvents="none" style={styles.bgGridB} />
-      <View style={styles.heroWrap}>
+      <View style={[styles.heroWrap, { height: heroHeight }]}>
         <Image source={getHeroImageSource(heroEvent)} style={styles.heroImage} resizeMode="contain" />
-        <TouchableOpacity style={[styles.heroArrow, styles.heroLeft]} onPress={goPrevHero}>
-          <Ionicons name="chevron-back" size={24} color="rgba(255,255,255,0.88)" />
+      </View>
+
+      <View style={styles.heroControls}>
+        <TouchableOpacity style={styles.heroControlButton} onPress={goPrevHero}>
+          <Ionicons name="chevron-back" size={18} color="#FFFFFF" />
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.heroArrow, styles.heroRight]} onPress={goNextHero}>
-          <Ionicons name="chevron-forward" size={24} color="rgba(255,255,255,0.88)" />
+        <View style={styles.heroProgressRail}>
+          {Array.from({ length: safeHeroLength }).map((_, index) => {
+            const active = index === heroIndex % safeHeroLength;
+            return (
+              <TouchableOpacity
+                key={index}
+                activeOpacity={0.8}
+                onPress={() => changeHero(index)}
+                style={[styles.heroProgressNode, active && styles.heroProgressNodeActive]}
+              />
+            );
+          })}
+        </View>
+        <TouchableOpacity style={styles.heroControlButton} onPress={goNextHero}>
+          <Ionicons name="chevron-forward" size={18} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
 
@@ -304,7 +335,7 @@ export function HomeScreen({ onOpenEvent }: Props) {
               <Text style={styles.price}>{t('Desde', 'From')} {event.price}</Text>
             </View>
             <View style={styles.ctaRow}>
-              <TouchableOpacity style={styles.shareButton}><Ionicons name="share-social-outline" size={20} color="#FFFFFF" /></TouchableOpacity>
+              <TouchableOpacity style={styles.shareButton}><SharePointIcon /></TouchableOpacity>
               <GradientButton
                 onPress={() => onOpenEvent(event)}
                 height={56}
@@ -337,12 +368,14 @@ const styles = StyleSheet.create({
   bgAccentBlue: { position: 'absolute', right: -150, top: -80, width: 400, height: 400, borderRadius: 200, backgroundColor: 'transparent' },
   bgGridA: { position: 'absolute', left: 0, right: 0, top: 0, height: 1600, borderLeftWidth: 1, borderRightWidth: 1, borderColor: 'rgba(255,255,255,0.026)' },
   bgGridB: { position: 'absolute', left: '25%', top: 0, bottom: 0, width: 1, backgroundColor: 'rgba(255,255,255,0.022)' },
-  content: { paddingTop: 24, paddingBottom: 46, backgroundColor: 'transparent' },
-  heroWrap: { alignSelf: 'stretch', marginHorizontal: 16, marginTop: 8, marginBottom: 12, height: 238, overflow: 'hidden', backgroundColor: '#030B14', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', borderRadius: 18, alignItems: 'center', justifyContent: 'center', shadowColor: '#000000', shadowOpacity: 0.30, shadowRadius: 24, shadowOffset: { width: 0, height: 12 }, elevation: 6 },
+  content: { paddingTop: 10, paddingBottom: 46, backgroundColor: 'transparent' },
+  heroWrap: { alignSelf: 'stretch', marginHorizontal: 16, marginTop: 0, marginBottom: 10, overflow: 'hidden', backgroundColor: '#030B14', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', borderRadius: 18, alignItems: 'center', justifyContent: 'center', shadowColor: '#000000', shadowOpacity: 0.30, shadowRadius: 24, shadowOffset: { width: 0, height: 12 }, elevation: 6 },
   heroImage: { width: '100%', height: '100%', backgroundColor: '#030B14' },
-  heroArrow: { position: 'absolute', top: '50%', transform: [{ translateY: -22 }], width: 44, height: 44, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.22)', backgroundColor: 'rgba(3,11,20,0.58)', alignItems: 'center', justifyContent: 'center', zIndex: 10, elevation: 10 },
-  heroLeft: { left: 14 },
-  heroRight: { right: 14 },
+  heroControls: { alignSelf: 'center', minHeight: 38, borderRadius: 999, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: 'rgba(3,11,20,0.82)', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 8, marginBottom: 12, shadowColor: '#000000', shadowOpacity: 0.24, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 6 },
+  heroControlButton: { width: 30, height: 30, borderRadius: 999, borderWidth: 1, borderColor: 'rgba(249,115,22,0.38)', backgroundColor: 'rgba(249,115,22,0.12)', alignItems: 'center', justifyContent: 'center' },
+  heroProgressRail: { minWidth: 78, height: 30, borderRadius: 999, paddingHorizontal: 8, backgroundColor: 'rgba(255,255,255,0.045)', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  heroProgressNode: { width: 7, height: 7, borderRadius: 999, backgroundColor: 'rgba(226,232,240,0.32)' },
+  heroProgressNodeActive: { width: 24, backgroundColor: '#F97316', shadowColor: '#F97316', shadowOpacity: 0.55, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } },
   heroAgeBadge: { position: 'absolute', top: 12, right: 12, minWidth: 34, height: 34, borderRadius: 17, paddingHorizontal: 7, backgroundColor: 'rgba(255,255,255,0.92)', alignItems: 'center', justifyContent: 'center' },
   heroAgeText: { color: '#0A375A', fontSize: 12, fontWeight: '900' },
   searchPanel: { marginHorizontal: 16, marginTop: 0, zIndex: 20, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: 'rgba(255,255,255,0.018)', padding: 16, gap: 12, overflow: 'hidden', shadowColor: '#000000', shadowOpacity: 0.16, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 5 },

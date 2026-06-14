@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.cardSoft },
   header: {
     backgroundColor: colors.card,
-    paddingTop: 18,
+    paddingTop: 10,
     paddingHorizontal: 20,
     paddingBottom: 16,
     borderBottomWidth: 1,

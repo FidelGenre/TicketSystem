@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { colors } from '../../theme/colors';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { GradientButton } from '../GradientButton';
 
 type ConnectionStatus = 'incoming' | 'outgoing' | 'accepted';
 
@@ -172,9 +173,7 @@ export function SocialMatchMobile() {
                   <Text style={styles.suggestionName} numberOfLines={1}>{suggestion.name}</Text>
                   <Text style={styles.suggestionMeta} numberOfLines={1}>{suggestion.meta}</Text>
                 </View>
-                <TouchableOpacity style={styles.connectButton}>
-                  <Text style={styles.connectText}>{t('SOLICITAR', 'REQUEST')}</Text>
-                </TouchableOpacity>
+                <GradientButton label={t('SOLICITAR', 'REQUEST')} height={38} style={styles.connectButton} textStyle={styles.connectText} />
               </View>
               <View style={styles.tagRow}>
                 {suggestion.tags.map((tag) => (
@@ -199,7 +198,7 @@ export function SocialMatchMobile() {
             </View>
             {connection.status === 'incoming' && (
               <View style={styles.connectionActions}>
-                <TouchableOpacity onPress={() => updateConnection(connection.id, 'accepted')} style={styles.acceptButton}><Text style={styles.acceptText}>{t('ACEPTAR', 'ACCEPT')}</Text></TouchableOpacity>
+                <GradientButton label={t('ACEPTAR', 'ACCEPT')} onPress={() => updateConnection(connection.id, 'accepted')} height={40} style={styles.acceptButton} textStyle={styles.acceptText} />
                 <TouchableOpacity onPress={() => updateConnection(connection.id, 'declined')} style={styles.rejectButton}><Text style={styles.rejectText}>No</Text></TouchableOpacity>
               </View>
             )}
@@ -207,7 +206,7 @@ export function SocialMatchMobile() {
               <TouchableOpacity onPress={() => updateConnection(connection.id, 'cancelled')} style={styles.rejectButton}><Text style={styles.rejectText}>{t('CANCELAR', 'CANCEL')}</Text></TouchableOpacity>
             )}
             {connection.status === 'accepted' && (
-              <TouchableOpacity onPress={() => setActiveChatId(connection.id)} style={styles.chatButton}><Text style={styles.chatText}>Chat</Text></TouchableOpacity>
+              <GradientButton label="Chat" onPress={() => setActiveChatId(connection.id)} height={40} style={styles.chatButton} textStyle={styles.chatText} />
             )}
           </View>
         ))}
@@ -233,7 +232,7 @@ export function SocialMatchMobile() {
 
           <View style={styles.chatComposer}>
             <TextInput value={chatDraft} onChangeText={setChatDraft} style={styles.chatInput} placeholder={t('Escribe un mensaje...', 'Write a message...')} placeholderTextColor="#9CA3AF" />
-            <TouchableOpacity onPress={sendMessage} style={styles.sendButton}><Text style={styles.sendText}>{t('ENVIAR', 'SEND')}</Text></TouchableOpacity>
+            <GradientButton label={t('ENVIAR', 'SEND')} onPress={sendMessage} height={50} style={styles.sendButton} textStyle={styles.sendText} />
           </View>
         </View>
       )}

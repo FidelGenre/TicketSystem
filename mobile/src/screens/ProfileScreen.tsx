@@ -211,7 +211,7 @@ function ActionRow({ badge, title, subtitle, action }: { badge: string; title: s
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: 'transparent' },
-  content: { paddingHorizontal: 18, paddingTop: 46, paddingBottom: 132 },
+  content: { paddingHorizontal: 18, paddingTop: 10, paddingBottom: 132 },
   hero: {
     backgroundColor: 'rgba(255,255,255,0.025)',
     borderRadius: 24,
