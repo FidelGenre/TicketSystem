@@ -56,8 +56,8 @@ export function MenuDrawer({
           {canOrganize && onSetMode && (
             <View style={styles.modeRow}>
               <View style={styles.modeRowLeft}>
-                <Ionicons name="briefcase-outline" size={18} color="#ff7a00" />
-                <Text style={styles.modeRowText}>{t('Modo organizador', 'Organizer mode')}</Text>
+                <Ionicons name={viewMode === 'organizer' ? 'briefcase-outline' : 'person-outline'} size={18} color="#ff7a00" />
+                <Text style={styles.modeRowText}>{viewMode === 'organizer' ? t('Organizador', 'Organizer') : t('Cliente', 'Client')}</Text>
               </View>
               <Switch
                 value={viewMode === 'organizer'}
