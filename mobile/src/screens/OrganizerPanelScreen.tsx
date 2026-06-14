@@ -11,7 +11,7 @@ import { OrganizerAccessMobile } from '../components/organizer/OrganizerAccessMo
 import { OrganizerRewardsMobile } from '../components/organizer/OrganizerRewardsMobile';
 import { apiGet } from '../services/api';
 
-type Section = 'dashboard' | 'events' | 'create' | 'details' | 'map' | 'attendees' | 'blocks' | 'rewards' | 'scan';
+export type Section = 'dashboard' | 'events' | 'create' | 'details' | 'map' | 'attendees' | 'blocks' | 'rewards' | 'scan';
 
 
 type OrganizerApiEvent = {
@@ -112,11 +112,15 @@ const sections: Section[] = [
   'rewards',
 ];
 
-export function OrganizerPanelScreen() {
+type PanelProps = { section?: Section; onSectionChange?: (s: Section) => void };
+
+export function OrganizerPanelScreen({ section, onSectionChange }: PanelProps = {}) {
   const { t } = useLanguage();
   const organizerIndicatorX = useRef(new Animated.Value(0)).current;
   const organizerIndicatorWidth = useRef(new Animated.Value(118)).current;
-  const [active, setActive] = useState<Section>('dashboard');
+  const [internalSection, setInternalSection] = useState<Section>('dashboard');
+  const active = section ?? internalSection;
+  const setActive = (s: Section) => { setInternalSection(s); onSectionChange?.(s); };
   const [tabLayouts, setTabLayouts] = useState<Partial<Record<Section, { x: number; width: number }>>>({});
   const [tabsViewportWidth, setTabsViewportWidth] = useState(0);
   const [tabsContentWidth, setTabsContentWidth] = useState(0);

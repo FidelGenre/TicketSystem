@@ -11,7 +11,7 @@ import { TicketsScreen } from './src/screens/TicketsScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { SocialScreen } from './src/screens/SocialScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
-import { OrganizerPanelScreen } from './src/screens/OrganizerPanelScreen';
+import { OrganizerPanelScreen, Section as OrgSection } from './src/screens/OrganizerPanelScreen';
 import { AdminPanelScreen } from './src/screens/AdminPanelScreen';
 import { ScanScreen } from './src/screens/ScanScreen';
 import { PurchaseScreen } from './src/screens/PurchaseScreen';
@@ -43,6 +43,20 @@ function AppContent() {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [loginAfterPurchase, setLoginAfterPurchase] = useState(false);
   const [viewMode, setViewMode] = useState<'client' | 'organizer'>('client');
+  const [organizerSection, setOrganizerSection] = useState<OrgSection>('dashboard');
+
+  const setMode = (mode: 'client' | 'organizer') => {
+    setViewMode(mode);
+    if (mode === 'organizer') { setOrganizerSection('dashboard'); goToTab('organizer'); }
+    else { goToTab('events'); }
+  };
+
+  const goOrganizerSection = (section: OrgSection) => {
+    clearFlow();
+    setViewMode('organizer');
+    setOrganizerSection(section);
+    setTab('organizer');
+  };
   const [paymentSuccessOpen, setPaymentSuccessOpen] = useState(false);
 
   // Restore a saved session on launch so the user stays logged in.
@@ -75,14 +89,30 @@ function AppContent() {
     setTab(nextTab);
   };
 
-  const bottomTabs: Tab[] = ['events', 'tickets', 'scan', 'social', 'profile'];
-  const activeBottomIndex = Math.max(0, bottomTabs.indexOf(tab));
   const isLoggedIn = !!currentUser;
   const userRole = currentUser?.role;
   const canAdmin = userRole === 'admin';
   const canOrganize = isLoggedIn;
   const navPadding = 8;
-  const navItemWidth = (width - navPadding * 2) / bottomTabs.length;
+
+  // Bottom tab bar swaps with the mode: client tools vs organizer tools.
+  const navItems = viewMode === 'organizer'
+    ? [
+        { key: 'panel', label: t('Panel', 'Panel'), icon: 'grid', active: tab === 'organizer' && organizerSection === 'dashboard', onPress: () => goOrganizerSection('dashboard') },
+        { key: 'oevents', label: t('Eventos', 'Events'), icon: 'calendar', active: tab === 'organizer' && organizerSection === 'events', onPress: () => goOrganizerSection('events') },
+        { key: 'attendees', label: t('Asistentes', 'Attendees'), icon: 'people', active: tab === 'organizer' && organizerSection === 'attendees', onPress: () => goOrganizerSection('attendees') },
+        { key: 'oscan', label: 'Scan', icon: 'scan', active: tab === 'scan', onPress: () => goToTab('scan') },
+        { key: 'oprofile', label: t('Perfil', 'Profile'), icon: 'person-circle', active: tab === 'profile', onPress: () => goToTab('profile') },
+      ]
+    : [
+        { key: 'events', label: t('Eventos', 'Events'), icon: 'home', active: tab === 'events', onPress: () => goToTab('events') },
+        { key: 'tickets', label: t('Tickets', 'Tickets'), icon: 'ticket', active: tab === 'tickets', onPress: () => goToTab('tickets') },
+        { key: 'scan', label: 'Scan', icon: 'scan', active: tab === 'scan', onPress: () => goToTab('scan') },
+        { key: 'social', label: 'Social', icon: 'people', active: tab === 'social', onPress: () => goToTab('social') },
+        { key: 'profile', label: t('Perfil', 'Profile'), icon: 'person-circle', active: tab === 'profile', onPress: () => goToTab('profile') },
+      ];
+  const activeBottomIndex = Math.max(0, navItems.findIndex((i) => i.active));
+  const navItemWidth = (width - navPadding * 2) / navItems.length;
 
   useEffect(() => {
     Animated.spring(navIndicatorX, {
@@ -130,7 +160,7 @@ function AppContent() {
         ) : tab === 'profile' ? (
           isLoggedIn ? <ProfileScreen key="profile" initialTab="account" user={currentUser!} onUserUpdated={setCurrentUser} onLogout={handleLogout} /> : <LoginScreen onSignIn={setCurrentUser} />
         ) : tab === 'organizer' ? (
-          isLoggedIn ? <OrganizerPanelScreen /> : <LoginScreen onSignIn={setCurrentUser} />
+          isLoggedIn ? <OrganizerPanelScreen section={organizerSection} onSectionChange={setOrganizerSection} /> : <LoginScreen onSignIn={setCurrentUser} />
         ) : tab === 'admin' ? (
           canAdmin ? <AdminPanelScreen /> : <LoginScreen onSignIn={setCurrentUser} />
         ) : tab === 'contact' ? (
@@ -144,30 +174,16 @@ function AppContent() {
         {!scanOpen && !purchaseOpen && !checkoutInfoOpen && !orderSummaryOpen && !paymentSuccessOpen && !loginAfterPurchase && (
           <View style={styles.bottomNav}>
             <Animated.View style={[styles.navSlidingLine, { transform: [{ translateX: navIndicatorX }] }]} />
-            <TouchableOpacity onPress={() => goToTab('events')} style={styles.navItem}>
-              <Ionicons name={tab === 'events' ? 'home' : 'home-outline'} size={18} color={tab === 'events' ? colors.orange : 'rgba(226,232,240,0.50)'} />
-              <Text style={[styles.navText, tab === 'events' && styles.navActiveText]}>{t('Eventos', 'Events')}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => goToTab('tickets')} style={styles.navItem}>
-              <Ionicons name={tab === 'tickets' ? 'ticket' : 'ticket-outline'} size={17} color={tab === 'tickets' ? colors.orange : 'rgba(226,232,240,0.50)'} />
-              <Text style={[styles.navText, tab === 'tickets' && styles.navActiveText]}>{t('Tickets', 'Tickets')}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => goToTab('scan')} style={styles.navItem}>
-              <Ionicons name={tab === 'scan' ? 'scan' : 'scan-outline'} size={17} color={tab === 'scan' ? colors.orange : 'rgba(226,232,240,0.50)'} />
-              <Text style={[styles.navText, tab === 'scan' && styles.navActiveText]}>Scan</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => goToTab('social')} style={styles.navItem}>
-              <Ionicons name={tab === 'social' ? 'people' : 'people-outline'} size={17} color={tab === 'social' ? colors.orange : 'rgba(226,232,240,0.50)'} />
-              <Text style={[styles.navText, tab === 'social' && styles.navActiveText]}>Social</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => goToTab('profile')} style={styles.navItem}>
-              <Ionicons name={tab === 'profile' ? 'person-circle' : 'person-circle-outline'} size={17} color={tab === 'profile' ? colors.orange : 'rgba(226,232,240,0.50)'} />
-              <Text style={[styles.navText, tab === 'profile' && styles.navActiveText]}>{t('Perfil', 'Profile')}</Text>
-            </TouchableOpacity>
+            {navItems.map((item) => (
+              <TouchableOpacity key={item.key} onPress={item.onPress} style={styles.navItem}>
+                <Ionicons
+                  name={(item.active ? item.icon : `${item.icon}-outline`) as any}
+                  size={item.key === 'events' ? 18 : 17}
+                  color={item.active ? colors.orange : 'rgba(226,232,240,0.50)'}
+                />
+                <Text style={[styles.navText, item.active && styles.navActiveText]} numberOfLines={1}>{item.label}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
         )}
 
@@ -190,7 +206,7 @@ function AppContent() {
           canOrganize={canOrganize}
           canAdmin={canAdmin}
           viewMode={viewMode}
-          onSetMode={(mode) => setViewMode(mode)}
+          onSetMode={setMode}
         />
         </View>
       </SafeAreaView>
