@@ -449,7 +449,7 @@ export function OrganizerPanelScreen({ section, onSectionChange }: PanelProps = 
           />
         )}
 
-        {active === 'map' && <VenueMapEditor />}
+        {active === 'map' && <VenueMapEditor eventId={selectedEvent?.id} />}
 
         {active === 'attendees' && (
           <OrganizerAttendeesMobile

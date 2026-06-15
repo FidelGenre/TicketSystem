@@ -1,10 +1,77 @@
-import { GestureResponderEvent, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { useMemo, useState } from 'react';
+import { Alert, GestureResponderEvent, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { apiGet, apiPost } from '../../services/api';
 
 type ItemType = 'table' | 'seat' | 'area' | 'bar' | 'stage';
 type TableShape = 'rectangle' | 'round' | 'soft';
 type SaleMode = 'whole' | 'seat';
+
+// Backend SectionType <-> editor ItemType. Bars/areas are non-seated zones.
+const TYPE_TO_SECTION: Record<ItemType, string> = {
+  table: 'table',
+  seat: 'seated',
+  area: 'standing',
+  bar: 'decor',
+  stage: 'stage',
+};
+const SECTION_TO_TYPE: Record<string, ItemType> = {
+  table: 'table',
+  seated: 'seat',
+  vip: 'seat',
+  standing: 'area',
+  decor: 'bar',
+  stage: 'stage',
+};
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Map a persisted backend section onto the editor's local item shape.
+function sectionToItem(s: any): VenueItem {
+  const type = SECTION_TO_TYPE[String(s.sectionType).toLowerCase()] || 'table';
+  return {
+    id: s.id,
+    type,
+    name: s.name ?? '',
+    x: Number(s.mapX) || 0,
+    y: Number(s.mapY) || 0,
+    width: Number(s.mapWidth) || 92,
+    height: Number(s.mapHeight) || 64,
+    color: s.color || '#f59e0b',
+    price: Number(s.price) || 0,
+    rows: Number(s.rows) || 0,
+    seatsPerRow: Number(s.seatsPerRow) || 0,
+    fontSize: Number(s.labelFontSize) || 12,
+    shape: (s.tableShape as TableShape) || 'rectangle',
+    saleMode: s.tablePurchaseMode === 'whole' ? 'whole' : 'seat',
+    locked: false,
+    blockedSeats: [],
+  };
+}
+
+// Map an editor item onto the backend /sections/bulk payload shape.
+function itemToSection(item: VenueItem, index: number) {
+  const section: any = {
+    name: item.name || `S${index + 1}`,
+    sectionType: TYPE_TO_SECTION[item.type],
+    rows: Number(item.rows) || 1,
+    seatsPerRow: Number(item.seatsPerRow) || 1,
+    capacity: item.type === 'area' ? 100 : 0,
+    price: Number(item.price) || 0,
+    color: item.color || '#6366f1',
+    mapX: parseFloat(item.x.toFixed(2)),
+    mapY: parseFloat(item.y.toFixed(2)),
+    mapWidth: parseFloat(item.width.toFixed(2)),
+    mapHeight: parseFloat(item.height.toFixed(2)),
+    labelFontSize: Number(item.fontSize) || 0,
+    tableShape: item.shape || 'round',
+    tablePurchaseMode: item.saleMode === 'whole' ? 'whole' : 'individual',
+    sortOrder: index,
+  };
+  // Only send the id for rows that already exist in the database.
+  if (item.id && UUID_RE.test(item.id)) section.id = item.id;
+  return section;
+}
 
 type VenueItem = {
   id: string;
@@ -37,7 +104,9 @@ const initialItems: VenueItem[] = [
   { id: 'table-30', type: 'table', name: '30', x: 650, y: 275, width: 96, height: 64, color: '#f59e0b', price: 100, rows: 2, seatsPerRow: 5, fontSize: 10, shape: 'rectangle', saleMode: 'seat', locked: false, blockedSeats: [] },
 ];
 
-export function VenueMapEditor() {
+type Props = { eventId?: string };
+
+export function VenueMapEditor({ eventId }: Props) {
   const { t } = useLanguage();
   const [items, setItems] = useState<VenueItem[]>(initialItems);
   const [selectedId, setSelectedId] = useState(initialItems[2].id);
@@ -47,7 +116,52 @@ export function VenueMapEditor() {
   const [canvasDrag, setCanvasDrag] = useState<{ x: number; y: number; pageX: number; pageY: number } | null>(null);
   const [objectDrag, setObjectDrag] = useState<{ id: string; x: number; y: number; pageX: number; pageY: number } | null>(null);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [zoom, setZoom] = useState(1);
+
+  // Load the persisted seat map for the selected event.
+  useEffect(() => {
+    if (!eventId) return;
+    let mounted = true;
+    apiGet<any[]>(`/events/${eventId}/sections`)
+      .then((data) => {
+        if (!mounted || !Array.isArray(data) || data.length === 0) return;
+        const loaded = data.map(sectionToItem);
+        setItems(loaded);
+        setSelectedId(loaded[0].id);
+        setSelectedSeat(null);
+        setSaved(true);
+      })
+      .catch(() => undefined);
+    return () => {
+      mounted = false;
+    };
+  }, [eventId]);
+
+  const saveMap = async () => {
+    if (!eventId) {
+      Alert.alert(t('Sin evento', 'No event'), t('Selecciona un evento para guardar el mapa.', 'Select an event to save the map.'));
+      return;
+    }
+    if (saving) return;
+    setSaving(true);
+    try {
+      const updated = await apiPost<any[]>(`/events/${eventId}/sections/bulk`, {
+        sections: items.map(itemToSection),
+        showStage: items.some((it) => it.type === 'stage'),
+      });
+      if (Array.isArray(updated) && updated.length > 0) {
+        const reloaded = updated.map(sectionToItem);
+        setItems(reloaded);
+        setSelectedId((prev) => (reloaded.some((r) => r.id === prev) ? prev : reloaded[0].id));
+      }
+      setSaved(true);
+    } catch (err: any) {
+      Alert.alert(t('Error', 'Error'), err?.message || t('No se pudo guardar el mapa', 'Could not save the map'));
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const selected = useMemo(() => items.find((item) => item.id === selectedId) || null, [items, selectedId]);
   const capacity = items.reduce((sum, item) => sum + getCapacity(item), 0);
@@ -168,8 +282,8 @@ export function VenueMapEditor() {
           </View>
         </View>
 
-        <TouchableOpacity onPress={() => setSaved(true)} style={styles.saveButton}>
-          <Text style={styles.saveText}>{saved ? 'GUARDADO' : 'GUARDAR'}</Text>
+        <TouchableOpacity onPress={saveMap} disabled={saving} style={[styles.saveButton, saving && { opacity: 0.6 }]}>
+          <Text style={styles.saveText}>{saving ? t('GUARDANDO...', 'SAVING...') : saved ? t('GUARDADO', 'SAVED') : t('GUARDAR', 'SAVE')}</Text>
         </TouchableOpacity>
       </View>
 
