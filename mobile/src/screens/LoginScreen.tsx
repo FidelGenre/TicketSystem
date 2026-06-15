@@ -4,6 +4,7 @@ import { colors } from '../theme/colors';
 import { useLanguage } from '../i18n/LanguageContext';
 import { AuthUser } from '../services/api';
 import { login as loginRequest, register as registerRequest } from '../services/auth';
+import { GradientButton } from '../components/GradientButton';
 
 type Props = {
   onSignIn: (user: AuthUser) => void;
@@ -156,17 +157,20 @@ export function LoginScreen({ onSignIn }: Props) {
           </View>
         )}
 
-        <TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={submit} disabled={loading}>
-          <Text style={styles.buttonText}>
-            {loading
-              ? isRegister
-                ? t('CREANDO...', 'CREATING...')
-                : t('ENTRANDO...', 'SIGNING IN...')
-              : isRegister
-                ? t('CREAR CUENTA', 'CREATE ACCOUNT')
-                : t('INICIAR SESIÓN', 'SIGN IN')}
-          </Text>
-        </TouchableOpacity>
+        <GradientButton
+          label={loading
+            ? isRegister
+              ? t('CREANDO...', 'CREATING...')
+              : t('ENTRANDO...', 'SIGNING IN...')
+            : isRegister
+              ? t('CREAR CUENTA', 'CREATE ACCOUNT')
+              : t('INICIAR SESIÓN', 'SIGN IN')}
+          onPress={submit}
+          disabled={loading}
+          height={58}
+          style={[styles.button, loading ? styles.buttonDisabled : {}]}
+          textStyle={styles.buttonText}
+        />
 
         <TouchableOpacity style={styles.secondaryButton} onPress={() => switchMode(isRegister ? 'login' : 'register')}>
           <Text style={styles.secondaryText}>
@@ -181,14 +185,14 @@ export function LoginScreen({ onSignIn }: Props) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#030B14',
+    backgroundColor: 'transparent',
   },
   scroll: {
     flexGrow: 1,
     padding: 18,
-    paddingTop: 90,
+    paddingTop: 10,
     paddingBottom: 40,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
   row: {
     flexDirection: 'row',
@@ -198,11 +202,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   card: {
-    backgroundColor: 'rgba(8,31,51,0.82)',
+    backgroundColor: 'rgba(255,255,255,0.018)',
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: 'rgba(255,255,255,0.14)',
     padding: 22,
+    shadowColor: '#000000',
+    shadowOpacity: 0.16,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
   },
   eyebrow: {
     color: colors.orange,
@@ -251,9 +259,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   button: {
-    height: 58,
     borderRadius: 8,
-    backgroundColor: colors.orange,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
@@ -270,7 +276,9 @@ const styles = StyleSheet.create({
   secondaryButton: {
     height: 54,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: '#030B14',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 10,

@@ -1,6 +1,7 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '../../theme/colors';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { GradientButton } from '../GradientButton';
 
 type AccessItem = {
   id: string;
@@ -56,11 +57,13 @@ export function OrganizerAccessMobile({ items, onToggle, goTo }: Props) {
             </View>
 
             <View style={styles.actions}>
-              <TouchableOpacity onPress={() => onToggle(item.id)} style={item.status === 'ACTIVE' ? styles.pauseButton : styles.activateButton}>
-                <Text style={item.status === 'ACTIVE' ? styles.pauseText : styles.activateText}>
-                  {item.status === 'ACTIVE' ? 'PAUSE ACCESS' : 'ACTIVATE'}
-                </Text>
-              </TouchableOpacity>
+              {item.status === 'ACTIVE' ? (
+                <TouchableOpacity onPress={() => onToggle(item.id)} style={styles.pauseButton}>
+                  <Text style={styles.pauseText}>PAUSE ACCESS</Text>
+                </TouchableOpacity>
+              ) : (
+                <GradientButton label="ACTIVATE" onPress={() => onToggle(item.id)} height={44} style={styles.activateButton} textStyle={styles.activateText} />
+              )}
 
               <TouchableOpacity style={styles.secondaryButton} onPress={() => goTo('map')}>
                 <Text style={styles.secondaryText}>{t('VER MAPA', 'VIEW MAP')}</Text>
@@ -162,7 +165,7 @@ const styles = StyleSheet.create({
   statusActiveText: { color: colors.orange },
   statusPausedText: { color: '#CBD5E1' },
   actions: { flexDirection: 'row', gap: 10 },
-  activateButton: { flex: 1, height: 44, borderRadius: 8, backgroundColor: colors.orange, alignItems: 'center', justifyContent: 'center' },
+  activateButton: { flex: 1, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   activateText: { color: '#FFFFFF', fontSize: 14, letterSpacing: 0, fontWeight: '700' },
   pauseButton: { flex: 1, height: 44, borderRadius: 14, backgroundColor: '#030B14', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' },
   pauseText: { color: colors.orange, fontSize: 14, letterSpacing: 0, fontWeight: '700' },

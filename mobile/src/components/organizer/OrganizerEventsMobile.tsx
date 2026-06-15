@@ -1,6 +1,7 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '../../theme/colors';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { GradientButton } from '../GradientButton';
 
 type EventStatus = 'draft' | 'published';
 
@@ -74,9 +75,13 @@ export function OrganizerEventsMobile({ eventTitle, eventVenue, eventStatus, eve
           <Text style={styles.copy}>{t('Administra publicaciones, ventas, mapas y accesos desde un solo lugar.', 'Manage publishing, sales, maps and access from one place.')}</Text>
         </View>
 
-        <TouchableOpacity style={styles.createButton} onPress={() => goTo('create')}>
-          <Text style={styles.createText}>{t('CREAR EVENTO', 'CREATE EVENT')}</Text>
-        </TouchableOpacity>
+        <GradientButton
+          label={t('CREAR EVENTO', 'CREATE EVENT')}
+          onPress={() => goTo('create')}
+          height={50}
+          style={styles.createButton}
+          textStyle={styles.createText}
+        />
       </View>
 
       {visibleEvents.map((item) => (
@@ -150,9 +155,13 @@ function MiniStat({ label, value }: { label: string; value: string }) {
 }
 
 function Action({ label, muted, onPress }: { label: string; muted?: boolean; onPress?: () => void }) {
+  if (!muted) {
+    return <GradientButton label={label} onPress={onPress} height={43} style={styles.action} textStyle={styles.actionText} />;
+  }
+
   return (
-    <TouchableOpacity onPress={onPress} style={[styles.action, muted && styles.actionMuted]}>
-      <Text style={[styles.actionText, muted && styles.actionTextMuted]}>{label}</Text>
+    <TouchableOpacity onPress={onPress} style={[styles.action, styles.actionMuted]}>
+      <Text style={[styles.actionText, styles.actionTextMuted]}>{label}</Text>
     </TouchableOpacity>
   );
 }

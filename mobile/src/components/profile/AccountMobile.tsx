@@ -5,6 +5,7 @@ import { colors } from '../../theme/colors';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { AuthUser } from '../../services/api';
 import { updateProfile as updateProfileRequest } from '../../services/auth';
+import { GradientButton } from '../GradientButton';
 
 type AccountForm = {
   firstName: string;
@@ -115,9 +116,13 @@ export function AccountMobile({ user, onUserUpdated, tabs, showSections = true }
                 <Text style={styles.title}>{t('Información personal', 'Personal information')}</Text>
               </View>
 
-              <TouchableOpacity style={editing ? styles.cancelSmall : styles.editSmall} onPress={() => setEditing(!editing)}>
-                <Text style={editing ? styles.cancelSmallText : styles.editSmallText}>{editing ? 'CANCEL' : 'EDIT'}</Text>
-              </TouchableOpacity>
+              {editing ? (
+                <TouchableOpacity style={styles.cancelSmall} onPress={() => setEditing(false)}>
+                  <Text style={styles.cancelSmallText}>CANCEL</Text>
+                </TouchableOpacity>
+              ) : (
+                <GradientButton label="EDIT" onPress={() => setEditing(true)} height={42} style={styles.editSmall} textStyle={styles.editSmallText} />
+              )}
             </View>
 
             {editing ? (
@@ -231,13 +236,13 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 14,
-    backgroundColor: colors.orange,
+    backgroundColor: '#030B14',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: '#030B14',
+    borderWidth: 1,
+    borderColor: 'rgba(249,115,22,0.72)',
   },
-  cameraText: { color: '#FFFFFF', fontSize: 10, fontWeight: '700' },
+  cameraText: { color: colors.orange, fontSize: 10, fontWeight: '700' },
   name: { color: '#FFFFFF', fontSize: 26, fontWeight: '700', marginBottom: 5 },
   role: { color: '#cbd5e1', fontSize: 12, letterSpacing: 0, fontWeight: '400', marginBottom: 14 },
   heroStats: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, width: '100%', justifyContent: 'center' },
@@ -275,7 +280,6 @@ const styles = StyleSheet.create({
     height: 42,
     paddingHorizontal: 18,
     borderRadius: 14,
-    backgroundColor: colors.orange,
     justifyContent: 'center',
   },
   editSmallText: { color: '#FFFFFF', fontSize: 12, letterSpacing: 0, fontWeight: '700' },

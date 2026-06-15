@@ -3,6 +3,7 @@ import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'reac
 import { apiPatch, apiPost } from '../../services/api';
 import { colors } from '../../theme/colors';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { GradientButton } from '../GradientButton';
 
 type EventStatus = 'draft' | 'published';
 
@@ -309,9 +310,13 @@ function MediaBox({ title, copy }: { title: string; copy: string }) {
 }
 
 function PremiumButton({ label, muted, onPress }: { label: string; muted?: boolean; onPress?: () => void }) {
+  if (!muted) {
+    return <GradientButton label={label} onPress={onPress} height={52} style={styles.button} textStyle={styles.buttonText} />;
+  }
+
   return (
-    <TouchableOpacity onPress={onPress} style={[styles.button, muted && styles.buttonMuted]}>
-      <Text style={[styles.buttonText, muted && styles.buttonTextMuted]}>{label}</Text>
+    <TouchableOpacity onPress={onPress} style={[styles.button, styles.buttonMuted]}>
+      <Text style={[styles.buttonText, styles.buttonTextMuted]}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -352,7 +357,7 @@ const styles = StyleSheet.create({
   summaryValue: { color: '#FFFFFF', fontSize: 18, fontWeight: '700', textAlign: 'center' },
   summaryLabel: { color: '#CBD5E1', fontSize: 10.5, fontWeight: '700', textAlign: 'center', marginTop: 3 },
   actionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 6, marginBottom: 14 },
-  button: { width: '48%', height: 52, borderRadius: 8, backgroundColor: colors.orange, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10 },
+  button: { width: '48%', height: 52, borderRadius: 8, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10 },
   buttonMuted: { backgroundColor: '#030B14', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' },
   buttonText: { color: '#FFFFFF', fontSize: 14, letterSpacing: 0, fontWeight: '700', textAlign: 'center' },
   buttonTextMuted: { color: '#F8FAFC' },

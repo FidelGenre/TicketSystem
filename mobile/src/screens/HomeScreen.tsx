@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Image, Keyboard, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Easing, Image, Keyboard, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Circle, Polygon } from 'react-native-svg';
 import { GradientButton } from '../components/GradientButton';
 import { getPublicEvents } from '../services/events';
 import { colors } from '../theme/colors';
@@ -10,6 +11,11 @@ import { MobileEvent } from '../types/event';
 import { AppFooter } from '../components/AppFooter';
 
 const fallbackEventImage = require('../../assets/demo-concert.png');
+const CATEGORY_CARD_WIDTH = 85;
+const CATEGORY_CARD_GAP = 11;
+const HERO_PROGRESS_STEP = 15;
+const HERO_PROGRESS_ACTIVE_WIDTH = 16;
+const HERO_PROGRESS_DOT_WIDTH = 7;
 
 type Props = {
   onOpenEvent: (event: MobileEvent) => void;
@@ -20,19 +26,37 @@ function getHeroImageSource(event?: MobileEvent) {
   return imageUrl ? { uri: imageUrl } : fallbackEventImage;
 }
 
+function getHeroImageUrl(event?: MobileEvent) {
+  return event?.bannerImageUrl || event?.imageUrl || '';
+}
+
 function getPosterImageSource(event?: MobileEvent) {
   const imageUrl = event?.imageUrl || event?.bannerImageUrl;
   return imageUrl ? { uri: imageUrl } : fallbackEventImage;
 }
 
-function categoryEmoji(item: string) {
+function SharePointIcon() {
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24">
+      <Polygon points="8,11 17,6 18,8 9,13" fill="#FFFFFF" />
+      <Polygon points="8,13 18,17 17,19 7,15" fill="#FFFFFF" />
+      <Circle cx={7} cy={13} r={2.4} fill="#030B14" stroke="#FFFFFF" strokeWidth={1.8} />
+      <Circle cx={18} cy={7} r={2.4} fill="#030B14" stroke="#FFFFFF" strokeWidth={1.8} />
+      <Circle cx={18} cy={18} r={2.4} fill="#030B14" stroke="#FFFFFF" strokeWidth={1.8} />
+    </Svg>
+  );
+}
+
+function categoryIcon(item: string): keyof typeof Ionicons.glyphMap {
   const s = item.toLowerCase();
-  if (/concert|concierto|music|música|musica|festival/.test(s)) return '🎵';
-  if (/sport|deporte|game|partido/.test(s)) return '🏟️';
-  if (/comed/.test(s)) return '🎤';
-  if (/theat|teatro|arte|art|show/.test(s)) return '🎭';
-  if (/network|negocio|business|vip|conf/.test(s)) return '🥂';
-  return '🎟️';
+  if (item === 'All') return 'sparkles-outline';
+  if (/priv|vip/.test(s)) return 'diamond-outline';
+  if (/concert|concierto|music|música|musica|festival/.test(s)) return 'musical-notes-outline';
+  if (/sport|deporte|game|partido/.test(s)) return 'trophy-outline';
+  if (/comed/.test(s)) return 'mic-outline';
+  if (/theat|teatro|arte|art|show/.test(s)) return 'color-palette-outline';
+  if (/network|negocio|business|conf/.test(s)) return 'briefcase-outline';
+  return 'ticket-outline';
 }
 
 function categoryDesc(item: string, t: (es: string, en: string) => string) {
@@ -48,13 +72,22 @@ function categoryDesc(item: string, t: (es: string, en: string) => string) {
 
 export function HomeScreen({ onOpenEvent }: Props) {
   const { t } = useLanguage();
+  const { width } = useWindowDimensions();
   const [events, setEvents] = useState<MobileEvent[]>([]);
   const [heroIndex, setHeroIndex] = useState(0);
+  const [previousHeroIndex, setPreviousHeroIndex] = useState<number | null>(null);
+  const [heroTransitionReady, setHeroTransitionReady] = useState(false);
   const [query, setQuery] = useState('');
   const [place, setPlace] = useState('');
   const [category, setCategory] = useState('All');
   const [sortBy, setSortBy] = useState<'date' | 'price'>('date');
   const [sortOpen, setSortOpen] = useState(false);
+  const [shiningCategory, setShiningCategory] = useState('All');
+  const categoryShine = useRef(new Animated.Value(0)).current;
+  const categoryImageScale = useRef(new Animated.Value(1.12)).current;
+  const categoryFrameX = useRef(new Animated.Value(0)).current;
+  const heroFade = useRef(new Animated.Value(1)).current;
+  const heroProgressX = useRef(new Animated.Value(0)).current;
 
   const trustItems: { icon: keyof typeof Ionicons.glyphMap; title: string; subtitle: string }[] = [
     { icon: 'card-outline', title: t('Pagos seguros', 'Secure payments'), subtitle: t('Procesado por Stripe.', 'Processed by Stripe') },
@@ -66,11 +99,70 @@ export function HomeScreen({ onOpenEvent }: Props) {
   const heroEvents = useMemo(() => events.filter((event) => event.bannerImageUrl || event.imageUrl), [events]);
   const safeHeroLength = Math.max(heroEvents.length, 1);
   const heroEvent = heroEvents[heroIndex % safeHeroLength] || events[0];
+  const previousHeroEvent = previousHeroIndex !== null ? heroEvents[previousHeroIndex % safeHeroLength] || events[0] : undefined;
+  const heroHeight = Math.max(120, Math.round((width - 32) / 2.63));
+  const heroProgressTrackWidth = HERO_PROGRESS_ACTIVE_WIDTH + (safeHeroLength - 1) * HERO_PROGRESS_STEP;
+  const heroProgressWidth = Math.max(78, heroProgressTrackWidth + 16);
 
   const categories = useMemo(() => {
     const tags = Array.from(new Set(events.map((e) => (e.tag || '').trim()).filter(Boolean)));
-    return ['All', ...tags];
+    const base = ['Private Event', 'Music', 'Business', 'VIP'];
+    return ['All', ...Array.from(new Set([...base, ...tags]))];
   }, [events]);
+  const categoryShineX = categoryShine.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-50, 50],
+  });
+  const categoryShineOpacity = categoryShine.interpolate({
+    inputRange: [0, 0.08, 1],
+    outputRange: [0, 1, 1],
+  });
+  const activeCategoryIndex = Math.max(0, categories.findIndex((item) => item === category));
+
+  useEffect(() => {
+    Animated.spring(categoryFrameX, {
+      toValue: activeCategoryIndex * (CATEGORY_CARD_WIDTH + CATEGORY_CARD_GAP),
+      damping: 18,
+      stiffness: 170,
+      mass: 0.72,
+      useNativeDriver: true,
+    }).start();
+  }, [activeCategoryIndex, categoryFrameX]);
+
+  useEffect(() => {
+    Animated.spring(heroProgressX, {
+      toValue: (heroIndex % safeHeroLength) * HERO_PROGRESS_STEP,
+      damping: 20,
+      stiffness: 130,
+      mass: 0.85,
+      useNativeDriver: true,
+    }).start();
+  }, [heroIndex, heroProgressX, safeHeroLength]);
+
+  const playCategoryShine = (item: string) => {
+    categoryShine.stopAnimation();
+    categoryImageScale.stopAnimation();
+    setShiningCategory(item);
+    categoryShine.setValue(0);
+    categoryImageScale.setValue(1.02);
+    Animated.timing(categoryShine, {
+      toValue: 1,
+      duration: 420,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+    Animated.timing(categoryImageScale, {
+      toValue: 1.12,
+      duration: 360,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleCategoryPress = (item: string) => {
+    setCategory(item);
+    playCategoryShine(item);
+  };
 
   const filteredEvents = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -124,13 +216,64 @@ export function HomeScreen({ onOpenEvent }: Props) {
     if (heroEvents.length <= 1) return;
 
     const normalizedIndex = ((nextIndex % heroEvents.length) + heroEvents.length) % heroEvents.length;
-    if (normalizedIndex !== heroIndex) setHeroIndex(normalizedIndex);
+    if (normalizedIndex === heroIndex) return;
+    const nextEvent = heroEvents[normalizedIndex];
+    const nextImageUrl = getHeroImageUrl(nextEvent);
+
+    const startTransition = () => {
+      heroFade.stopAnimation();
+      setPreviousHeroIndex(heroIndex);
+      setHeroTransitionReady(false);
+      heroFade.setValue(0);
+      setHeroIndex(normalizedIndex);
+    };
+
+    if (nextImageUrl) {
+      Image.prefetch(nextImageUrl).finally(startTransition);
+    } else {
+      startTransition();
+    }
+  };
+
+  const finishHeroImageLoad = () => {
+    if (previousHeroIndex === null || heroTransitionReady) return;
+
+    setHeroTransitionReady(true);
+    Animated.timing(heroFade, {
+      toValue: 1,
+      duration: 950,
+      easing: Easing.inOut(Easing.cubic),
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (finished) setPreviousHeroIndex(null);
+    });
   };
 
   const goNextHero = () => {
     if (heroEvents.length <= 1) return;
     changeHero((heroIndex + 1) % heroEvents.length);
   };
+
+  const trustSection = (
+    <View style={styles.trustStrip}>
+      <LinearGradient
+        pointerEvents="none"
+        colors={['rgba(17,26,39,0.88)', 'rgba(7,14,23,0.94)']}
+        style={StyleSheet.absoluteFill}
+      />
+      {trustItems.map((item) => (
+        <View key={item.title} style={styles.trustRow}>
+          <View style={styles.trustIcon}>
+            <Ionicons name={item.icon} size={17} color="#ff7a00" />
+          </View>
+          <View style={styles.trustCopy}>
+            <Text style={styles.trustTitle}>{item.title}</Text>
+            <Text style={styles.trustSubtitle}>{item.subtitle}</Text>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -139,24 +282,46 @@ export function HomeScreen({ onOpenEvent }: Props) {
       <View pointerEvents="none" style={styles.bgAccentBlue} />
       <View pointerEvents="none" style={styles.bgGridA} />
       <View pointerEvents="none" style={styles.bgGridB} />
-      <View style={styles.heroWrap}>
-        <Image source={getHeroImageSource(heroEvent)} style={styles.heroImage} resizeMode="cover" />
-        <TouchableOpacity style={[styles.heroArrow, styles.heroLeft]} onPress={goPrevHero}>
-          <Ionicons name="chevron-back" size={24} color="rgba(255,255,255,0.88)" />
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.heroArrow, styles.heroRight]} onPress={goNextHero}>
-          <Ionicons name="chevron-forward" size={24} color="rgba(255,255,255,0.88)" />
-        </TouchableOpacity>
-        {!!heroEvent?.age && (
-          <View style={styles.heroAgeBadge}><Text style={styles.heroAgeText}>{heroEvent.age}</Text></View>
+      <View style={[styles.heroWrap, { height: heroHeight }]}>
+        {previousHeroEvent && (
+          <Image source={getHeroImageSource(previousHeroEvent)} style={styles.heroImage} resizeMode="contain" />
         )}
+        <Animated.Image
+          source={getHeroImageSource(heroEvent)}
+          style={[styles.heroImage, previousHeroEvent && styles.heroImageLayer, { opacity: previousHeroEvent ? heroFade : 1 }]}
+          resizeMode="contain"
+          onLoad={finishHeroImageLoad}
+          onError={finishHeroImageLoad}
+        />
+      </View>
+
+      <View style={styles.heroControls}>
+        <TouchableOpacity style={styles.heroControlButton} onPress={goPrevHero}>
+          <Ionicons name="chevron-back" size={18} color="#FFFFFF" />
+        </TouchableOpacity>
+        <View style={[styles.heroProgressRail, { width: heroProgressWidth }]}>
+          <View style={[styles.heroProgressTrack, { width: heroProgressTrackWidth }]}>
+            <Animated.View pointerEvents="none" style={[styles.heroProgressNodeActive, { transform: [{ translateX: heroProgressX }] }]} />
+            {Array.from({ length: safeHeroLength }).map((_, index) => (
+              <TouchableOpacity
+                key={index}
+                activeOpacity={0.8}
+                onPress={() => changeHero(index)}
+                style={[styles.heroProgressNode, { left: index * HERO_PROGRESS_STEP + (HERO_PROGRESS_ACTIVE_WIDTH - HERO_PROGRESS_DOT_WIDTH) / 2 }]}
+              />
+            ))}
+          </View>
+        </View>
+        <TouchableOpacity style={styles.heroControlButton} onPress={goNextHero}>
+          <Ionicons name="chevron-forward" size={18} color="#FFFFFF" />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.searchPanel}>
         <LinearGradient
           pointerEvents="none"
-          colors={['rgba(21,31,45,0.94)', 'rgba(8,17,29,0.92)']}
-          style={[StyleSheet.absoluteFill, { borderRadius: 14 }]}
+          colors={['rgba(255,255,255,0.018)', 'rgba(255,255,255,0.018)']}
+          style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
         />
         <LinearGradient
           pointerEvents="none"
@@ -196,23 +361,52 @@ export function HomeScreen({ onOpenEvent }: Props) {
                 : events.find((e) => (e.tag || '').toLowerCase() === item.toLowerCase() && (e.imageUrl || e.bannerImageUrl));
               const img = match?.imageUrl || match?.bannerImageUrl || '';
               return (
-                <TouchableOpacity key={item} activeOpacity={0.85} onPress={() => setCategory(item)} style={[styles.catCard, active && styles.catCardActive]}>
-                  {img ? <Image source={{ uri: img }} style={styles.catImage} resizeMode="cover" /> : null}
+                <TouchableOpacity key={item} activeOpacity={0.85} onPress={() => handleCategoryPress(item)} style={[styles.catCard, active && styles.catCardActive]}>
+                  <Animated.Image
+                    source={img ? { uri: img } : fallbackEventImage}
+                    style={[styles.catImage, active && styles.catImageActive, active && { transform: [{ scale: categoryImageScale }] }]}
+                    resizeMode="cover"
+                  />
                   <LinearGradient
                     pointerEvents="none"
-                    colors={['rgba(2,5,9,0.04)', 'rgba(2,5,9,0.42)', 'rgba(2,5,9,0.94)']}
+                    colors={['rgba(3,11,20,0.10)', 'rgba(3,11,20,0.42)', 'rgba(3,11,20,0.96)']}
                     locations={[0, 0.42, 1]}
                     style={StyleSheet.absoluteFill}
                   />
-                  <View pointerEvents="none" style={styles.catGlow} />
+                  {shiningCategory === item && (
+                    <Animated.View
+                      pointerEvents="none"
+                      style={[
+                        styles.catShine,
+                        {
+                          opacity: categoryShineOpacity,
+                          transform: [{ translateX: categoryShineX }],
+                        },
+                      ]}
+                    >
+                      <LinearGradient
+                        colors={['rgba(255,255,255,0)', 'rgba(255,236,181,0.18)', 'rgba(255,255,255,0)']}
+                        locations={[0, 0.44, 0.58]}
+                        start={{ x: 0, y: 0.16 }}
+                        end={{ x: 1, y: 0.84 }}
+                        style={StyleSheet.absoluteFill}
+                      />
+                    </Animated.View>
+                  )}
+                  <View style={styles.catIconBadge}>
+                    <Ionicons name={categoryIcon(item)} size={15} color="#FFFFFF" />
+                  </View>
                   <View style={styles.catContent}>
-                    <Text style={styles.catIcon}>{item === 'All' ? '🎟️' : categoryEmoji(item)}</Text>
                     <Text style={styles.catTitle} numberOfLines={1}>{label}</Text>
                     <Text style={styles.catDesc} numberOfLines={2}>{categoryDesc(item, t)}</Text>
                   </View>
                 </TouchableOpacity>
               );
             })}
+            <Animated.View
+              pointerEvents="none"
+              style={[styles.catSelectionFrame, { transform: [{ translateX: categoryFrameX }] }]}
+            />
           </ScrollView>
         </View>
         <GradientButton
@@ -241,25 +435,6 @@ export function HomeScreen({ onOpenEvent }: Props) {
             </TouchableOpacity>
           </View>
         )}
-      </View>
-
-      <View style={styles.trustStrip}>
-        <LinearGradient
-          pointerEvents="none"
-          colors={['rgba(17,26,39,0.88)', 'rgba(7,14,23,0.94)']}
-          style={StyleSheet.absoluteFill}
-        />
-        {trustItems.map((item, index) => (
-          <View key={item.title} style={[styles.trustRow, index > 0 && styles.trustRowDivider]}>
-            <View style={styles.trustIcon}>
-              <Ionicons name={item.icon} size={22} color="#ff7a00" />
-            </View>
-            <View style={styles.trustCopy}>
-              <Text style={styles.trustTitle}>{item.title}</Text>
-              <Text style={styles.trustSubtitle}>{item.subtitle}</Text>
-            </View>
-          </View>
-        ))}
       </View>
 
       <View style={styles.highlights}>
@@ -305,7 +480,7 @@ export function HomeScreen({ onOpenEvent }: Props) {
               <Text style={styles.price}>{t('Desde', 'From')} {event.price}</Text>
             </View>
             <View style={styles.ctaRow}>
-              <TouchableOpacity style={styles.shareButton}><Ionicons name="share-social-outline" size={20} color="#FFFFFF" /></TouchableOpacity>
+              <TouchableOpacity style={styles.shareButton}><SharePointIcon /></TouchableOpacity>
               <GradientButton
                 onPress={() => onOpenEvent(event)}
                 height={56}
@@ -317,6 +492,8 @@ export function HomeScreen({ onOpenEvent }: Props) {
           </View>
         </TouchableOpacity>
       ))}
+
+      {trustSection}
 
       <View style={styles.footerGap}>
         <AppFooter />
@@ -336,33 +513,37 @@ const styles = StyleSheet.create({
   bgAccentBlue: { position: 'absolute', right: -150, top: -80, width: 400, height: 400, borderRadius: 200, backgroundColor: 'transparent' },
   bgGridA: { position: 'absolute', left: 0, right: 0, top: 0, height: 1600, borderLeftWidth: 1, borderRightWidth: 1, borderColor: 'rgba(255,255,255,0.026)' },
   bgGridB: { position: 'absolute', left: '25%', top: 0, bottom: 0, width: 1, backgroundColor: 'rgba(255,255,255,0.022)' },
-  content: { paddingTop: 8, paddingBottom: 46, backgroundColor: 'transparent' },
-  heroWrap: { marginHorizontal: 16, marginTop: 12, marginBottom: 0, height: 450, overflow: 'hidden', backgroundColor: '#081F33', borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', borderRadius: 16, shadowColor: '#000000', shadowOpacity: 0.30, shadowRadius: 24, shadowOffset: { width: 0, height: 12 }, elevation: 6 },
-  heroImage: { width: '100%', height: '100%', backgroundColor: '#081F33' },
-  heroArrow: { position: 'absolute', top: '50%', transform: [{ translateY: -22 }], width: 44, height: 44, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.22)', backgroundColor: 'rgba(70,70,75,0.55)', alignItems: 'center', justifyContent: 'center' },
-  heroLeft: { left: 14 },
-  heroRight: { right: 14 },
+  content: { paddingTop: 10, paddingBottom: 46, backgroundColor: 'transparent' },
+  heroWrap: { alignSelf: 'stretch', marginHorizontal: 16, marginTop: 0, marginBottom: 10, overflow: 'hidden', backgroundColor: '#030B14', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', borderRadius: 18, alignItems: 'center', justifyContent: 'center', shadowColor: '#000000', shadowOpacity: 0.30, shadowRadius: 24, shadowOffset: { width: 0, height: 12 }, elevation: 6 },
+  heroImage: { width: '100%', height: '100%', backgroundColor: 'transparent' },
+  heroImageLayer: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
+  heroControls: { alignSelf: 'center', minHeight: 38, borderRadius: 999, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: 'rgba(3,11,20,0.82)', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 8, marginBottom: 12, shadowColor: '#000000', shadowOpacity: 0.24, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 6 },
+  heroControlButton: { width: 30, height: 30, borderRadius: 999, borderWidth: 1, borderColor: 'rgba(249,115,22,0.38)', backgroundColor: 'rgba(249,115,22,0.12)', alignItems: 'center', justifyContent: 'center' },
+  heroProgressRail: { minWidth: 78, height: 30, borderRadius: 999, paddingHorizontal: 8, backgroundColor: 'rgba(255,255,255,0.045)', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' },
+  heroProgressTrack: { height: 30, position: 'relative' },
+  heroProgressNode: { position: 'absolute', top: 11.5, width: HERO_PROGRESS_DOT_WIDTH, height: HERO_PROGRESS_DOT_WIDTH, borderRadius: 999, backgroundColor: 'rgba(226,232,240,0.32)', zIndex: 1 },
+  heroProgressNodeActive: { position: 'absolute', left: 0, top: 11.5, width: HERO_PROGRESS_ACTIVE_WIDTH, height: 7, borderRadius: 999, backgroundColor: '#F97316', shadowColor: '#F97316', shadowOpacity: 0.55, shadowRadius: 8, shadowOffset: { width: 0, height: 0 }, zIndex: 2 },
   heroAgeBadge: { position: 'absolute', top: 12, right: 12, minWidth: 34, height: 34, borderRadius: 17, paddingHorizontal: 7, backgroundColor: 'rgba(255,255,255,0.92)', alignItems: 'center', justifyContent: 'center' },
   heroAgeText: { color: '#0A375A', fontSize: 12, fontWeight: '900' },
-  searchPanel: { marginHorizontal: 16, marginTop: -28, zIndex: 20, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(139,154,174,0.26)', padding: 16, gap: 12, overflow: 'hidden', shadowColor: '#000000', shadowOpacity: 0.38, shadowRadius: 28, shadowOffset: { width: 0, height: 18 }, elevation: 10 },
+  searchPanel: { marginHorizontal: 16, marginTop: 0, zIndex: 20, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: 'rgba(255,255,255,0.018)', padding: 16, gap: 12, overflow: 'hidden', shadowColor: '#000000', shadowOpacity: 0.16, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 5 },
   searchAccentLine: { position: 'absolute', top: 0, left: 38, right: 38, height: 2, borderRadius: 999 },
-  field: { minHeight: 57, borderWidth: 1, borderColor: 'rgba(139,154,174,0.26)', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 11, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', gap: 5 },
+  field: { minHeight: 57, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', borderRadius: 16, paddingHorizontal: 14, paddingVertical: 11, backgroundColor: '#030B14', justifyContent: 'center', gap: 5 },
   fieldLabel: { color: '#FFFFFF', fontSize: 14, fontWeight: '700', letterSpacing: 0 },
   fieldRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   fieldInput: { flex: 1, fontSize: 12, color: '#FFFFFF', fontWeight: '500', outlineStyle: 'none' as any, padding: 0 },
   searchText: { fontSize: 14, letterSpacing: 0 },
-  categoryRow: { paddingTop: 14, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.10)' },
-  categoryScroll: { gap: 11, paddingRight: 8, paddingVertical: 3 },
-  catCard: { width: 118, height: 118, borderRadius: 10, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,107,0,0.34)', backgroundColor: '#030914' },
-  catCardActive: { borderColor: 'rgba(255,107,0,0.72)' },
+  categoryRow: { paddingTop: 14, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.14)' },
+  categoryScroll: { gap: CATEGORY_CARD_GAP, paddingRight: 18, paddingTop: 6, paddingBottom: 10, position: 'relative' },
+  catCard: { width: CATEGORY_CARD_WIDTH, height: CATEGORY_CARD_WIDTH, borderRadius: 10, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,107,0,0.34)', backgroundColor: '#030914', justifyContent: 'flex-end', padding: 0, shadowColor: '#000000', shadowOpacity: 0.32, shadowRadius: 18, shadowOffset: { width: 0, height: 12 }, elevation: 5 },
+  catCardActive: { borderColor: 'rgba(255,107,0,0.34)', shadowColor: '#FF6B00', shadowOpacity: 0.18, shadowRadius: 18, shadowOffset: { width: 0, height: 0 }, elevation: 10 },
+  catSelectionFrame: { position: 'absolute', left: 0, top: 6, width: CATEGORY_CARD_WIDTH, height: CATEGORY_CARD_WIDTH, borderRadius: 10, borderWidth: 1.5, borderColor: 'rgba(255,107,0,0.86)', backgroundColor: 'transparent', shadowColor: '#FF6B00', shadowOpacity: 0.34, shadowRadius: 16, shadowOffset: { width: 0, height: 0 }, elevation: 20, zIndex: 30 },
   catImage: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%', opacity: 0.72 },
-  catOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(2,5,9,0.22)' },
-  catShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '62%', backgroundColor: 'rgba(2,5,9,0.62)' },
-  catGlow: { position: 'absolute', top: -22, left: -22, width: 70, height: 70, borderRadius: 35, backgroundColor: 'rgba(255,107,0,0.30)' },
-  catContent: { position: 'absolute', left: 11, right: 11, bottom: 11, gap: 3 },
-  catIcon: { fontSize: 16, color: '#ff8a1c', marginBottom: 1 },
+  catImageActive: { opacity: 0.9 },
+  catShine: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 4 },
+  catIconBadge: { position: 'absolute', top: 8, left: 8, width: 30, height: 30, borderRadius: 10, backgroundColor: 'rgba(3,11,20,0.72)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', zIndex: 5 },
+  catContent: { position: 'absolute', left: 10, right: 10, bottom: 9, gap: 4, zIndex: 5 },
   catTitle: { color: '#FFFFFF', fontSize: 13, fontWeight: '900', lineHeight: 15 },
-  catDesc: { color: 'rgba(255,255,255,0.74)', fontSize: 9.5, fontWeight: '700', lineHeight: 12 },
+  catDesc: { color: 'rgba(255,255,255,0.76)', fontSize: 9.5, fontWeight: '700', lineHeight: 12 },
   emptyEvents: { marginHorizontal: 16, marginTop: 24, padding: 22, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.02)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)' },
   emptyEventsText: { color: 'rgba(226,232,240,0.72)', fontSize: 15, textAlign: 'center', lineHeight: 22 },
   category: { height: 42, minWidth: 94, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(246,198,95,0.14)', backgroundColor: 'rgba(255,255,255,0.055)', alignItems: 'center', justifyContent: 'center', position: 'relative' },
@@ -373,30 +554,30 @@ const styles = StyleSheet.create({
   categoryDot: { position: 'absolute', right: 12, top: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.orange, shadowColor: colors.orange, shadowOpacity: 0.9, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } },
   sortButton: { marginBottom: 8 },
   sortText: { fontSize: 14, letterSpacing: 0 },
-  trustStrip: { marginHorizontal: 16, marginTop: 22, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(117,132,153,0.28)', overflow: 'hidden', shadowColor: '#000000', shadowOpacity: 0.32, shadowRadius: 24, shadowOffset: { width: 0, height: 14 }, elevation: 6 },
-  trustRow: { minHeight: 94, paddingHorizontal: 23, paddingVertical: 17, flexDirection: 'row', alignItems: 'center', gap: 16 },
-  trustRowDivider: { borderTopWidth: 1, borderTopColor: 'rgba(117,132,153,0.22)' },
-  trustIcon: { width: 57, height: 57, borderRadius: 999, borderWidth: 1, borderColor: 'rgba(255,122,0,0.55)', backgroundColor: 'rgba(255,122,0,0.10)', alignItems: 'center', justifyContent: 'center', shadowColor: '#ff7a00', shadowOpacity: 0.16, shadowRadius: 12, shadowOffset: { width: 0, height: 0 } },
-  trustCopy: { flex: 1, gap: 4 },
-  trustTitle: { color: '#FFFFFF', fontSize: 15, fontWeight: '700', lineHeight: 17 },
-  trustSubtitle: { color: 'rgba(248,250,252,0.64)', fontSize: 13, fontWeight: '400', lineHeight: 17 },
-  sortMenu: { borderRadius: 16, backgroundColor: '#0b2236', borderWidth: 1, borderColor: 'rgba(246,198,95,0.18)', overflow: 'hidden', marginTop: 2 },
-  sortMenuHeader: { paddingHorizontal: 16, paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.10)', backgroundColor: 'rgba(255,255,255,0.05)' },
+  trustStrip: { marginHorizontal: 16, marginTop: 18, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: 'rgba(255,255,255,0.018)', padding: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 8, overflow: 'hidden', shadowColor: '#000000', shadowOpacity: 0.22, shadowRadius: 18, shadowOffset: { width: 0, height: 10 }, elevation: 5 },
+  trustRow: { width: '48.8%', minHeight: 82, paddingHorizontal: 10, paddingVertical: 11, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: '#030B14', alignItems: 'center', justifyContent: 'center', gap: 7 },
+  trustRowDivider: { borderTopWidth: 0, borderTopColor: 'transparent' },
+  trustIcon: { width: 34, height: 34, borderRadius: 999, borderWidth: 1, borderColor: 'rgba(255,122,0,0.48)', backgroundColor: 'rgba(255,122,0,0.09)', alignItems: 'center', justifyContent: 'center', shadowColor: '#ff7a00', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } },
+  trustCopy: { width: '100%', gap: 2, alignItems: 'center' },
+  trustTitle: { color: '#FFFFFF', fontSize: 12, fontWeight: '700', lineHeight: 14, textAlign: 'center' },
+  trustSubtitle: { color: 'rgba(248,250,252,0.62)', fontSize: 10, fontWeight: '400', lineHeight: 12, textAlign: 'center' },
+  sortMenu: { borderRadius: 16, backgroundColor: '#030B14', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', overflow: 'hidden', marginTop: 2 },
+  sortMenuHeader: { paddingHorizontal: 16, paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.14)', backgroundColor: 'rgba(255,255,255,0.018)' },
   sortMenuHeaderText: { color: 'rgba(203,213,225,0.9)', fontSize: 10, fontWeight: '700', letterSpacing: 0 },
   sortOption: { paddingHorizontal: 16, paddingVertical: 13 },
   sortOptionActive: { backgroundColor: 'rgba(249,115,22,0.16)' },
   sortOptionText: { color: 'rgba(226,232,240,0.92)', fontSize: 13, fontWeight: '700' },
   sortOptionTextActive: { color: '#F97316' },
-  highlights: { paddingHorizontal: 16, marginTop: 46 },
-  eyebrow: { color: colors.orange, fontSize: 12, letterSpacing: 0, fontWeight: '500', marginBottom: 12 },
+  highlights: { marginHorizontal: 16, marginTop: 46, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: 'rgba(255,255,255,0.018)', padding: 16 },
+  eyebrow: { color: colors.orange, fontSize: 12, letterSpacing: 0, fontWeight: '700', marginBottom: 12 },
   eventsTitle: { color: '#FFFFFF', fontSize: 32, lineHeight: 36, fontWeight: '700' },
   eventsCount: { color: 'rgba(203,213,225,0.72)', fontSize: 16, fontWeight: '400', marginTop: 12 },
-  eventCard: { marginHorizontal: 16, marginTop: 28, backgroundColor: 'rgba(255,255,255,0.018)', borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(246,198,95,0.18)' },
+  eventCard: { marginHorizontal: 16, marginTop: 18, backgroundColor: 'rgba(255,255,255,0.018)', borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' },
   eventPoster: { width: '100%', aspectRatio: 3 / 4, position: 'relative', backgroundColor: 'rgba(255,255,255,0.012)' },
   eventPosterImage: { width: '100%', height: '100%' },
   posterShade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(5,24,44,0.12)' },
-  privateBadge: { position: 'absolute', top: 16, left: 14, backgroundColor: 'rgba(255,255,255,0.92)', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 },
-  privateBadgeText: { color: colors.navy, fontSize: 12, fontWeight: '500', letterSpacing: 1 },
+  privateBadge: { position: 'absolute', top: 16, left: 14, backgroundColor: 'rgba(3,11,20,0.72)', borderRadius: 999, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', paddingHorizontal: 12, paddingVertical: 8 },
+  privateBadgeText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700', letterSpacing: 0 },
   featuredBadge: { position: 'absolute', top: 16, right: 14, backgroundColor: colors.orange, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 9, shadowColor: colors.orange, shadowOpacity: 0.34, shadowRadius: 14, shadowOffset: { width: 0, height: 8 } },
   featuredText: { color: colors.white, fontSize: 12, fontWeight: '600', letterSpacing: 1.2 },
   plusBadge: { position: 'absolute', top: 76, right: 24, width: 48, height: 48, borderRadius: 24, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' },
@@ -405,13 +586,13 @@ const styles = StyleSheet.create({
   mockVenue: { color: colors.white, fontSize: 34, fontWeight: '800', letterSpacing: 2.2 },
   mockEvent: { color: colors.white, fontSize: 22, fontWeight: '800', marginTop: 10, textAlign: 'center' },
   mockLine: { color: colors.white, fontSize: 15, fontWeight: '800', marginTop: 18, letterSpacing: 2 },
-  eventInfo: { padding: 18, backgroundColor: 'rgba(255,255,255,0.016)', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.10)' },
+  eventInfo: { padding: 18, backgroundColor: '#030B14', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.14)' },
   eventName: { color: '#F8FAFC', fontSize: 21, fontWeight: '700', lineHeight: 25, marginBottom: 14 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
   metaCol: { flex: 1 },
   eventMeta: { color: '#F97316', fontSize: 15, fontWeight: '500' },
   eventAddress: { color: 'rgba(226,232,240,0.55)', fontSize: 13, fontWeight: '400', marginTop: 1 },
-  divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.22)', marginVertical: 20 },
+  divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.14)', marginVertical: 20 },
   price: { color: '#F8FAFC', fontSize: 20, fontWeight: '600' },
   ctaRow: { flexDirection: 'row', gap: 14, marginTop: 22 },
   shareButton: { width: 56, height: 56, borderRadius: 8, backgroundColor: 'transparent', borderWidth: 1, borderColor: 'rgba(249,115,22,0.62)', alignItems: 'center', justifyContent: 'center' },

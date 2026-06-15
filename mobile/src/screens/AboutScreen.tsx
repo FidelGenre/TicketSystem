@@ -88,10 +88,10 @@ export function AboutScreen({ onBack, onContact }: Props) {
 const styles = StyleSheet.create({
   screenWrap: { flex: 1, backgroundColor: '#030B14' },
   root: { flex: 1, backgroundColor: 'transparent' },
-  content: { padding: 18, paddingTop: 18, paddingBottom: 120 },
+  content: { padding: 18, paddingTop: 10, paddingBottom: 120 },
   back: { alignSelf: 'flex-start', marginBottom: 14 },
   backText: { color: '#CBD5E1', fontSize: 15, fontWeight: '700' },
-  hero: { alignItems: 'center', marginBottom: 22, marginTop: 6, gap: 14 },
+  hero: { alignItems: 'center', marginBottom: 22, marginTop: 0, gap: 14 },
   pill: { backgroundColor: 'rgba(249,115,22,0.12)', borderRadius: 999, paddingHorizontal: 14, paddingVertical: 6 },
   pillText: { color: '#F97316', fontSize: 11, fontWeight: '800', letterSpacing: 1.4, textTransform: 'uppercase' },
   title: { color: '#FFFFFF', fontSize: 32, lineHeight: 36, fontWeight: '900', textAlign: 'center' },

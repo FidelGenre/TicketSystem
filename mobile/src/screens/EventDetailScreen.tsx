@@ -278,7 +278,7 @@ function Legend({ color, label }: { color: string; label: string }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: 'transparent' },
-  content: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 130, backgroundColor: 'transparent' },
+  content: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 130, backgroundColor: 'transparent' },
   backButton: {
     alignSelf: 'flex-start',
     marginBottom: 14,

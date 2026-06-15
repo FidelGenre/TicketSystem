@@ -1,6 +1,7 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '../../theme/colors';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { GradientButton } from '../GradientButton';
 
 type Attendee = {
   id: string;
@@ -111,9 +112,13 @@ function Status({ status }: { status: string }) {
 }
 
 function Button({ label, muted, onPress }: { label: string; muted?: boolean; onPress?: () => void }) {
+  if (!muted) {
+    return <GradientButton label={label} onPress={onPress} height={46} style={styles.button} textStyle={styles.buttonText} />;
+  }
+
   return (
-    <TouchableOpacity onPress={onPress} style={[styles.button, muted && styles.buttonMuted]}>
-      <Text style={[styles.buttonText, muted && styles.buttonTextMuted]}>{label}</Text>
+    <TouchableOpacity onPress={onPress} style={[styles.button, styles.buttonMuted]}>
+      <Text style={[styles.buttonText, styles.buttonTextMuted]}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -189,7 +194,7 @@ const styles = StyleSheet.create({
   secondaryAction: { width: 104, height: 44, borderRadius: 14, backgroundColor: '#030B14', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' },
   secondaryText: { color: '#F8FAFC', fontSize: 11, letterSpacing: 0, fontWeight: '700' },
   bottomActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 6 },
-  button: { minHeight: 46, borderRadius: 8, backgroundColor: colors.orange, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 15, flexGrow: 1 },
+  button: { minHeight: 46, borderRadius: 8, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 15, flexGrow: 1 },
   buttonMuted: { backgroundColor: '#030B14', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' },
   buttonText: { color: '#FFFFFF', fontSize: 14, letterSpacing: 0, fontWeight: '700' },
   buttonTextMuted: { color: '#F8FAFC' },
