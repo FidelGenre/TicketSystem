@@ -10,6 +10,7 @@
     "expo": "~56.0.5",
     "expo-av": "^16.0.8",
     "expo-font": "56.0.5",
+    "expo-image-picker": "~56.0.17",
     "expo-linear-gradient": "~56.0.4",
     "expo-status-bar": "~56.0.4",
     "expo-web-browser": "~56.0.5",

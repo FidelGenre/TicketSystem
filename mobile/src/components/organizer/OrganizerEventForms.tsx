@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { apiPatch, apiPost } from '../../services/api';
+import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { apiPatch, apiPost, apiUploadImage, getImageUrl } from '../../services/api';
 import { colors } from '../../theme/colors';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { GradientButton } from '../GradientButton';
@@ -89,6 +90,7 @@ export function OrganizerCreateEventMobile({ eventTitle, setEventTitle, eventVen
   const [timezone, setTimezone] = useState('America/Chicago');
   const [maxTickets, setMaxTickets] = useState('8');
   const [saving, setSaving] = useState(false);
+  const [createdId, setCreatedId] = useState<string | undefined>();
 
   const saveDraft = async () => {
     if (saving) return;
@@ -105,7 +107,13 @@ export function OrganizerCreateEventMobile({ eventTitle, setEventTitle, eventVen
         maxTicketsPerPerson: Number(maxTickets) || 1,
       });
       onEventCreated?.(result);
-      goTo('events');
+      // Keep the user on the form so they can now upload images for the
+      // freshly-created event (image endpoints require an existing id).
+      setCreatedId(result?.id);
+      Alert.alert(
+        t('Borrador guardado', 'Draft saved'),
+        t('Ahora puedes subir la miniatura y el banner.', 'You can now upload the thumbnail and banner.'),
+      );
     } catch (err: any) {
       Alert.alert(t('Error', 'Error'), err?.message || t('No se pudo crear el evento', 'Could not create event'));
     } finally {
@@ -135,8 +143,8 @@ export function OrganizerCreateEventMobile({ eventTitle, setEventTitle, eventVen
         <Field label={t('Max. entradas por persona/transaccion', 'Max tickets per person/transaction')} value={maxTickets} onChangeText={setMaxTickets} keyboardType="number-pad" />
 
         <View style={styles.mediaGrid}>
-          <MediaBox title={t('Imagen miniatura', 'Thumbnail image')} copy={t('Foto principal para tarjetas de evento', 'Main image for event cards')} />
-          <MediaBox title={t('Imagen banner', 'Banner image')} copy={t('Banner superior del evento', 'Top event banner')} />
+          <MediaBox title={t('Imagen miniatura', 'Thumbnail image')} copy={t('Foto principal para tarjetas de evento', 'Main image for event cards')} eventId={createdId} kind="thumbnail" />
+          <MediaBox title={t('Imagen banner', 'Banner image')} copy={t('Banner superior del evento', 'Top event banner')} eventId={createdId} kind="banner" />
         </View>
 
         <View style={styles.actionGrid}>
@@ -237,8 +245,8 @@ export function OrganizerDetailsMobile({ eventTitle, setEventTitle, eventVenue, 
         <Text style={styles.eyebrow}>{t('IMÁGENES', 'MEDIA')}</Text>
         <Text style={styles.cardTitle}>{t('Imágenes del evento', 'Event images')}</Text>
         <View style={styles.mediaGrid}>
-          <MediaBox title={t('Miniatura', 'Thumbnail')} copy={t('Imagen que aparece en listados y tarjetas', 'Image shown in listings and cards')} />
-          <MediaBox title={t('Banner', 'Banner')} copy={t('Imagen grande del detalle y home', 'Large image for details and home')} />
+          <MediaBox title={t('Miniatura', 'Thumbnail')} copy={t('Imagen que aparece en listados y tarjetas', 'Image shown in listings and cards')} eventId={selectedEventId} kind="thumbnail" />
+          <MediaBox title={t('Banner', 'Banner')} copy={t('Imagen grande del detalle y home', 'Large image for details and home')} eventId={selectedEventId} kind="banner" />
         </View>
       </View>
 
@@ -293,17 +301,53 @@ function Activity({ title, copy }: { title: string; copy: string }) {
   );
 }
 
-function MediaBox({ title, copy }: { title: string; copy: string }) {
+function MediaBox({ title, copy, eventId, kind, initialUrl }: { title: string; copy: string; eventId?: string; kind: 'thumbnail' | 'banner'; initialUrl?: string }) {
   const { t } = useLanguage();
+  const [preview, setPreview] = useState<string>(initialUrl ? getImageUrl(initialUrl) : '');
+  const [uploading, setUploading] = useState(false);
+
+  const pickAndUpload = async () => {
+    if (!eventId) {
+      Alert.alert(t('Guarda primero', 'Save first'), t('Guarda el borrador del evento antes de subir imágenes.', 'Save the event draft before uploading images.'));
+      return;
+    }
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(t('Permiso necesario', 'Permission needed'), t('Concede acceso a tus fotos para subir una imagen.', 'Grant photo access to upload an image.'));
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.9 });
+    if (result.canceled || !result.assets?.length) return;
+
+    const asset = result.assets[0];
+    setUploading(true);
+    try {
+      const path = kind === 'banner' ? `/events/${eventId}/image/banner` : `/events/${eventId}/image`;
+      const updated = await apiUploadImage<any>(path, { uri: asset.uri, fileName: asset.fileName, mimeType: asset.mimeType });
+      const nextUrl = kind === 'banner' ? updated?.bannerImageUrl : updated?.imageUrl;
+      setPreview(nextUrl ? getImageUrl(nextUrl) : asset.uri);
+    } catch (err: any) {
+      Alert.alert(t('Error', 'Error'), err?.message || t('No se pudo subir la imagen', 'Could not upload the image'));
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <View style={styles.mediaBox}>
-      <View style={styles.mediaIcon}>
-        <Text style={styles.mediaIconText}>Img</Text>
-      </View>
+      {preview ? (
+        <Image source={{ uri: preview }} style={styles.mediaPreview} resizeMode="cover" />
+      ) : (
+        <View style={styles.mediaIcon}>
+          <Text style={styles.mediaIconText}>Img</Text>
+        </View>
+      )}
       <Text style={styles.mediaTitle}>{title}</Text>
       <Text style={styles.mediaCopy}>{copy}</Text>
-      <TouchableOpacity style={styles.mediaButton}>
-        <Text style={styles.mediaButtonText}>{t('SELECCIONAR', 'SELECT')}</Text>
+      <TouchableOpacity style={styles.mediaButton} onPress={pickAndUpload} disabled={uploading}>
+        <Text style={styles.mediaButtonText}>
+          {uploading ? t('SUBIENDO...', 'UPLOADING...') : preview ? t('CAMBIAR', 'CHANGE') : t('SELECCIONAR', 'SELECT')}
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -378,6 +422,7 @@ const styles = StyleSheet.create({
   mediaGrid: { gap: 12, marginBottom: 14 },
   mediaBox: { backgroundColor: '#030B14', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', padding: 16 },
   mediaIcon: { width: 54, height: 54, borderRadius: 17, backgroundColor: '#030B14', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  mediaPreview: { width: '100%', height: 120, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', marginBottom: 12, backgroundColor: '#030B14' },
   mediaIconText: { color: colors.orange, fontSize: 11, fontWeight: '700' },
   mediaTitle: { color: colors.textPrimary, fontSize: 17, fontWeight: '700', marginBottom: 4 },
   mediaCopy: { color: colors.textFaint, fontSize: 13, fontWeight: '700', lineHeight: 18, marginBottom: 12 },

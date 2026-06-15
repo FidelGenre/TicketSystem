@@ -131,6 +131,47 @@ export async function apiPut<T>(path: string, body?: unknown): Promise<T> {
   return (text ? JSON.parse(text) : undefined) as T;
 }
 
+export type PickedImage = { uri: string; fileName?: string | null; mimeType?: string | null };
+
+// Multipart upload of a locally-picked image. Works on web (blob fetch) and
+// native (uri/name/type triplet). Does NOT set Content-Type so the runtime adds
+// the correct multipart boundary.
+export async function apiUploadImage<T>(path: string, image: PickedImage, field = 'image'): Promise<T> {
+  if (!API_URL) throw new Error('Missing EXPO_PUBLIC_API_URL');
+
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  const name = image.fileName || `upload-${Date.now()}.jpg`;
+  const type = image.mimeType || 'image/jpeg';
+  const form = new FormData();
+
+  if (typeof window !== 'undefined' && image.uri.startsWith('blob:')) {
+    // Web: the picker hands back a blob: URL — materialize it into a Blob.
+    const blob = await (await fetch(image.uri)).blob();
+    form.append(field, blob, name);
+  } else {
+    // Native: React Native FormData accepts the file descriptor object.
+    form.append(field, { uri: image.uri, name, type } as any);
+  }
+
+  const response = await fetch(`${API_URL}${cleanPath}`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: form,
+  });
+
+  if (!response.ok) {
+    let message = `API request failed: ${response.status}`;
+    try {
+      const data = await response.json();
+      message = data?.message || message;
+    } catch {}
+    throw new Error(message);
+  }
+
+  const text = await response.text();
+  return (text ? JSON.parse(text) : undefined) as T;
+}
+
 export async function apiDelete<T = void>(path: string): Promise<T> {
   if (!API_URL) throw new Error('Missing EXPO_PUBLIC_API_URL');
 
