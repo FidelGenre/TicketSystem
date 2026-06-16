@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Animated, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { colors } from '../theme/colors';
 import { useLanguage } from '../i18n/LanguageContext';
 import { apiDelete, apiGet, apiPatch, apiPost, getImageUrl } from '../services/api';
@@ -199,6 +200,38 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
       setUsersTotal(typeof data?.total === 'number' ? data.total : listFrom(data).length);
     } catch (err: any) {
       setUsersApiError(err?.message || 'Could not load users');
+    }
+  };
+
+  // ── Create user (admin) ────────────────────────────────────────────────────
+  const [showCreateUser, setShowCreateUser] = useState(false);
+  const [cuForm, setCuForm] = useState({ firstName: '', lastName: '', username: '', email: '', password: '', phone: '', role: 'client' as 'client' | 'organizer' | 'admin' });
+  const [creatingUser, setCreatingUser] = useState(false);
+  const setCu = (k: keyof typeof cuForm, v: string) => setCuForm((f) => ({ ...f, [k]: v }));
+  const createUserApi = async () => {
+    if (!cuForm.firstName.trim() || !cuForm.lastName.trim() || !cuForm.username.trim() || !cuForm.email.trim()) {
+      Alert.alert(t('Faltan datos', 'Missing info'), t('Nombre, apellido, usuario y correo son requeridos.', 'First name, last name, username and email are required.'));
+      return;
+    }
+    setCreatingUser(true);
+    try {
+      await apiPost('/admin/users', {
+        firstName: cuForm.firstName,
+        lastName: cuForm.lastName,
+        username: cuForm.username,
+        email: cuForm.email,
+        password: cuForm.password || undefined,
+        role: cuForm.role,
+        phone: cuForm.phone,
+      });
+      Alert.alert(t('Listo', 'Done'), t('Usuario creado.', 'User created.'));
+      setShowCreateUser(false);
+      setCuForm({ firstName: '', lastName: '', username: '', email: '', password: '', phone: '', role: 'client' });
+      await loadUsers();
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || t('No se pudo crear el usuario', 'Could not create user'));
+    } finally {
+      setCreatingUser(false);
     }
   };
 
@@ -499,6 +532,47 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
     );
   };
 
+  // ── Event approval (pending events + pending changes) ──────────────────────
+  const PENDING_CHANGE_FIELDS = ['title', 'description', 'imageUrl', 'bannerImageUrl', 'venueName', 'category', 'eventDate', 'creatorCommission'];
+  const eventPendingFields = (ev: any): string[] => {
+    const map: Record<string, any> = {
+      title: ev.pendingTitle, description: ev.pendingDescription, imageUrl: ev.pendingImageUrl,
+      bannerImageUrl: ev.pendingBannerImageUrl, venueName: ev.pendingVenueName, category: ev.pendingCategory,
+      eventDate: ev.pendingEventDate,
+      creatorCommission: ev.pendingCreatorCommission != null ? ev.pendingCreatorCommission : undefined,
+    };
+    return PENDING_CHANGE_FIELDS.filter((f) => map[f] != null && map[f] !== '');
+  };
+
+  const approveEventApi = async (id: string) => {
+    try {
+      await apiPatch(`/admin/events/${id}/approve`);
+      setAdminEvents((cur) => cur.map((e) => e.id === id ? { ...e, status: 'published' } : e));
+    } catch (err: any) { Alert.alert('Error', err?.message || t('No se pudo aprobar', 'Could not approve')); }
+  };
+  const rejectEventApi = async (id: string) => {
+    try {
+      await apiPatch(`/admin/events/${id}/reject`);
+      setAdminEvents((cur) => cur.map((e) => e.id === id ? { ...e, status: 'rejected' } : e));
+    } catch (err: any) { Alert.alert('Error', err?.message || t('No se pudo rechazar', 'Could not reject')); }
+  };
+  const resolveChanges = async (id: string, approve: boolean) => {
+    const ev = adminEvents.find((e) => e.id === id);
+    if (!ev) return;
+    const fields = eventPendingFields(ev);
+    if (fields.length === 0) return;
+    try {
+      for (const field of fields) {
+        await apiPatch(`/admin/events/${id}/${approve ? 'approve-change' : 'reject-change'}`, { field });
+      }
+      Alert.alert(t('Listo', 'Done'), approve ? t('Cambios aprobados.', 'Changes approved.') : t('Cambios rechazados.', 'Changes rejected.'));
+      try {
+        const fresh = await apiGet<any>('/admin/events?page=1&limit=50');
+        setAdminEvents(listFrom(fresh));
+      } catch {}
+    } catch (err: any) { Alert.alert('Error', err?.message || 'Error'); }
+  };
+
   // ── Special codes actions ──────────────────────────────────────────────────
 
   const addSpecialCode = async () => {
@@ -570,6 +644,51 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
     }
   };
 
+  // ── Home banner management (base64 data URLs, like the web) ────────────────
+  const [bannerDesktop, setBannerDesktop] = useState<{ data: string; name: string } | null>(null);
+  const [bannerMobile, setBannerMobile] = useState<{ data: string; name: string } | null>(null);
+  const [publishingBanner, setPublishingBanner] = useState(false);
+
+  const pickBanner = async (which: 'desktop' | 'mobile') => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) { Alert.alert(t('Permiso necesario', 'Permission needed'), t('Concede acceso a tus fotos.', 'Grant photo access.')); return; }
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.85, base64: true });
+    if (res.canceled || !res.assets?.length) return;
+    const a = res.assets[0];
+    const dataUrl = a.base64 ? `data:${a.mimeType || 'image/jpeg'};base64,${a.base64}` : a.uri;
+    const entry = { data: dataUrl, name: a.fileName || `banner-${which}` };
+    if (which === 'desktop') setBannerDesktop(entry); else setBannerMobile(entry);
+  };
+
+  const publishBanner = async () => {
+    if (!bannerDesktop) { Alert.alert(t('Imagen requerida', 'Image required'), t('Selecciona la imagen del banner.', 'Select the banner image.')); return; }
+    setPublishingBanner(true);
+    try {
+      await apiPost('/marketing/admin/banner/home', {
+        imageData: bannerDesktop.data,
+        fileName: bannerDesktop.name,
+        mobileImageData: bannerMobile?.data || null,
+        mobileFileName: bannerMobile?.name || null,
+      });
+      Alert.alert(t('Publicado', 'Published'), t('Banner publicado en el home.', 'Banner published on the home page.'));
+      setHomeBanner({ isActive: true });
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || t('No se pudo publicar el banner.', 'Could not publish the banner.'));
+    } finally {
+      setPublishingBanner(false);
+    }
+  };
+
+  const deleteBanner = async (which: 'home' | 'home-mobile') => {
+    try {
+      await apiDelete(`/marketing/admin/banner/${which}`);
+      if (which === 'home') { setBannerDesktop(null); setHomeBanner(false); } else setBannerMobile(null);
+      Alert.alert(t('Listo', 'Done'), t('Banner eliminado.', 'Banner removed.'));
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Error');
+    }
+  };
+
   return (
     <View style={styles.root}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
@@ -628,6 +747,27 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
                     </View>
                   </View>
                 </View>
+
+                {item.status === 'pending' && (
+                  <View style={styles.adminApprovalRow}>
+                    <TouchableOpacity onPress={() => approveEventApi(item.id)} style={[styles.adminApproveBtn]}>
+                      <Text style={styles.adminApproveText}>{t('APROBAR EVENTO', 'APPROVE EVENT')}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => rejectEventApi(item.id)} style={[styles.adminRejectBtn]}>
+                      <Text style={styles.adminRejectText}>{t('RECHAZAR', 'REJECT')}</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+                {eventPendingFields(item).length > 0 && (
+                  <View style={styles.adminApprovalRow}>
+                    <TouchableOpacity onPress={() => resolveChanges(item.id, true)} style={[styles.adminApproveBtn]}>
+                      <Text style={styles.adminApproveText}>{t('APROBAR CAMBIOS', 'APPROVE CHANGES')} ({eventPendingFields(item).length})</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => resolveChanges(item.id, false)} style={[styles.adminRejectBtn]}>
+                      <Text style={styles.adminRejectText}>{t('RECHAZAR', 'REJECT')}</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
 
                 <View style={styles.adminEventActions}>
                   <GradientButton
@@ -717,6 +857,36 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
                   style={styles.userSearchInput}
                 />
               </View>
+
+              <TouchableOpacity onPress={() => setShowCreateUser((v) => !v)} style={styles.createToggle}>
+                <Text style={styles.createToggleText}>{showCreateUser ? t('✕ Cancelar', '✕ Cancel') : t('+ Crear usuario', '+ Create user')}</Text>
+              </TouchableOpacity>
+
+              {showCreateUser && (
+                <PanelCard title={t('Nuevo usuario', 'New user')} eyebrow={t('CREAR', 'CREATE')} copy={t('Crea una cuenta manualmente.', 'Create an account manually.')}>
+                  <View style={styles.twoColRow}>
+                    <View style={styles.col}><FieldLabel label={t('Nombre', 'First name')} /><TextInput value={cuForm.firstName} onChangeText={(v) => setCu('firstName', v)} style={styles.input} /></View>
+                    <View style={styles.col}><FieldLabel label={t('Apellido', 'Last name')} /><TextInput value={cuForm.lastName} onChangeText={(v) => setCu('lastName', v)} style={styles.input} /></View>
+                  </View>
+                  <FieldLabel label={t('Usuario', 'Username')} />
+                  <TextInput value={cuForm.username} onChangeText={(v) => setCu('username', v)} autoCapitalize="none" style={styles.input} />
+                  <FieldLabel label={t('Email', 'Email')} />
+                  <TextInput value={cuForm.email} onChangeText={(v) => setCu('email', v)} autoCapitalize="none" keyboardType="email-address" style={styles.input} />
+                  <FieldLabel label={t('Teléfono', 'Phone')} />
+                  <TextInput value={cuForm.phone} onChangeText={(v) => setCu('phone', v)} keyboardType="phone-pad" style={styles.input} />
+                  <FieldLabel label={t('Contraseña (opcional)', 'Password (optional)')} />
+                  <TextInput value={cuForm.password} onChangeText={(v) => setCu('password', v)} secureTextEntry style={styles.input} />
+                  <FieldLabel label={t('Rol', 'Role')} />
+                  <View style={styles.segmentGroup}>
+                    {(['client', 'organizer', 'admin'] as const).map((role) => (
+                      <TouchableOpacity key={role} onPress={() => setCu('role', role)} style={[styles.segment, cuForm.role === role && styles.segmentActive]}>
+                        <Text style={[styles.segmentText, cuForm.role === role && styles.segmentTextActive]}>{role}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  <GradientButton label={creatingUser ? t('CREANDO...', 'CREATING...') : t('CREAR USUARIO', 'CREATE USER')} onPress={createUserApi} height={48} style={{ marginTop: 12 }} />
+                </PanelCard>
+              )}
               {usersApiError ? (
                 <View style={styles.userEmptyCard}>
                   <Text style={styles.userEmptyText}>{t('No se pudo actualizar la lista real de usuarios.', 'Could not refresh the real users list.')}</Text>
@@ -865,6 +1035,26 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
                 </View>
                 <Text style={styles.bannerPreviewTitle}>{t('Tu entrada a grandes experiencias', 'Your access to great experiences')}</Text>
                 <Text style={styles.bannerPreviewCopy}>{t('Conciertos, teatro, talleres, networking y eventos privados.', 'Concerts, theater, workshops, networking and private events.')}</Text>
+              </View>
+            </PanelCard>
+
+            <PanelCard title={t('Gestión de banner', 'Banner management')} eyebrow={t('HOME', 'HOME')} copy={t('Sube la imagen del banner del home (escritorio y móvil).', 'Upload the home banner image (desktop and mobile).')}>
+              <View style={styles.twoColRow}>
+                <View style={styles.col}>
+                  <FieldLabel label={t('Escritorio', 'Desktop')} />
+                  {bannerDesktop ? <Image source={{ uri: bannerDesktop.data }} style={styles.bannerThumb} resizeMode="cover" /> : <View style={styles.bannerThumbEmpty}><Text style={styles.bannerThumbText}>16:9</Text></View>}
+                  <TouchableOpacity onPress={() => pickBanner('desktop')} style={styles.bannerPickBtn}><Text style={styles.bannerPickText}>{bannerDesktop ? t('CAMBIAR', 'CHANGE') : t('SELECCIONAR', 'SELECT')}</Text></TouchableOpacity>
+                </View>
+                <View style={styles.col}>
+                  <FieldLabel label={t('Móvil (opcional)', 'Mobile (optional)')} />
+                  {bannerMobile ? <Image source={{ uri: bannerMobile.data }} style={styles.bannerThumb} resizeMode="cover" /> : <View style={styles.bannerThumbEmpty}><Text style={styles.bannerThumbText}>9:16</Text></View>}
+                  <TouchableOpacity onPress={() => pickBanner('mobile')} style={styles.bannerPickBtn}><Text style={styles.bannerPickText}>{bannerMobile ? t('CAMBIAR', 'CHANGE') : t('SELECCIONAR', 'SELECT')}</Text></TouchableOpacity>
+                </View>
+              </View>
+              <GradientButton label={publishingBanner ? t('PUBLICANDO...', 'PUBLISHING...') : t('PUBLICAR BANNER', 'PUBLISH BANNER')} onPress={publishBanner} height={48} style={{ marginTop: 12 }} />
+              <View style={styles.bannerDeleteRow}>
+                <TouchableOpacity onPress={() => deleteBanner('home')} style={styles.bannerDeleteBtn}><Text style={styles.bannerDeleteText}>{t('Borrar escritorio', 'Delete desktop')}</Text></TouchableOpacity>
+                <TouchableOpacity onPress={() => deleteBanner('home-mobile')} style={styles.bannerDeleteBtn}><Text style={styles.bannerDeleteText}>{t('Borrar móvil', 'Delete mobile')}</Text></TouchableOpacity>
               </View>
             </PanelCard>
 
@@ -1308,6 +1498,11 @@ const styles = StyleSheet.create({
   adminEventTitle: { color: '#F8FAFC', fontSize: 17, lineHeight: 21, fontWeight: '700', marginBottom: 5 },
   adminEventMeta: { color: 'rgba(226,232,240,0.62)', fontSize: 12, lineHeight: 17, fontWeight: '400', marginBottom: 8 },
   adminEventBadges: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  adminApprovalRow: { flexDirection: 'row', gap: 7, marginTop: 10 },
+  adminApproveBtn: { flex: 1, height: 36, borderRadius: 10, backgroundColor: 'rgba(16,185,129,0.14)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.5)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+  adminApproveText: { color: '#34D399', fontSize: 11, fontWeight: '800' },
+  adminRejectBtn: { width: 96, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,90,69,0.1)', borderWidth: 1, borderColor: 'rgba(255,90,69,0.4)', alignItems: 'center', justifyContent: 'center' },
+  adminRejectText: { color: '#FCA5A5', fontSize: 11, fontWeight: '800' },
   adminEventActions: { flexDirection: 'row', gap: 7, marginTop: 10 },
   adminEventPrimaryAction: { flex: 1.12, borderRadius: 10 },
   adminEventPrimaryText: { color: '#FFFFFF', fontSize: 10, fontWeight: '700', letterSpacing: 0 },
@@ -1363,6 +1558,18 @@ const styles = StyleSheet.create({
   fieldLabel: { color: 'rgba(226,232,240,0.64)', fontSize: 13, fontWeight: '400', marginBottom: 8 },
   input: { height: 58, borderRadius: 17, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: '#030B14', paddingHorizontal: 16, color: '#F8FAFC', fontSize: 16, fontWeight: '700', marginBottom: 16 },
   segmentGroup: { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  createToggle: { alignSelf: 'flex-start', marginBottom: 12, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(249,115,22,0.4)', backgroundColor: 'rgba(249,115,22,0.1)' },
+  createToggleText: { color: '#F97316', fontSize: 13, fontWeight: '800' },
+  twoColRow: { flexDirection: 'row', gap: 10 },
+  col: { flex: 1 },
+  bannerThumb: { width: '100%', height: 88, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', marginBottom: 8, backgroundColor: '#030B14' },
+  bannerThumbEmpty: { width: '100%', height: 88, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', marginBottom: 8, backgroundColor: '#030B14', alignItems: 'center', justifyContent: 'center' },
+  bannerThumbText: { color: 'rgba(226,232,240,0.4)', fontSize: 13, fontWeight: '800' },
+  bannerPickBtn: { height: 38, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: '#030B14', alignItems: 'center', justifyContent: 'center' },
+  bannerPickText: { color: '#F8FAFC', fontSize: 12, fontWeight: '800' },
+  bannerDeleteRow: { flexDirection: 'row', gap: 10, marginTop: 10 },
+  bannerDeleteBtn: { flex: 1, height: 38, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,90,69,0.3)', backgroundColor: 'rgba(255,90,69,0.08)', alignItems: 'center', justifyContent: 'center' },
+  bannerDeleteText: { color: '#ff5a45', fontSize: 12, fontWeight: '700' },
   segment: { flex: 1, height: 48, borderRadius: 15, backgroundColor: '#030B14', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' },
   segmentActive: { backgroundColor: 'rgba(255,255,255,0.055)', borderColor: 'rgba(255,255,255,0.24)' },
   segmentActiveOrange: { backgroundColor: colors.orange, borderColor: colors.orange },

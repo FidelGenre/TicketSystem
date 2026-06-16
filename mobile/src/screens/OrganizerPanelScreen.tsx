@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Alert, Animated, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { colors } from '../theme/colors';
@@ -9,9 +9,13 @@ import { OrganizerEventsMobile } from '../components/organizer/OrganizerEventsMo
 import { OrganizerAttendeesMobile } from '../components/organizer/OrganizerAttendeesMobile';
 import { OrganizerAccessMobile } from '../components/organizer/OrganizerAccessMobile';
 import { OrganizerRewardsMobile } from '../components/organizer/OrganizerRewardsMobile';
+import { OrganizerAnalyticsMobile } from '../components/organizer/OrganizerAnalyticsMobile';
+import { OrganizerOverviewMobile } from '../components/organizer/OrganizerOverviewMobile';
+import { OrganizerCommissionMobile } from '../components/organizer/OrganizerCommissionMobile';
+import { OrganizerBlocksMobile } from '../components/organizer/OrganizerBlocksMobile';
 import { apiGet, apiPatch, apiPost, getImageUrl } from '../services/api';
 
-export type Section = 'dashboard' | 'events' | 'create' | 'details' | 'map' | 'attendees' | 'blocks' | 'rewards' | 'scan';
+export type Section = 'dashboard' | 'events' | 'create' | 'analytics' | 'details' | 'overview' | 'attendees' | 'map' | 'blocks' | 'commission' | 'rewards' | 'scan';
 
 
 type OrganizerApiEvent = {
@@ -28,6 +32,8 @@ type OrganizerApiEvent = {
   soldTickets?: number;
   ticketsSold?: number;
   totalRevenue?: number;
+  creatorCommission?: number;
+  pendingCreatorCommission?: number | null;
   revenue?: number;
   imageUrl?: string | null;
   bannerImageUrl?: string | null;
@@ -86,7 +92,12 @@ function formatEventDate(value?: string) {
   }
 }
 
-function toOrganizerEvent(event: OrganizerApiEvent, index: number) {
+function toOrganizerEvent(event: OrganizerApiEvent, index: number): {
+  id: string; title: string; venue: string; date: string; eventDate: string; time: string;
+  category: string; capacity: number; sold: number; revenue: string;
+  status: 'draft' | 'published'; imageUrl: string;
+  creatorCommission?: number; pendingCreatorCommission?: number | null;
+} {
   const capacity = Number(event.capacity || event.totalCapacity || 0);
   const sold = Number(event.soldTickets || event.ticketsSold || 0);
   return {
@@ -102,12 +113,14 @@ function toOrganizerEvent(event: OrganizerApiEvent, index: number) {
     revenue: money(event.totalRevenue || event.revenue || 0),
     status: event.status === 'published' ? 'published' as const : 'draft' as const,
     imageUrl: getImageUrl(event.imageUrl || event.bannerImageUrl),
+    creatorCommission: Number(event.creatorCommission || 0),
+    pendingCreatorCommission: event.pendingCreatorCommission ?? null,
   };
 }
 
 // Global sections (always available) vs event sections (only after picking an event).
-const GLOBAL_SECTIONS: Section[] = ['dashboard', 'events', 'create'];
-const EVENT_SECTIONS: Section[] = ['details', 'map', 'attendees', 'blocks', 'rewards'];
+const GLOBAL_SECTIONS: Section[] = ['dashboard', 'events', 'create', 'rewards'];
+const EVENT_SECTIONS: Section[] = ['analytics', 'details', 'overview', 'attendees', 'map', 'blocks', 'commission'];
 const isEventSection = (s: Section) => EVENT_SECTIONS.includes(s);
 
 type PanelProps = { section?: Section; onSectionChange?: (s: Section) => void };
@@ -128,6 +141,7 @@ export function OrganizerPanelScreen({ section, onSectionChange }: PanelProps = 
   const [eventStatus, setEventStatus] = useState<'draft' | 'published'>('published');
   const [accessItems, setAccessItems] = useState<{ id: string; title: string; type: string; status: string }[]>([]);
   const [organizerEvents, setOrganizerEvents] = useState<ReturnType<typeof toOrganizerEvent>[]>([]);
+  const [rawEventsById, setRawEventsById] = useState<Record<string, any>>({});
   const [organizerStats, setOrganizerStats] = useState<OrganizerStats>({});
   // The event the organizer is currently managing (null = global view).
   const [selectedEvent, setSelectedEvent] = useState<ReturnType<typeof toOrganizerEvent> | null>(null);
@@ -156,7 +170,11 @@ export function OrganizerPanelScreen({ section, onSectionChange }: PanelProps = 
     apiGet<any>('/events/mine/list')
       .then((data) => {
         if (!mounted) return;
-        const items = listFrom(data).map(toOrganizerEvent);
+        const raw = listFrom(data);
+        const byId: Record<string, any> = {};
+        raw.forEach((e: any) => { if (e?.id) byId[String(e.id)] = e; });
+        setRawEventsById(byId);
+        const items = raw.map(toOrganizerEvent);
         setOrganizerEvents(items);
 
         const first = items[0];
@@ -180,16 +198,22 @@ export function OrganizerPanelScreen({ section, onSectionChange }: PanelProps = 
   }, []);
 
   const [attendees, setAttendees] = useState<MobileAttendee[]>([]);
+  // Raw attendee rows (status 'used'/'active'/'cancelled', sectionName, seats)
+  // kept for Analytics and Blocks which need the real backend fields.
+  const [attendeesRaw, setAttendeesRaw] = useState<any[]>([]);
 
   // Load attendees for the event currently being managed.
   const selectedEventId = selectedEvent?.id;
   useEffect(() => {
-    if (!selectedEventId) { setAttendees([]); return; }
+    if (!selectedEventId) { setAttendees([]); setAttendeesRaw([]); return; }
     let mounted = true;
 
     apiGet<any>(`/orders/event/${selectedEventId}/attendees`)
       .then((data) => {
-        if (mounted) setAttendees(listFrom(data).map(toAttendee));
+        if (!mounted) return;
+        const list = listFrom(data);
+        setAttendeesRaw(list);
+        setAttendees(list.map(toAttendee));
       })
       .catch(() => {});
 
@@ -213,6 +237,28 @@ export function OrganizerPanelScreen({ section, onSectionChange }: PanelProps = 
       })
       .catch(() => {});
   }, [selectedEventId]);
+
+  // Load sales + sections (seatmap) for the selected event — feeds Analytics,
+  // Overview and Blocks (mirror of the web editor's loadEvent).
+  const [eventSales, setEventSales] = useState<any | null>(null);
+  const [eventSections, setEventSections] = useState<any[]>([]);
+  const reloadEventData = useCallback(async () => {
+    if (!selectedEventId) { setEventSales(null); setEventSections([]); return; }
+    try {
+      const sales = await apiGet<any>(`/orders/event/${selectedEventId}/sales`);
+      setEventSales(sales || null);
+    } catch { setEventSales(null); }
+    try {
+      const secs = await apiGet<any[]>(`/events/${selectedEventId}/seatmap`);
+      setEventSections(Array.isArray(secs) ? secs : []);
+    } catch {
+      try {
+        const secs = await apiGet<any[]>(`/events/${selectedEventId}/sections`);
+        setEventSections(Array.isArray(secs) ? secs : []);
+      } catch { setEventSections([]); }
+    }
+  }, [selectedEventId]);
+  useEffect(() => { reloadEventData(); }, [reloadEventData]);
 
   // Lazy load reward stats when visiting the rewards section.
   useEffect(() => {
@@ -464,8 +510,20 @@ export function OrganizerPanelScreen({ section, onSectionChange }: PanelProps = 
             setEventStatus={setEventStatus}
             goTo={setActive}
             selectedEventId={selectedEvent?.id}
+            event={selectedEvent ? rawEventsById[selectedEvent.id] : undefined}
           />
         )}
+
+        {active === 'analytics' && (
+          <OrganizerAnalyticsMobile
+            sales={eventSales}
+            attendees={attendeesRaw}
+            sections={eventSections}
+            eventTitle={selectedEvent?.title}
+          />
+        )}
+
+        {active === 'overview' && <OrganizerOverviewMobile sections={eventSections} />}
 
         {active === 'map' && <VenueMapEditor eventId={selectedEvent?.id} />}
 
@@ -476,14 +534,27 @@ export function OrganizerPanelScreen({ section, onSectionChange }: PanelProps = 
             onToggle={toggleAttendeeStatus}
             onResend={handleResendAttendee}
             goTo={setActive}
+            eventId={selectedEvent?.id}
+            event={selectedEvent ? rawEventsById[selectedEvent.id] : undefined}
+            eventTitle={selectedEvent?.title}
           />
         )}
 
         {active === 'blocks' && (
-          <OrganizerAccessMobile
-            items={accessItems}
-            onToggle={toggleAccessItem}
-            goTo={setActive}
+          <OrganizerBlocksMobile
+            eventId={selectedEvent?.id}
+            sections={eventSections}
+            onReload={reloadEventData}
+          />
+        )}
+
+        {active === 'commission' && (
+          <OrganizerCommissionMobile
+            eventId={selectedEvent?.id}
+            eventStatus={eventStatus}
+            sections={eventSections}
+            initialCommission={selectedEvent?.creatorCommission}
+            pendingCommission={selectedEvent?.pendingCreatorCommission}
           />
         )}
 
@@ -638,10 +709,13 @@ function sectionLabel(section: Section, t: (es: string, en: string) => string) {
     dashboard: t('Dashboard', 'Dashboard'),
     events: t('Mis eventos', 'My events'),
     create: t('Crear evento', 'Create event'),
+    analytics: t('Analytics', 'Analytics'),
     details: t('Detalles', 'Details'),
+    overview: t('Resumen', 'Overview'),
     map: t('Mapa visual', 'Visual map'),
     attendees: t('Asistentes', 'Attendees'),
-    blocks: t('Bloqueos', 'Access'),
+    blocks: t('Bloqueos', 'Blocks'),
+    commission: t('Comisión', 'Commission'),
     rewards: t('Recompensas', 'Rewards'),
     scan: t('Escanear', 'Scan'),
   };
@@ -653,10 +727,13 @@ function titleFor(section: Section, t: (es: string, en: string) => string) {
     dashboard: t('Panel de organizador', 'Organizer dashboard'),
     events: t('Mis eventos', 'My events'),
     create: t('Crear evento', 'Create event'),
-    details: t('Detalles', 'Details'),
+    analytics: t('Analytics del evento', 'Event analytics'),
+    details: t('Detalles e imágenes', 'Details and media'),
+    overview: t('Resumen de secciones', 'Sections overview'),
     map: t('Mapa visual', 'Visual map'),
     attendees: t('Asistentes y ventas', 'Attendees and sales'),
-    blocks: t('Bloqueos e invitaciones', 'Access and invitations'),
+    blocks: t('Bloqueos e invitaciones', 'Blocks and invitations'),
+    commission: t('Comisión del creador', 'Creator commission'),
     rewards: t('Recompensas', 'Rewards'),
     scan: t('Escanear tickets', 'Scan tickets'),
   };
@@ -668,10 +745,13 @@ function subtitleFor(section: Section, t: (es: string, en: string) => string) {
     dashboard: t('Ventas, tickets, asistentes y balance.', 'Sales, tickets, attendees and balance.'),
     events: t('Administra tus eventos publicados y borradores.', 'Manage your published events and drafts.'),
     create: t('Crea un evento nuevo desde el movil.', 'Create a new event from mobile.'),
+    analytics: t('Ventas, acceso y rendimiento por sección.', 'Sales, access and section performance.'),
     details: t('Edita informacion publica e imagenes.', 'Edit public information and images.'),
+    overview: t('Secciones, capacidad y precios del evento.', 'Event sections, capacity and prices.'),
     map: t('Mesas, sillas, areas, barras y precios.', 'Tables, seats, areas, bars and prices.'),
     attendees: t('Compradores, tickets y acceso.', 'Buyers, tickets and access.'),
-    blocks: t('Reservas, invitaciones y lista VIP.', 'Reservations, invitations and VIP list.'),
+    blocks: t('Bloquea asientos e invita gratis.', 'Block seats and send free invites.'),
+    commission: t('Define tu comisión por entrada.', 'Set your per-ticket commission.'),
     rewards: t('Comisiones, codigos y pagos.', 'Commissions, codes and payouts.'),
     scan: t('Valida tickets en la puerta.', 'Validate tickets at the door.'),
   };
