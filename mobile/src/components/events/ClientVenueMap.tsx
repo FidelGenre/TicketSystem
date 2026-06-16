@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { PanResponder, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import Svg, { Circle, G, Rect, Text as SvgText } from 'react-native-svg';
 import { colors } from '../../theme/colors';
 import { useLanguage } from '../../i18n/LanguageContext';
 
@@ -223,101 +224,137 @@ function TableSection({
   const color = sectionColor(section);
   const isRound = (section.tableShape || 'round') === 'round';
   const chairSize = clamp(Math.min(width, height) * 0.18, 5, 16);
+  const chairRadius = chairSize / 2;
   const centerW = width * (isRound ? 0.60 : 0.70);
   const centerH = height * (isRound ? 0.60 : 0.45);
   const centerX = width / 2 - centerW / 2;
   const centerY = height / 2 - centerH / 2;
-  const allUnavailable = seats.length > 0 && seats.every((seat) => isSeatUnavailable(seat, overrides[seatKey(seat)] || {}));
+  const availableSeats = seats.filter((seat) => !isSeatUnavailable(seat, overrides[seatKey(seat)] || overrides[`seat-${seat.seatNumber}`] || {}));
+  const selectedCount = availableSeats.filter((seat) => isSelected(seat, selectedSeats)).length;
+  const allUnavailable = seats.length > 0 && availableSeats.length === 0;
+  const tableFill = allUnavailable ? '#E5E7EB' : '#22415C';
+  const tableStroke = allUnavailable ? '#9CA3AF' : 'rgba(246,198,95,0.48)';
+  const label = section.name || section.label || '';
+  const selectTable = () => {
+    const targetSeats = selectedCount > 0 ? availableSeats.filter((seat) => isSelected(seat, selectedSeats)) : availableSeats;
+    onSeatInfo({
+      title: tableLabel(label),
+      subtitle: `${availableSeats.length} sillas disponibles`,
+      status: selectedCount > 0 ? 'Seleccionada' : allUnavailable ? 'No disponible' : 'Disponible',
+      price: Number(section.price || 0),
+      tone: selectedCount > 0 ? 'selected' : allUnavailable ? 'sold' : 'available',
+    });
+    targetSeats.forEach(onToggleSeat);
+  };
 
   return (
     <View style={StyleSheet.absoluteFill}>
-      <TouchableOpacity
-        style={[
-          styles.tableCore,
-          {
-            left: centerX,
-            top: centerY,
-            width: centerW,
-            height: centerH,
-            borderRadius: isRound ? Math.min(centerW, centerH) / 2 : 4,
-            borderColor: allUnavailable ? '#9CA3AF' : color,
-            backgroundColor: allUnavailable ? '#E5E7EB' : '#F8FAFC',
-          },
-        ]}
-        activeOpacity={0.85}
-        disabled={allUnavailable}
-        onPress={() => {
-          const availableSeats = seats.filter((seat) => !isSeatUnavailable(seat, overrides[seatKey(seat)] || overrides[`seat-${seat.seatNumber}`] || {}));
-          const selectedCount = availableSeats.filter((seat) => isSelected(seat, selectedSeats)).length;
-          const targetSeats = selectedCount > 0 ? availableSeats.filter((seat) => isSelected(seat, selectedSeats)) : availableSeats;
-          onSeatInfo({
-            title: tableLabel(section.name || section.label),
-            subtitle: `${availableSeats.length} sillas disponibles`,
-            status: selectedCount > 0 ? 'Seleccionada' : allUnavailable ? 'No disponible' : 'Disponible',
-            price: Number(section.price || 0),
-            tone: selectedCount > 0 ? 'selected' : allUnavailable ? 'sold' : 'available',
-          });
-          targetSeats.forEach(onToggleSeat);
-        }}
-      >
-        <Text style={[styles.tableLabel, { fontSize: clamp(Math.min(width, height) * 0.16, 7, 13) }]} numberOfLines={1}>
-          {section.name || section.label}
-        </Text>
-      </TouchableOpacity>
+      <Svg width={width} height={height} style={StyleSheet.absoluteFill}>
+        <G onPress={allUnavailable ? undefined : selectTable}>
+          {isRound ? (
+            <Circle
+              cx={width / 2}
+              cy={height / 2}
+              r={Math.min(centerW, centerH) / 2}
+              fill={tableFill}
+              stroke={tableStroke}
+              strokeWidth={1.4}
+            />
+          ) : (
+            <Rect
+              x={centerX}
+              y={centerY}
+              width={centerW}
+              height={centerH}
+              rx={Math.max(3, Math.min(centerW, centerH) * 0.08)}
+              fill={tableFill}
+              stroke={tableStroke}
+              strokeWidth={1.4}
+            />
+          )}
+          <SvgText
+            x={width / 2}
+            y={height / 2 + clamp(Math.min(width, height) * 0.055, 3, 6)}
+            fill={allUnavailable ? '#64748B' : '#F8FAFC'}
+            fontSize={clamp(Math.min(width, height) * 0.16, 7, 13)}
+            fontWeight="900"
+            textAnchor="middle"
+          >
+            {label}
+          </SvgText>
+        </G>
 
-      {seats.map((seat, index) => {
-        const override = overrides[seatKey(seat)] || overrides[`seat-${seat.seatNumber}`] || {};
-        if (override.disabled) return null;
+        {seats.map((seat, index) => {
+          const override = overrides[seatKey(seat)] || overrides[`seat-${seat.seatNumber}`] || {};
+          if (override.disabled) return null;
 
-        let x = width / 2 - chairSize / 2;
-        let y = height / 2 - chairSize / 2;
+          let cx = width / 2;
+          let cy = height / 2;
 
-        if (isRound) {
-          const angle = (index * Math.PI * 2) / Math.max(1, seats.length) - Math.PI / 2;
-          const radius = Math.min(width, height) * 0.43;
-          x = width / 2 + Math.cos(angle) * radius - chairSize / 2;
-          y = height / 2 + Math.sin(angle) * radius - chairSize / 2;
-        } else {
-          const count = Math.max(1, seats.length);
-          const perimeter = 2 * (1 + 0.55);
-          const step = perimeter / count;
-          const pos = index * step;
-          let xPct = 50;
-          let yPct = 50;
-
-          if (pos < 1) {
-            xPct = 15 + pos * 70;
-            yPct = 12;
-          } else if (pos < 1.55) {
-            xPct = 88;
-            yPct = 15 + ((pos - 1) / 0.55) * 70;
-          } else if (pos < 2.55) {
-            xPct = 85 - (pos - 1.55) * 70;
-            yPct = 88;
+          if (isRound) {
+            const angle = (index * Math.PI * 2) / Math.max(1, seats.length) - Math.PI / 2;
+            const radius = Math.min(width, height) * 0.43;
+            cx = width / 2 + Math.cos(angle) * radius;
+            cy = height / 2 + Math.sin(angle) * radius;
           } else {
-            xPct = 12;
-            yPct = 85 - ((pos - 2.55) / 0.55) * 70;
+            const count = Math.max(1, seats.length);
+            const perimeter = 2 * (1 + 0.55);
+            const step = perimeter / count;
+            const pos = index * step;
+            let xPct = 50;
+            let yPct = 50;
+
+            if (pos < 1) {
+              xPct = 15 + pos * 70;
+              yPct = 12;
+            } else if (pos < 1.55) {
+              xPct = 88;
+              yPct = 15 + ((pos - 1) / 0.55) * 70;
+            } else if (pos < 2.55) {
+              xPct = 85 - (pos - 1.55) * 70;
+              yPct = 88;
+            } else {
+              xPct = 12;
+              yPct = 85 - ((pos - 2.55) / 0.55) * 70;
+            }
+
+            cx = (xPct / 100) * width;
+            cy = (yPct / 100) * height;
           }
 
-          x = (xPct / 100) * width - chairSize / 2;
-          y = (yPct / 100) * height - chairSize / 2;
-        }
+          cx += Number(override.xOffset || 0) * scale;
+          cy += Number(override.yOffset || 0) * scale;
+          const selected = isSelected(seat, selectedSeats);
+          const unavailable = isSeatUnavailable(seat, override);
+          const reserved = String(seat.status || '').toLowerCase() === 'reserved' || override?.reserved;
+          const fill = selected ? colors.orange : unavailable ? (reserved ? '#FACC15' : '#CBD5E1') : color;
+          const stroke = selected ? '#FFFFFF' : unavailable ? fill : '#FFFFFF';
 
-        return (
-          <SeatDot
-            key={seat.id}
-            seat={seat}
-            section={section}
-            override={override}
-            selectedSeats={selectedSeats}
-            onToggleSeat={onToggleSeat}
-            onSeatInfo={onSeatInfo}
-            x={x + Number(override.xOffset || 0) * scale}
-            y={y + Number(override.yOffset || 0) * scale}
-            size={chairSize}
-          />
-        );
-      })}
+          return (
+            <G
+              key={seat.id}
+              onPress={() => {
+                if (unavailable && !selected) return;
+                onSeatInfo(buildSeatInfo(seat, section, selectedSeats));
+                onToggleSeat(seat);
+              }}
+            >
+              <Circle
+                cx={cx}
+                cy={cy}
+                r={selected ? chairRadius * 1.18 : chairRadius}
+                fill={fill}
+                stroke={stroke}
+                strokeWidth={1.5}
+                opacity={unavailable && !selected ? 0.66 : 1}
+              />
+              {override?.isWheelchair ? (
+                <SvgText x={cx} y={cy + chairRadius * 0.38} fill="#FFFFFF" fontSize={chairRadius} fontWeight="900" textAnchor="middle">♿</SvgText>
+              ) : null}
+            </G>
+          );
+        })}
+      </Svg>
     </View>
   );
 }
@@ -604,7 +641,13 @@ export function ClientVenueMap({ seatMap, selectedSeats, onToggleSeat }: Props) 
                     top,
                     width: sectionWidth,
                     height: sectionHeight,
-                    borderColor: color,
+                    borderColor: kind === 'table' || kind === 'seats' ? 'transparent' : color,
+                    borderWidth:
+                      kind === 'table' || kind === 'seats'
+                        ? 0
+                        : kind === 'decor'
+                          ? 1
+                          : 2,
                     backgroundColor:
                       kind === 'stage'
                         ? '#0F172A'

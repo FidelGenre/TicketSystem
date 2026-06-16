@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Animated, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { colors } from '../theme/colors';
 import { useLanguage } from '../i18n/LanguageContext';
 import { apiDelete, apiGet, apiPatch, apiPost, getImageUrl } from '../services/api';
 import { GradientButton } from '../components/GradientButton';
+import { OrganizerDetailsMobile } from '../components/organizer/OrganizerEventForms';
 
 export type Section = 'dashboard' | 'events' | 'users' | 'categories' | 'marketing' | 'analytics' | 'codes' | 'payments';
 type AdminUser = { id: string; name: string; email: string; role: 'client' | 'organizer' | 'admin'; suspended: boolean; avatarUrl?: string };
@@ -171,6 +173,10 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
 
   const [adminStats, setAdminStats] = useState<AdminStats>({});
   const [adminEvents, setAdminEvents] = useState<any[]>([]);
+  const [editingAdminEvent, setEditingAdminEvent] = useState<any | null>(null);
+  const [adminEditTitle, setAdminEditTitle] = useState('');
+  const [adminEditVenue, setAdminEditVenue] = useState('');
+  const [adminEditStatus, setAdminEditStatus] = useState<'draft' | 'published'>('published');
 
   // Lazy-loaded section data
   const [analyticsSummary, setAnalyticsSummary] = useState<AnalyticsSummary | null>(null);
@@ -689,6 +695,23 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
     }
   };
 
+  const openAdminEventEditor = (event: any) => {
+    setEditingAdminEvent(event);
+    setAdminEditTitle(adminEventTitle(event));
+    setAdminEditVenue(adminEventVenue(event));
+    setAdminEditStatus(event?.status === 'draft' ? 'draft' : 'published');
+  };
+
+  const closeAdminEventEditor = async () => {
+    setEditingAdminEvent(null);
+    try {
+      const fresh = await apiGet<any>('/admin/events?page=1&limit=50');
+      setAdminEvents(listFrom(fresh));
+    } catch {
+      /* keep current list */
+    }
+  };
+
   return (
     <View style={styles.root}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
@@ -719,12 +742,40 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
         )}
 
         {active === 'events' && (
-          <>
+          editingAdminEvent ? (
+            <>
+              <TouchableOpacity onPress={closeAdminEventEditor} style={styles.adminEditBack}>
+                <Text style={styles.adminEditBackText}>‹ {t('Eventos admin', 'Admin events')}</Text>
+              </TouchableOpacity>
+              <OrganizerDetailsMobile
+                eventTitle={adminEditTitle}
+                setEventTitle={setAdminEditTitle}
+                eventVenue={adminEditVenue}
+                setEventVenue={setAdminEditVenue}
+                eventStatus={adminEditStatus}
+                setEventStatus={setAdminEditStatus}
+                goTo={(section) => {
+                  if (section === 'events') closeAdminEventEditor();
+                  if (section === 'map') Alert.alert(t('Mapa visual', 'Visual map'), t('Edita el mapa desde el panel Organizador del evento.', 'Edit the map from the Organizer event panel.'));
+                }}
+                selectedEventId={String(editingAdminEvent.id)}
+                event={editingAdminEvent}
+              />
+            </>
+          ) : (
+            <>
             {adminEvents.length === 0 && (
               <PanelCard title={t('Sin eventos todavía', 'No events yet')} copy={t('Cuando se publiquen eventos aparecerán aquí.', 'Published events will appear here.')} />
             )}
             {[...adminEvents].sort(sortAdminEventsBySchedule).map((item: any) => (
               <View key={String(item.id || item.slug || adminEventTitle(item))} style={[styles.adminEventCard, isAdminEventPast(item) && styles.adminEventCardPast]}>
+                <TouchableOpacity
+                  onPress={() => openAdminEventEditor(item)}
+                  style={styles.adminEventEditButton}
+                  accessibilityLabel={t('Editar evento', 'Edit event')}
+                >
+                  <Ionicons name="pencil" size={15} color="#F97316" />
+                </TouchableOpacity>
                 <View style={styles.adminEventTop}>
                   <View style={styles.adminEventPosterWrap}>
                     {adminEventImage(item) ? (
@@ -786,7 +837,8 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
                 </View>
               </View>
             ))}
-          </>
+            </>
+          )
         )}
 
         {active === 'users' && (
@@ -1486,14 +1538,17 @@ const styles = StyleSheet.create({
   statusTextOrange: { color: colors.orange },
   statusTextGray: { color: '#CBD5E1' },
   statusTextDark: { color: '#F8FAFC' },
-  adminEventCard: { backgroundColor: '#030B14', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', padding: 11, marginBottom: 10 },
+  adminEventCard: { position: 'relative', backgroundColor: '#030B14', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', padding: 11, marginBottom: 10 },
   adminEventCardPast: { backgroundColor: 'rgba(3,11,20,0.74)', borderColor: 'rgba(148,163,184,0.18)' },
+  adminEventEditButton: { position: 'absolute', top: 10, right: 10, width: 34, height: 34, borderRadius: 11, backgroundColor: 'rgba(249,115,22,0.10)', borderWidth: 1, borderColor: 'rgba(249,115,22,0.38)', alignItems: 'center', justifyContent: 'center', zIndex: 5, shadowColor: '#F97316', shadowOpacity: 0.16, shadowRadius: 10, shadowOffset: { width: 0, height: 5 } },
+  adminEditBack: { alignSelf: 'flex-start', minHeight: 40, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9, marginBottom: 12, backgroundColor: 'rgba(249,115,22,0.10)', borderWidth: 1, borderColor: 'rgba(249,115,22,0.32)', justifyContent: 'center' },
+  adminEditBackText: { color: '#FDBA74', fontSize: 13, fontWeight: '800' },
   adminEventTop: { flexDirection: 'row', gap: 11, alignItems: 'center' },
   adminEventPosterWrap: { width: 76, height: 96, borderRadius: 12, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
   adminEventPoster: { width: '100%', height: '100%' },
   adminEventPosterFallback: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(249,115,22,0.08)' },
   adminEventPosterText: { color: colors.orange, fontSize: 9, fontWeight: '700', letterSpacing: 0 },
-  adminEventMain: { flex: 1, minWidth: 0 },
+  adminEventMain: { flex: 1, minWidth: 0, paddingRight: 34 },
   adminEventEyebrow: { color: colors.orange, fontSize: 10, fontWeight: '700', letterSpacing: 0, marginBottom: 4 },
   adminEventTitle: { color: '#F8FAFC', fontSize: 17, lineHeight: 21, fontWeight: '700', marginBottom: 5 },
   adminEventMeta: { color: 'rgba(226,232,240,0.62)', fontSize: 12, lineHeight: 17, fontWeight: '400', marginBottom: 8 },
