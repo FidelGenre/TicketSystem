@@ -9,6 +9,7 @@ import { OrganizerEventsMobile } from '../components/organizer/OrganizerEventsMo
 import { OrganizerAttendeesMobile } from '../components/organizer/OrganizerAttendeesMobile';
 import { OrganizerAccessMobile } from '../components/organizer/OrganizerAccessMobile';
 import { OrganizerRewardsMobile } from '../components/organizer/OrganizerRewardsMobile';
+import { OrganizerAnalyticsMobile } from '../components/organizer/OrganizerAnalyticsMobile';
 import { apiGet, apiPatch, apiPost } from '../services/api';
 
 export type Section = 'dashboard' | 'events' | 'create' | 'analytics' | 'details' | 'overview' | 'attendees' | 'map' | 'blocks' | 'commission' | 'rewards' | 'scan';
@@ -103,7 +104,7 @@ function toOrganizerEvent(event: OrganizerApiEvent, index: number) {
 
 // Global sections (always available) vs event sections (only after picking an event).
 const GLOBAL_SECTIONS: Section[] = ['dashboard', 'events', 'create'];
-const EVENT_SECTIONS: Section[] = ['details', 'map', 'attendees', 'blocks', 'rewards'];
+const EVENT_SECTIONS: Section[] = ['analytics', 'details', 'map', 'attendees', 'blocks', 'rewards'];
 const isEventSection = (s: Section) => EVENT_SECTIONS.includes(s);
 
 type PanelProps = { section?: Section; onSectionChange?: (s: Section) => void };
@@ -176,16 +177,22 @@ export function OrganizerPanelScreen({ section, onSectionChange }: PanelProps = 
   }, []);
 
   const [attendees, setAttendees] = useState<MobileAttendee[]>([]);
+  // Raw attendee rows (status 'used'/'active'/'cancelled', sectionName, seats)
+  // kept for Analytics and Blocks which need the real backend fields.
+  const [attendeesRaw, setAttendeesRaw] = useState<any[]>([]);
 
   // Load attendees for the event currently being managed.
   const selectedEventId = selectedEvent?.id;
   useEffect(() => {
-    if (!selectedEventId) { setAttendees([]); return; }
+    if (!selectedEventId) { setAttendees([]); setAttendeesRaw([]); return; }
     let mounted = true;
 
     apiGet<any>(`/orders/event/${selectedEventId}/attendees`)
       .then((data) => {
-        if (mounted) setAttendees(listFrom(data).map(toAttendee));
+        if (!mounted) return;
+        const list = listFrom(data);
+        setAttendeesRaw(list);
+        setAttendees(list.map(toAttendee));
       })
       .catch(() => {});
 
@@ -478,6 +485,15 @@ export function OrganizerPanelScreen({ section, onSectionChange }: PanelProps = 
             setEventStatus={setEventStatus}
             goTo={setActive}
             selectedEventId={selectedEvent?.id}
+          />
+        )}
+
+        {active === 'analytics' && (
+          <OrganizerAnalyticsMobile
+            sales={eventSales}
+            attendees={attendeesRaw}
+            sections={eventSections}
+            eventTitle={selectedEvent?.title}
           />
         )}
 
