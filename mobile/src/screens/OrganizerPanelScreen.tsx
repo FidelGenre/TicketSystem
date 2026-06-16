@@ -292,8 +292,18 @@ export function OrganizerPanelScreen({ section, onSectionChange }: PanelProps = 
     setOrganizerEvents((prev) => [newEvent, ...prev]);
   };
 
-  const toggleAccessItem = (id: string) => {
-    setAccessItems((current) => current.map((item) => item.id === id ? { ...item, status: item.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE' } : item));
+  const toggleAccessItem = async (id: string) => {
+    const item = accessItems.find((a) => a.id === id);
+    if (!item) return;
+    const nextActive = item.status !== 'ACTIVE';
+    // Optimistic flip, revert if the request fails.
+    setAccessItems((current) => current.map((a) => a.id === id ? { ...a, status: nextActive ? 'ACTIVE' : 'PAUSED' } : a));
+    try {
+      await apiPatch(`/special-codes/${id}`, { isActive: nextActive });
+    } catch (err: any) {
+      setAccessItems((current) => current.map((a) => a.id === id ? { ...a, status: nextActive ? 'PAUSED' : 'ACTIVE' } : a));
+      Alert.alert('Error', err?.message || t('No se pudo actualizar el acceso', 'Could not update access'));
+    }
   };
 
   const toggleAttendeeStatus = async (id: string) => {
