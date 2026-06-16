@@ -466,6 +466,47 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
     );
   };
 
+  // ── Event approval (pending events + pending changes) ──────────────────────
+  const PENDING_CHANGE_FIELDS = ['title', 'description', 'imageUrl', 'bannerImageUrl', 'venueName', 'category', 'eventDate', 'creatorCommission'];
+  const eventPendingFields = (ev: any): string[] => {
+    const map: Record<string, any> = {
+      title: ev.pendingTitle, description: ev.pendingDescription, imageUrl: ev.pendingImageUrl,
+      bannerImageUrl: ev.pendingBannerImageUrl, venueName: ev.pendingVenueName, category: ev.pendingCategory,
+      eventDate: ev.pendingEventDate,
+      creatorCommission: ev.pendingCreatorCommission != null ? ev.pendingCreatorCommission : undefined,
+    };
+    return PENDING_CHANGE_FIELDS.filter((f) => map[f] != null && map[f] !== '');
+  };
+
+  const approveEventApi = async (id: string) => {
+    try {
+      await apiPatch(`/admin/events/${id}/approve`);
+      setAdminEvents((cur) => cur.map((e) => e.id === id ? { ...e, status: 'published' } : e));
+    } catch (err: any) { Alert.alert('Error', err?.message || t('No se pudo aprobar', 'Could not approve')); }
+  };
+  const rejectEventApi = async (id: string) => {
+    try {
+      await apiPatch(`/admin/events/${id}/reject`);
+      setAdminEvents((cur) => cur.map((e) => e.id === id ? { ...e, status: 'rejected' } : e));
+    } catch (err: any) { Alert.alert('Error', err?.message || t('No se pudo rechazar', 'Could not reject')); }
+  };
+  const resolveChanges = async (id: string, approve: boolean) => {
+    const ev = adminEvents.find((e) => e.id === id);
+    if (!ev) return;
+    const fields = eventPendingFields(ev);
+    if (fields.length === 0) return;
+    try {
+      for (const field of fields) {
+        await apiPatch(`/admin/events/${id}/${approve ? 'approve-change' : 'reject-change'}`, { field });
+      }
+      Alert.alert(t('Listo', 'Done'), approve ? t('Cambios aprobados.', 'Changes approved.') : t('Cambios rechazados.', 'Changes rejected.'));
+      try {
+        const fresh = await apiGet<any>('/admin/events?page=1&limit=50');
+        setAdminEvents(listFrom(fresh));
+      } catch {}
+    } catch (err: any) { Alert.alert('Error', err?.message || 'Error'); }
+  };
+
   // ── Special codes actions ──────────────────────────────────────────────────
 
   const addSpecialCode = async () => {
@@ -592,6 +633,27 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
                     </View>
                   </View>
                 </View>
+
+                {item.status === 'pending' && (
+                  <View style={styles.adminApprovalRow}>
+                    <TouchableOpacity onPress={() => approveEventApi(item.id)} style={[styles.adminApproveBtn]}>
+                      <Text style={styles.adminApproveText}>{t('APROBAR EVENTO', 'APPROVE EVENT')}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => rejectEventApi(item.id)} style={[styles.adminRejectBtn]}>
+                      <Text style={styles.adminRejectText}>{t('RECHAZAR', 'REJECT')}</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+                {eventPendingFields(item).length > 0 && (
+                  <View style={styles.adminApprovalRow}>
+                    <TouchableOpacity onPress={() => resolveChanges(item.id, true)} style={[styles.adminApproveBtn]}>
+                      <Text style={styles.adminApproveText}>{t('APROBAR CAMBIOS', 'APPROVE CHANGES')} ({eventPendingFields(item).length})</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => resolveChanges(item.id, false)} style={[styles.adminRejectBtn]}>
+                      <Text style={styles.adminRejectText}>{t('RECHAZAR', 'REJECT')}</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
 
                 <View style={styles.adminEventActions}>
                   <GradientButton
@@ -1254,6 +1316,11 @@ const styles = StyleSheet.create({
   adminEventTitle: { color: '#F8FAFC', fontSize: 17, lineHeight: 21, fontWeight: '700', marginBottom: 5 },
   adminEventMeta: { color: 'rgba(226,232,240,0.62)', fontSize: 12, lineHeight: 17, fontWeight: '400', marginBottom: 8 },
   adminEventBadges: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  adminApprovalRow: { flexDirection: 'row', gap: 7, marginTop: 10 },
+  adminApproveBtn: { flex: 1, height: 36, borderRadius: 10, backgroundColor: 'rgba(16,185,129,0.14)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.5)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+  adminApproveText: { color: '#34D399', fontSize: 11, fontWeight: '800' },
+  adminRejectBtn: { width: 96, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,90,69,0.1)', borderWidth: 1, borderColor: 'rgba(255,90,69,0.4)', alignItems: 'center', justifyContent: 'center' },
+  adminRejectText: { color: '#FCA5A5', fontSize: 11, fontWeight: '800' },
   adminEventActions: { flexDirection: 'row', gap: 7, marginTop: 10 },
   adminEventPrimaryAction: { flex: 1.12, borderRadius: 10 },
   adminEventPrimaryText: { color: '#FFFFFF', fontSize: 10, fontWeight: '700', letterSpacing: 0 },
