@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Animated, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { colors } from '../theme/colors';
 import { useLanguage } from '../i18n/LanguageContext';
 import { apiDelete, apiGet, apiPatch, apiPost, getImageUrl } from '../services/api';
 import { GradientButton } from '../components/GradientButton';
+import { OrganizerDetailsMobile } from '../components/organizer/OrganizerEventForms';
 
 export type Section = 'dashboard' | 'events' | 'users' | 'categories' | 'marketing' | 'analytics' | 'codes' | 'payments';
 type AdminUser = { id: string; name: string; email: string; role: 'client' | 'organizer' | 'admin'; suspended: boolean; avatarUrl?: string };
@@ -14,7 +16,7 @@ type AnalyticsSummary = {
   days: number;
   totalViews: number;
   uniqueVisitors: number;
-  topEvents: { eventSlug: string; views: number; visitors: number }[];
+  topEvents: { eventSlug: string; eventTitle?: string | null; views: number; visitors: number }[];
   daily: { date: string; views: number; visitors: number }[];
 };
 
@@ -67,6 +69,20 @@ function listFrom(payload: any) {
 function money(value: any) {
   const amount = Number(value || 0);
   return `$${amount.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+}
+
+function formatEventSlug(slug: string) {
+  const parts = slug
+    .split(/[/-]+/)
+    .filter(Boolean)
+    .filter((word, index, words) => {
+      const isLast = index === words.length - 1;
+      return !(isLast && /^[a-z0-9]{8,}$/i.test(word));
+    });
+
+  return parts
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 }
 
 function fullName(user: any) {
@@ -157,27 +173,37 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
 
   const [adminStats, setAdminStats] = useState<AdminStats>({});
   const [adminEvents, setAdminEvents] = useState<any[]>([]);
+  const [editingAdminEvent, setEditingAdminEvent] = useState<any | null>(null);
+  const [adminEditTitle, setAdminEditTitle] = useState('');
+  const [adminEditVenue, setAdminEditVenue] = useState('');
+  const [adminEditStatus, setAdminEditStatus] = useState<'draft' | 'published'>('published');
 
   // Lazy-loaded section data
   const [analyticsSummary, setAnalyticsSummary] = useState<AnalyticsSummary | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [apiCodes, setApiCodes] = useState<ApiSpecialCode[]>([]);
   const [codesLoading, setCodesLoading] = useState(false);
+  const [codesLoaded, setCodesLoaded] = useState(false);
+  const [codesError, setCodesError] = useState('');
   const [commissionSummary, setCommissionSummary] = useState<CommissionEntry[]>([]);
   const [homeBanner, setHomeBanner] = useState<{ title?: string; isActive?: boolean } | null | false>(null);
   const [recipientsCount, setRecipientsCount] = useState(0);
   const [adminOrders, setAdminOrders] = useState<AdminOrder[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
+  const [ordersLoaded, setOrdersLoaded] = useState(false);
+  const [ordersError, setOrdersError] = useState('');
   const [campaignSubjectDraft, setCampaignSubjectDraft] = useState('');
   const [campaignBodyDraft, setCampaignBodyDraft] = useState('');
   const [specialCodeOwnerDraft, setSpecialCodeOwnerDraft] = useState('');
   const [usersApiError, setUsersApiError] = useState('');
+  const [usersTotal, setUsersTotal] = useState<number | null>(null);
 
   const loadUsers = async () => {
     try {
       setUsersApiError('');
       const data = await apiGet<any>('/admin/users?page=1&limit=20');
       setUsers(listFrom(data).map(toAdminUser));
+      setUsersTotal(typeof data?.total === 'number' ? data.total : listFrom(data).length);
     } catch (err: any) {
       setUsersApiError(err?.message || 'Could not load users');
     }
@@ -234,6 +260,7 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
 
       if (usersRes.status === 'fulfilled') {
         setUsers(listFrom(usersRes.value).map(toAdminUser));
+        setUsersTotal(typeof usersRes.value?.total === 'number' ? usersRes.value.total : listFrom(usersRes.value).length);
         setUsersApiError('');
       }
 
@@ -318,16 +345,24 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
 
   // Lazy-load special codes when that section is first opened
   useEffect(() => {
-    if (active !== 'codes' || apiCodes.length > 0 || codesLoading) return;
+    if (active !== 'codes' || codesLoaded || codesLoading) return;
     setCodesLoading(true);
+    setCodesError('');
     Promise.allSettled([
       apiGet<ApiSpecialCode[]>('/special-codes'),
       apiGet<CommissionEntry[]>('/special-codes/admin/commission-summary'),
     ]).then(([codesRes, commRes]) => {
+      let nextError = '';
       if (codesRes.status === 'fulfilled') setApiCodes(codesRes.value || []);
+      if (codesRes.status === 'rejected') nextError = codesRes.reason?.message || 'Could not load special codes';
       if (commRes.status === 'fulfilled') setCommissionSummary(commRes.value || []);
-    }).finally(() => setCodesLoading(false));
-  }, [active, apiCodes.length, codesLoading]);
+      if (commRes.status === 'rejected' && !nextError) nextError = commRes.reason?.message || 'Could not load commission summary';
+      if (nextError) setCodesError(nextError);
+    }).finally(() => {
+      setCodesLoaded(true);
+      setCodesLoading(false);
+    });
+  }, [active, codesLoaded, codesLoading]);
 
   // Lazy-load marketing data when that section is first opened
   useEffect(() => {
@@ -343,13 +378,17 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
 
   // Lazy-load orders/financials when payments section is opened
   useEffect(() => {
-    if (active !== 'payments' || adminOrders.length > 0 || ordersLoading) return;
+    if (active !== 'payments' || ordersLoaded || ordersLoading) return;
     setOrdersLoading(true);
+    setOrdersError('');
     apiGet<any>('/admin/orders?page=1&limit=20')
       .then((data) => setAdminOrders(listFrom(data)))
-      .catch(() => {})
-      .finally(() => setOrdersLoading(false));
-  }, [active, adminOrders.length, ordersLoading]);
+      .catch((err: any) => setOrdersError(err?.message || 'Could not load orders'))
+      .finally(() => {
+        setOrdersLoaded(true);
+        setOrdersLoading(false);
+      });
+  }, [active, ordersLoaded, ordersLoading]);
 
   // ── User actions ───────────────────────────────────────────────────────────
 
@@ -656,12 +695,33 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
     }
   };
 
+  const openAdminEventEditor = (event: any) => {
+    setEditingAdminEvent(event);
+    setAdminEditTitle(adminEventTitle(event));
+    setAdminEditVenue(adminEventVenue(event));
+    setAdminEditStatus(event?.status === 'draft' ? 'draft' : 'published');
+  };
+
+  const closeAdminEventEditor = async () => {
+    setEditingAdminEvent(null);
+    try {
+      const fresh = await apiGet<any>('/admin/events?page=1&limit=50');
+      setAdminEvents(listFrom(fresh));
+    } catch {
+      /* keep current list */
+    }
+  };
+
   return (
     <View style={styles.root}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-        <Text style={styles.eyebrow}>{t('ADMIN', 'ADMIN')}</Text>
-        <Text style={styles.title}>{titleFor(active, t)}</Text>
-        <Text style={styles.subtitle}>{subtitleFor(active, t)}</Text>
+        {active !== 'codes' && (
+          <>
+            <Text style={styles.eyebrow}>{t('ADMIN', 'ADMIN')}</Text>
+            <Text style={styles.title}>{titleFor(active, t)}</Text>
+            <Text style={styles.subtitle}>{subtitleFor(active, t)}</Text>
+          </>
+        )}
 
 
         {active === 'dashboard' && (
@@ -682,13 +742,40 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
         )}
 
         {active === 'events' && (
-          <>
-            <PanelCard title={t('Eventos publicados', 'Published events')} eyebrow={t('EVENTOS REALES', 'LIVE EVENTS')} copy={t('Eventos cargados directamente desde el backend.', 'Events loaded directly from the backend.')} />
+          editingAdminEvent ? (
+            <>
+              <TouchableOpacity onPress={closeAdminEventEditor} style={styles.adminEditBack}>
+                <Text style={styles.adminEditBackText}>‹ {t('Eventos admin', 'Admin events')}</Text>
+              </TouchableOpacity>
+              <OrganizerDetailsMobile
+                eventTitle={adminEditTitle}
+                setEventTitle={setAdminEditTitle}
+                eventVenue={adminEditVenue}
+                setEventVenue={setAdminEditVenue}
+                eventStatus={adminEditStatus}
+                setEventStatus={setAdminEditStatus}
+                goTo={(section) => {
+                  if (section === 'events') closeAdminEventEditor();
+                  if (section === 'map') Alert.alert(t('Mapa visual', 'Visual map'), t('Edita el mapa desde el panel Organizador del evento.', 'Edit the map from the Organizer event panel.'));
+                }}
+                selectedEventId={String(editingAdminEvent.id)}
+                event={editingAdminEvent}
+              />
+            </>
+          ) : (
+            <>
             {adminEvents.length === 0 && (
               <PanelCard title={t('Sin eventos todavía', 'No events yet')} copy={t('Cuando se publiquen eventos aparecerán aquí.', 'Published events will appear here.')} />
             )}
             {[...adminEvents].sort(sortAdminEventsBySchedule).map((item: any) => (
               <View key={String(item.id || item.slug || adminEventTitle(item))} style={[styles.adminEventCard, isAdminEventPast(item) && styles.adminEventCardPast]}>
+                <TouchableOpacity
+                  onPress={() => openAdminEventEditor(item)}
+                  style={styles.adminEventEditButton}
+                  accessibilityLabel={t('Editar evento', 'Edit event')}
+                >
+                  <Ionicons name="pencil" size={15} color="#F97316" />
+                </TouchableOpacity>
                 <View style={styles.adminEventTop}>
                   <View style={styles.adminEventPosterWrap}>
                     {adminEventImage(item) ? (
@@ -750,7 +837,8 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
                 </View>
               </View>
             ))}
-          </>
+            </>
+          )
         )}
 
         {active === 'users' && (
@@ -794,6 +882,21 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
             ))
           ) : (
             <>
+              <View style={styles.userCountCard}>
+                <View>
+                  <Text style={styles.userCountEyebrow}>{t('USUARIOS ACTUALES', 'CURRENT USERS')}</Text>
+                  <Text style={styles.userCountCopy}>
+                    {userSearchQuery.trim()
+                      ? t('Coincidencias visibles en la búsqueda', 'Visible search matches')
+                      : t('Total registrado en la plataforma', 'Total registered on the platform')}
+                  </Text>
+                </View>
+                <View style={styles.userCountBadge}>
+                  <Text style={styles.userCountValue}>
+                    {userSearchQuery.trim() ? visibleUsers.length : (usersTotal ?? users.length)}
+                  </Text>
+                </View>
+              </View>
               <View style={styles.userSearchBox}>
                 <Text style={styles.userSearchIcon}>⌕</Text>
                 <TextInput
@@ -1054,7 +1157,7 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
                       <RankItem
                         key={ev.eventSlug}
                         index={String(i + 1).padStart(2, '0')}
-                        title={ev.eventSlug}
+                        title={ev.eventTitle || formatEventSlug(ev.eventSlug)}
                         value={`${ev.views} ${t('vistas', 'views')}`}
                       />
                     ))}
@@ -1066,7 +1169,7 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
                     {analyticsSummary.daily.map((d) => {
                       const maxViews = Math.max(...analyticsSummary.daily.map((r) => r.views), 1);
                       const pct = Math.round((d.views / maxViews) * 100);
-                      return <AnalyticsBar key={d.date} label={d.date.slice(5)} value={`${pct}%` as `${number}%`} />;
+                      return <AnalyticsBar key={d.date} label={d.date.slice(5)} value={`${pct}%` as `${number}%`} views={d.views} />;
                     })}
                   </PanelCard>
                 )}
@@ -1079,17 +1182,21 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
         )}
         {active === 'codes' && (
           <>
-            <PanelCard title={t('Codigos especiales', 'Special codes')} eyebrow={t('CODIGOS ESPECIALES', 'SPECIAL CODES')} copy={t('Crea codigos, asigna comisiones y monitorea ventas generadas.', 'Create codes, assign commissions and monitor generated sales.')}>
-              <TextInput value={specialCodeDraft} onChangeText={setSpecialCodeDraft} placeholder={t('Codigo (ej: LPVIP)', 'Code (e.g. LPVIP)')} placeholderTextColor="#9CA3AF" autoCapitalize="characters" style={[styles.createInput, { marginBottom: 10 }]} />
+            <View style={styles.codeCreateCard}>
+              <Text style={styles.formEyebrow}>{t('CODIGOS ESPECIALES', 'SPECIAL CODES')}</Text>
+              <Text style={styles.codePanelTitle}>{t('Codigos especiales', 'Special codes')}</Text>
+              <Text style={styles.codePanelCopy}>{t('Crea codigos, asigna comisiones y monitorea ventas generadas.', 'Create codes, assign commissions and monitor generated sales.')}</Text>
+              <TextInput value={specialCodeDraft} onChangeText={setSpecialCodeDraft} placeholder={t('Codigo (ej: LPVIP)', 'Code (e.g. LPVIP)')} placeholderTextColor="#9CA3AF" autoCapitalize="characters" style={[styles.codeInput, { marginBottom: 8 }]} />
               <View style={styles.createRow}>
-                <TextInput value={specialCodeOwnerDraft} onChangeText={setSpecialCodeOwnerDraft} placeholder={t('ID del dueño (UUID)', 'Owner user ID (UUID)')} placeholderTextColor="#9CA3AF" autoCapitalize="none" style={styles.createInput} />
-                <TouchableOpacity onPress={addSpecialCode} style={styles.createButton}>
-                  <Text style={styles.createButtonText}>{t('AGREGAR', 'ADD')}</Text>
-                </TouchableOpacity>
+                <TextInput value={specialCodeOwnerDraft} onChangeText={setSpecialCodeOwnerDraft} placeholder={t('ID del dueño (UUID)', 'Owner user ID (UUID)')} placeholderTextColor="#9CA3AF" autoCapitalize="none" style={styles.codeInput} />
+                <GradientButton label={t('AGREGAR', 'ADD')} onPress={addSpecialCode} height={44} style={styles.codeAddButton} textStyle={styles.codeAddButtonText} />
               </View>
-            </PanelCard>
+            </View>
 
             {codesLoading && <PanelCard title={t('Cargando...', 'Loading...')} />}
+            {!codesLoading && codesError ? (
+              <PanelCard title={t('No se pudieron cargar los códigos', 'Could not load codes')} copy={codesError} />
+            ) : null}
 
             {!codesLoading && (
               <View style={styles.metricsGrid}>
@@ -1103,27 +1210,21 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
             {apiCodes.map((item) => {
               const ownerName = [item.owner?.firstName, item.owner?.lastName].filter(Boolean).join(' ') || item.owner?.email || item.ownerUserId.slice(0, 8);
               return (
-                <View key={item.id} style={styles.userCard}>
-                  <View style={styles.cardHeader}>
-                    <View style={[styles.avatar, item.isActive ? styles.avatarOrange : styles.avatarMuted]}>
-                      <Text style={styles.avatarText}>{item.code.slice(0, 2)}</Text>
-                    </View>
+                <View key={item.id} style={styles.codeCard}>
+                  <View style={styles.codeCardTop}>
                     <View style={styles.cardMain}>
-                      <Text style={styles.cardTitle}>{item.code}</Text>
-                      <Text style={styles.cardSub}>{ownerName} · ${Number(item.commissionFixed).toFixed(0)} commission</Text>
+                      <Text style={styles.codeCardTitle}>{item.code}</Text>
+                      <Text style={styles.codeCardSub}>{ownerName} · ${Number(item.commissionFixed).toFixed(0)} commission</Text>
                     </View>
+                    <StatusPill label={item.isActive ? 'ACTIVE' : 'INACTIVE'} tone={item.isActive ? 'green' : 'gray'} compact />
                   </View>
 
-                  <View style={styles.statusRow}>
-                    <StatusPill label={item.isActive ? 'ACTIVE' : 'INACTIVE'} tone={item.isActive ? 'green' : 'gray'} />
-                  </View>
-
-                  <View style={styles.actionRow}>
-                    <TouchableOpacity onPress={() => toggleSpecialCode(item.id)} style={styles.cardPrimaryAction}>
-                      <Text style={styles.cardPrimaryText}>{item.isActive ? 'DISABLE' : 'ENABLE'}</Text>
+                  <View style={styles.codeActionRow}>
+                    <TouchableOpacity onPress={() => toggleSpecialCode(item.id)} style={styles.codePrimaryAction}>
+                      <Text style={styles.codePrimaryText}>{item.isActive ? 'DISABLE' : 'ENABLE'}</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => deleteCodeApi(item.id)} style={[styles.cardSecondaryAction, { borderColor: 'rgba(239,68,68,0.28)' }]}>
-                      <Text style={[styles.cardSecondaryText, { color: '#FCA5A5' }]}>DEL</Text>
+                    <TouchableOpacity onPress={() => deleteCodeApi(item.id)} style={styles.codeDeleteAction}>
+                      <Text style={styles.codeDeleteText}>DEL</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1192,6 +1293,9 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
             </View>
 
             {ordersLoading && <PanelCard title={t('Cargando órdenes...', 'Loading orders...')} />}
+            {!ordersLoading && ordersError ? (
+              <PanelCard title={t('No se pudieron cargar los pagos', 'Could not load payments')} copy={ordersError} />
+            ) : null}
 
             {adminOrders.slice(0, 15).map((order) => {
               const buyer = [order.user?.firstName, order.user?.lastName].filter(Boolean).join(' ') || order.user?.email || '—';
@@ -1333,12 +1437,14 @@ function OrderItem({ index, title }: { index: string; title: string }) {
   );
 }
 
-function AnalyticsBar({ label, value }: { label: string; value: `${number}%` }) {
+function AnalyticsBar({ label, value, views }: { label: string; value: `${number}%`; views: number }) {
+  const { t } = useLanguage();
+
   return (
     <View style={styles.analyticsRow}>
       <View style={styles.analyticsTop}>
         <Text style={styles.analyticsLabel}>{label}</Text>
-        <Text style={styles.analyticsValue}>{value}</Text>
+        <Text style={styles.analyticsValue}>{value} · {views} {t('vistas', 'views')}</Text>
       </View>
       <View style={styles.analyticsTrack}>
         <View style={[styles.analyticsFill, { width: value }]} />
@@ -1420,26 +1526,29 @@ const styles = StyleSheet.create({
   statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   statusPill: { height: 32, borderRadius: 999, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
   statusPillCompact: { height: 24, paddingHorizontal: 9 },
-  statusGreen: { backgroundColor: 'rgba(249,115,22,0.12)', borderColor: 'rgba(249,115,22,0.34)' },
+  statusGreen: { backgroundColor: 'rgba(34,197,94,0.12)', borderColor: 'rgba(34,197,94,0.34)' },
   statusRed: { backgroundColor: 'rgba(239,68,68,0.12)', borderColor: 'rgba(239,68,68,0.28)' },
   statusOrange: { backgroundColor: 'rgba(249,115,22,0.12)', borderColor: 'rgba(249,115,22,0.34)' },
   statusGray: { backgroundColor: '#030B14', borderColor: 'rgba(255,255,255,0.14)' },
   statusDark: { backgroundColor: '#030B14', borderColor: 'rgba(255,255,255,0.14)' },
   statusText: { fontSize: 10, fontWeight: '700', letterSpacing: 0 },
   statusTextCompact: { fontSize: 9 },
-  statusTextGreen: { color: colors.orange },
+  statusTextGreen: { color: '#4ADE80' },
   statusTextRed: { color: '#FCA5A5' },
   statusTextOrange: { color: colors.orange },
   statusTextGray: { color: '#CBD5E1' },
   statusTextDark: { color: '#F8FAFC' },
-  adminEventCard: { backgroundColor: '#030B14', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', padding: 11, marginBottom: 10 },
+  adminEventCard: { position: 'relative', backgroundColor: '#030B14', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', padding: 11, marginBottom: 10 },
   adminEventCardPast: { backgroundColor: 'rgba(3,11,20,0.74)', borderColor: 'rgba(148,163,184,0.18)' },
+  adminEventEditButton: { position: 'absolute', top: 10, right: 10, width: 34, height: 34, borderRadius: 11, backgroundColor: 'rgba(249,115,22,0.10)', borderWidth: 1, borderColor: 'rgba(249,115,22,0.38)', alignItems: 'center', justifyContent: 'center', zIndex: 5, shadowColor: '#F97316', shadowOpacity: 0.16, shadowRadius: 10, shadowOffset: { width: 0, height: 5 } },
+  adminEditBack: { alignSelf: 'flex-start', minHeight: 40, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9, marginBottom: 12, backgroundColor: 'rgba(249,115,22,0.10)', borderWidth: 1, borderColor: 'rgba(249,115,22,0.32)', justifyContent: 'center' },
+  adminEditBackText: { color: '#FDBA74', fontSize: 13, fontWeight: '800' },
   adminEventTop: { flexDirection: 'row', gap: 11, alignItems: 'center' },
   adminEventPosterWrap: { width: 76, height: 96, borderRadius: 12, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
   adminEventPoster: { width: '100%', height: '100%' },
   adminEventPosterFallback: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(249,115,22,0.08)' },
   adminEventPosterText: { color: colors.orange, fontSize: 9, fontWeight: '700', letterSpacing: 0 },
-  adminEventMain: { flex: 1, minWidth: 0 },
+  adminEventMain: { flex: 1, minWidth: 0, paddingRight: 34 },
   adminEventEyebrow: { color: colors.orange, fontSize: 10, fontWeight: '700', letterSpacing: 0, marginBottom: 4 },
   adminEventTitle: { color: '#F8FAFC', fontSize: 17, lineHeight: 21, fontWeight: '700', marginBottom: 5 },
   adminEventMeta: { color: 'rgba(226,232,240,0.62)', fontSize: 12, lineHeight: 17, fontWeight: '400', marginBottom: 8 },
@@ -1475,6 +1584,11 @@ const styles = StyleSheet.create({
   userSecondaryText: { color: '#F8FAFC', fontSize: 10, fontWeight: '700', letterSpacing: 0 },
   userDangerAction: { borderColor: 'rgba(239,68,68,0.24)' },
   userDangerText: { color: '#FCA5A5' },
+  userCountCard: { minHeight: 78, borderRadius: 18, borderWidth: 1, borderColor: 'rgba(249,115,22,0.28)', backgroundColor: 'rgba(3,11,20,0.86)', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 14, paddingHorizontal: 15, paddingVertical: 13, marginBottom: 10, shadowColor: '#ff6800', shadowOpacity: 0.13, shadowRadius: 18, shadowOffset: { width: 0, height: 9 } },
+  userCountEyebrow: { color: colors.orange, fontSize: 18, fontWeight: '700', letterSpacing: 0, marginBottom: 4 },
+  userCountCopy: { color: 'rgba(226,232,240,0.66)', fontSize: 12, lineHeight: 16, fontWeight: '600' },
+  userCountBadge: { minWidth: 82, height: 54, borderRadius: 16, backgroundColor: 'rgba(249,115,22,0.11)', borderWidth: 1, borderColor: 'rgba(249,115,22,0.34)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12 },
+  userCountValue: { color: '#F8FAFC', fontSize: 28, fontWeight: '800', letterSpacing: 0 },
   userSearchBox: { height: 46, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', backgroundColor: '#030B14', flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 13, marginBottom: 10 },
   userSearchIcon: { color: colors.orange, fontSize: 18, fontWeight: '700', width: 18, textAlign: 'center' },
   userSearchInput: { flex: 1, color: '#F8FAFC', fontSize: 14, fontWeight: '600', paddingVertical: 0 },
@@ -1526,6 +1640,21 @@ const styles = StyleSheet.create({
   createInput: { flex: 1, height: 56, borderRadius: 17, borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#FFFFFF', paddingHorizontal: 16, color: colors.navy, fontSize: 15, fontWeight: '700' },
   createButton: { width: 78, height: 56, borderRadius: 8, backgroundColor: colors.orange, alignItems: 'center', justifyContent: 'center' },
   createButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700', letterSpacing: 0 },
+  codeCreateCard: { backgroundColor: 'rgba(255,255,255,0.018)', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', padding: 13, marginBottom: 12, shadowColor: '#000000', shadowOpacity: 0.14, shadowRadius: 12, shadowOffset: { width: 0, height: 7 } },
+  codePanelTitle: { color: '#F8FAFC', fontSize: 20, fontWeight: '700', marginBottom: 5 },
+  codePanelCopy: { color: 'rgba(226,232,240,0.64)', fontSize: 12, lineHeight: 17, fontWeight: '500', marginBottom: 10 },
+  codeInput: { flex: 1, height: 44, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', backgroundColor: '#030B14', paddingHorizontal: 12, color: '#F8FAFC', fontSize: 12, fontWeight: '700' },
+  codeAddButton: { width: 82, borderRadius: 10 },
+  codeAddButtonText: { color: '#FFFFFF', fontSize: 10, fontWeight: '700', letterSpacing: 0 },
+  codeCard: { backgroundColor: '#030B14', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', padding: 11, marginBottom: 8 },
+  codeCardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 9 },
+  codeCardTitle: { color: '#F8FAFC', fontSize: 16, fontWeight: '700', marginBottom: 3 },
+  codeCardSub: { color: 'rgba(226,232,240,0.62)', fontSize: 11, fontWeight: '500' },
+  codeActionRow: { flexDirection: 'row', gap: 7 },
+  codePrimaryAction: { flex: 1, height: 34, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.025)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
+  codePrimaryText: { color: '#F8FAFC', fontSize: 10, fontWeight: '700', letterSpacing: 0 },
+  codeDeleteAction: { width: 62, height: 34, borderRadius: 10, backgroundColor: '#030B14', borderWidth: 1, borderColor: 'rgba(239,68,68,0.24)', alignItems: 'center', justifyContent: 'center' },
+  codeDeleteText: { color: '#FCA5A5', fontSize: 10, fontWeight: '700', letterSpacing: 0 },
   activity: { flexDirection: 'row', gap: 12, padding: 14, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: '#030B14', marginTop: 10 },
   activityDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.orange, marginTop: 5 },
   activityCopy: { flex: 1 },
