@@ -41,8 +41,18 @@ type Props = {
 
 const CANVAS_WIDTH = 2000;
 const CANVAS_HEIGHT = 1600;
-const VIEWPORT_HEIGHT = 620;
+const VIEWPORT_HEIGHT = 640;
 const FIT_PADDING = 54;
+const MAX_ZOOM = 2.6;
+const ZOOM_STEP = 0.22;
+
+type SeatInfo = {
+  title: string;
+  subtitle: string;
+  status: string;
+  price: number;
+  tone: 'available' | 'selected' | 'sold' | 'reserved';
+};
 
 function parseSeatConfig(raw?: string | null) {
   if (!raw) return {};
@@ -90,12 +100,57 @@ function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
 
+function tableLabel(name?: string | null, es = true) {
+  const word = es ? 'Mesa' : 'Table';
+  const raw = String(name || '').trim();
+  if (!raw) return word;
+  return /^(mesa|table)\b/i.test(raw) ? raw : `${word} ${raw}`;
+}
+
+function seatPrice(seat: ClientSeat, section: ClientVenueSection) {
+  const overrides = parseSeatConfig(section.seatsConfig);
+  const override = overrides[seatKey(seat)] || overrides[`seat-${seat.seatNumber}`] || {};
+  return Number(override?.price ?? section.price ?? 0);
+}
+
+function seatTitle(seat: ClientSeat, section: ClientVenueSection, es = true) {
+  const kind = getKind(section);
+  if (kind === 'table') {
+    return `${tableLabel(section.name || section.label, es)} · ${es ? 'Silla' : 'Seat'} ${seat.seatNumber || ''}`.trim();
+  }
+  const row = seat.rowLabel && seat.rowLabel !== 'GA' ? `${seat.rowLabel}-` : '';
+  return `${section.name || section.label || (es ? 'Seccion' : 'Section')} ${row}${seat.seatNumber || ''}`.trim();
+}
+
+function buildSeatInfo(seat: ClientSeat, section: ClientVenueSection, selectedSeats: ClientSeat[], es = true): SeatInfo {
+  const overrides = parseSeatConfig(section.seatsConfig);
+  const override = overrides[seatKey(seat)] || overrides[`seat-${seat.seatNumber}`] || {};
+  const selected = isSelected(seat, selectedSeats);
+  const unavailable = isSeatUnavailable(seat, override);
+  const statusRaw = String(seat.status || 'available').toLowerCase();
+  const reserved = statusRaw === 'reserved' || override?.reserved;
+  return {
+    title: seatTitle(seat, section, es),
+    subtitle: section.name || section.label || '',
+    status: selected
+      ? (es ? 'Seleccionado' : 'Selected')
+      : reserved
+        ? (es ? 'Reservado' : 'Reserved')
+        : unavailable
+          ? (es ? 'No disponible' : 'Unavailable')
+          : (es ? 'Disponible' : 'Available'),
+    price: seatPrice(seat, section),
+    tone: selected ? 'selected' : reserved ? 'reserved' : unavailable ? 'sold' : 'available',
+  };
+}
+
 function SeatDot({
   seat,
   section,
   override,
   selectedSeats,
   onToggleSeat,
+  onSeatInfo,
   x,
   y,
   size,
@@ -105,6 +160,7 @@ function SeatDot({
   override: any;
   selectedSeats: ClientSeat[];
   onToggleSeat: (seat: ClientSeat) => void;
+  onSeatInfo: (info: SeatInfo) => void;
   x: number;
   y: number;
   size: number;
@@ -112,12 +168,18 @@ function SeatDot({
   const selected = isSelected(seat, selectedSeats);
   const unavailable = isSeatUnavailable(seat, override);
   const color = sectionColor(section);
+  const reserved = String(seat.status || '').toLowerCase() === 'reserved' || override?.reserved;
+  const seatBg = selected ? colors.orange : unavailable ? (reserved ? '#FACC15' : '#CBD5E1') : color;
 
   return (
     <TouchableOpacity
       key={seat.id}
       disabled={unavailable && !selected}
-      onPress={() => onToggleSeat(seat)}
+      activeOpacity={0.82}
+      onPress={() => {
+        onSeatInfo(buildSeatInfo(seat, section, selectedSeats));
+        onToggleSeat(seat);
+      }}
       style={[
         styles.seatDot,
         {
@@ -126,12 +188,18 @@ function SeatDot({
           width: size,
           height: size,
           borderRadius: size / 2,
-          backgroundColor: selected ? colors.orange : unavailable ? '#DCE3EA' : '#DCE3EA',
-          borderColor: selected ? '#FFFFFF' : unavailable ? '#DCE3EA' : color,
+          backgroundColor: seatBg,
+          borderColor: selected ? '#FFFFFF' : unavailable ? seatBg : '#FFFFFF',
           opacity: unavailable && !selected ? 0.62 : 1,
+          shadowColor: selected ? colors.orange : color,
+          shadowOpacity: selected ? 0.4 : unavailable ? 0 : 0.2,
+          shadowRadius: selected ? 8 : 4,
+          transform: [{ scale: selected ? 1.16 : 1 }],
         },
       ]}
-    />
+    >
+      {override?.isWheelchair ? <Text style={[styles.wheelchair, { fontSize: clamp(size * 0.52, 6, 10) }]}>♿</Text> : null}
+    </TouchableOpacity>
   );
 }
 
@@ -140,11 +208,13 @@ function TableSection({
   scale,
   selectedSeats,
   onToggleSeat,
+  onSeatInfo,
 }: {
   section: ClientVenueSection;
   scale: number;
   selectedSeats: ClientSeat[];
   onToggleSeat: (seat: ClientSeat) => void;
+  onSeatInfo: (info: SeatInfo) => void;
 }) {
   const seats = section.seats || [];
   const overrides = parseSeatConfig(section.seatsConfig);
@@ -161,7 +231,7 @@ function TableSection({
 
   return (
     <View style={StyleSheet.absoluteFill}>
-      <View
+      <TouchableOpacity
         style={[
           styles.tableCore,
           {
@@ -174,11 +244,26 @@ function TableSection({
             backgroundColor: allUnavailable ? '#E5E7EB' : '#F8FAFC',
           },
         ]}
+        activeOpacity={0.85}
+        disabled={allUnavailable}
+        onPress={() => {
+          const availableSeats = seats.filter((seat) => !isSeatUnavailable(seat, overrides[seatKey(seat)] || overrides[`seat-${seat.seatNumber}`] || {}));
+          const selectedCount = availableSeats.filter((seat) => isSelected(seat, selectedSeats)).length;
+          const targetSeats = selectedCount > 0 ? availableSeats.filter((seat) => isSelected(seat, selectedSeats)) : availableSeats;
+          onSeatInfo({
+            title: tableLabel(section.name || section.label),
+            subtitle: `${availableSeats.length} sillas disponibles`,
+            status: selectedCount > 0 ? 'Seleccionada' : allUnavailable ? 'No disponible' : 'Disponible',
+            price: Number(section.price || 0),
+            tone: selectedCount > 0 ? 'selected' : allUnavailable ? 'sold' : 'available',
+          });
+          targetSeats.forEach(onToggleSeat);
+        }}
       >
         <Text style={[styles.tableLabel, { fontSize: clamp(Math.min(width, height) * 0.16, 7, 13) }]} numberOfLines={1}>
           {section.name || section.label}
         </Text>
-      </View>
+      </TouchableOpacity>
 
       {seats.map((seat, index) => {
         const override = overrides[seatKey(seat)] || overrides[`seat-${seat.seatNumber}`] || {};
@@ -226,6 +311,7 @@ function TableSection({
             override={override}
             selectedSeats={selectedSeats}
             onToggleSeat={onToggleSeat}
+            onSeatInfo={onSeatInfo}
             x={x + Number(override.xOffset || 0) * scale}
             y={y + Number(override.yOffset || 0) * scale}
             size={chairSize}
@@ -241,11 +327,13 @@ function RowSeatsSection({
   scale,
   selectedSeats,
   onToggleSeat,
+  onSeatInfo,
 }: {
   section: ClientVenueSection;
   scale: number;
   selectedSeats: ClientSeat[];
   onToggleSeat: (seat: ClientSeat) => void;
+  onSeatInfo: (info: SeatInfo) => void;
 }) {
   const seats = section.seats || [];
   const overrides = parseSeatConfig(section.seatsConfig);
@@ -281,6 +369,7 @@ function RowSeatsSection({
             override={override}
             selectedSeats={selectedSeats}
             onToggleSeat={onToggleSeat}
+            onSeatInfo={onSeatInfo}
             x={x - size / 2 + Number(override.xOffset || 0) * scale}
             y={y - size / 2 + Number(override.yOffset || 0) * scale}
             size={size}
@@ -294,6 +383,8 @@ function RowSeatsSection({
 export function ClientVenueMap({ seatMap, selectedSeats, onToggleSeat }: Props) {
   const { t } = useLanguage();
   const { width } = useWindowDimensions();
+  const [activeInfo, setActiveInfo] = useState<SeatInfo | null>(null);
+  const [focusedSectionId, setFocusedSectionId] = useState<string | null>(null);
 
   const sections = useMemo(
     () =>
@@ -308,6 +399,7 @@ export function ClientVenueMap({ seatMap, selectedSeats, onToggleSeat }: Props) 
   );
 
   const viewportWidth = Math.max(280, width - 64);
+  const viewportHeight = width < 390 ? 570 : VIEWPORT_HEIGHT;
 
   const fitView = useMemo(() => {
     if (!sections.length) {
@@ -322,37 +414,72 @@ export function ClientVenueMap({ seatMap, selectedSeats, onToggleSeat }: Props) 
     const contentW = Math.max(1, maxX - minX);
     const contentH = Math.max(1, maxY - minY);
     const scale = clamp(
-      Math.min((viewportWidth - FIT_PADDING) / contentW, (VIEWPORT_HEIGHT - FIT_PADDING) / contentH),
-      0.18,
-      0.9
+      Math.min((viewportWidth - FIT_PADDING) / contentW, (viewportHeight - FIT_PADDING) / contentH),
+      0.12,
+      1.05
     );
 
     return {
       scale,
       offset: {
         x: viewportWidth / 2 - ((minX + maxX) / 2) * scale,
-        y: VIEWPORT_HEIGHT / 2 - ((minY + maxY) / 2) * scale,
+        y: viewportHeight / 2 - ((minY + maxY) / 2) * scale,
       },
     };
-  }, [sections, viewportWidth]);
+  }, [sections, viewportHeight, viewportWidth]);
 
   const [scale, setScale] = useState(fitView.scale);
   const [offset, setOffset] = useState(fitView.offset);
   const gestureStart = useRef({ x: fitView.offset.x, y: fitView.offset.y, scale: fitView.scale, distance: 0 });
+  const viewRef = useRef({ scale: fitView.scale, offset: fitView.offset });
+  const fitScaleRef = useRef(fitView.scale);
 
   useEffect(() => {
     setScale(fitView.scale);
     setOffset(fitView.offset);
+    setFocusedSectionId(null);
     gestureStart.current = { x: fitView.offset.x, y: fitView.offset.y, scale: fitView.scale, distance: 0 };
+    viewRef.current = { scale: fitView.scale, offset: fitView.offset };
+    fitScaleRef.current = fitView.scale;
   }, [fitView]);
 
   const zoom = (amount: number) => {
-    setScale((current) => clamp(current + amount, fitView.scale, 2.4));
+    setScale((current) => {
+      const next = clamp(current + amount, fitView.scale, MAX_ZOOM);
+      viewRef.current.scale = next;
+      return next;
+    });
   };
 
   const resetMap = () => {
     setScale(fitView.scale);
     setOffset(fitView.offset);
+    setFocusedSectionId(null);
+    setActiveInfo(null);
+    viewRef.current = { scale: fitView.scale, offset: fitView.offset };
+  };
+
+  const focusSection = (section: ClientVenueSection) => {
+    const kind = getKind(section);
+    if (kind === 'stage' || kind === 'decor') return;
+    const widthRaw = Number(section.mapWidth || 100);
+    const heightRaw = Number(section.mapHeight || 100);
+    const targetScale = clamp(Math.min((viewportWidth * 0.72) / widthRaw, (viewportHeight * 0.58) / heightRaw), fitView.scale, MAX_ZOOM);
+    const nextOffset = {
+      x: viewportWidth / 2 - (Number(section.mapX || 0) + widthRaw / 2) * targetScale,
+      y: viewportHeight / 2 - (Number(section.mapY || 0) + heightRaw / 2) * targetScale - 42,
+    };
+    setFocusedSectionId(section.id);
+    setScale(targetScale);
+    setOffset(nextOffset);
+    setActiveInfo({
+      title: section.name || section.label || t('Sección', 'Section'),
+      subtitle: kind === 'standing' ? t('Acceso general', 'General admission') : `${section.seats?.length || 0} ${t('asientos', 'seats')}`,
+      status: t('Selecciona en el mapa', 'Select on map'),
+      price: Number(section.price || 0),
+      tone: 'available',
+    });
+    viewRef.current = { scale: targetScale, offset: nextOffset };
   };
 
   const panResponder = useRef(
@@ -366,21 +493,25 @@ export function ClientVenueMap({ seatMap, selectedSeats, onToggleSeat }: Props) 
             ? Math.hypot(touches[0].pageX - touches[1].pageX, touches[0].pageY - touches[1].pageY)
             : 0;
 
-        gestureStart.current = { x: offset.x, y: offset.y, scale, distance };
+        gestureStart.current = { x: viewRef.current.offset.x, y: viewRef.current.offset.y, scale: viewRef.current.scale, distance };
       },
       onPanResponderMove: (event, gesture) => {
         const touches = event.nativeEvent.touches;
 
         if (touches.length >= 2 && gestureStart.current.distance > 0) {
           const distance = Math.hypot(touches[0].pageX - touches[1].pageX, touches[0].pageY - touches[1].pageY);
-          setScale(clamp(gestureStart.current.scale * (distance / gestureStart.current.distance), fitView.scale, 2.4));
+          const nextScale = clamp(gestureStart.current.scale * (distance / gestureStart.current.distance), fitScaleRef.current, MAX_ZOOM);
+          setScale(nextScale);
+          viewRef.current.scale = nextScale;
           return;
         }
 
-        setOffset({
+        const nextOffset = {
           x: gestureStart.current.x + gesture.dx,
           y: gestureStart.current.y + gesture.dy,
-        });
+        };
+        setOffset(nextOffset);
+        viewRef.current.offset = nextOffset;
       },
     })
   ).current;
@@ -396,16 +527,26 @@ export function ClientVenueMap({ seatMap, selectedSeats, onToggleSeat }: Props) 
 
   const verticalLines = Array.from({ length: 41 }, (_, index) => index * 50);
   const horizontalLines = Array.from({ length: 33 }, (_, index) => index * 50);
+  const selectedInFocus = focusedSectionId ? selectedSeats.filter((seat) => seat.sectionId === focusedSectionId).length : 0;
 
   return (
     <View style={styles.wrap}>
       <View style={styles.topBar}>
+        <View style={styles.mapHeader}>
+          <View>
+            <Text style={styles.mapEyebrow}>{t('MAPA INTERACTIVO', 'INTERACTIVE MAP')}</Text>
+            <Text style={styles.mapTitle}>{t('Elige tu lugar', 'Choose your spot')}</Text>
+          </View>
+          <View style={styles.zoomBadge}>
+            <Text style={styles.zoomBadgeText}>{Math.round((scale / fitView.scale) * 100)}%</Text>
+          </View>
+        </View>
         <View style={styles.controls}>
-          <TouchableOpacity style={styles.controlButton} onPress={() => zoom(-0.12)}>
+          <TouchableOpacity style={styles.controlButton} onPress={() => zoom(-ZOOM_STEP)}>
             <Text style={styles.controlText}>−</Text>
           </TouchableOpacity>
           <View style={styles.controlDivider} />
-          <TouchableOpacity style={styles.controlButton} onPress={() => zoom(0.12)}>
+          <TouchableOpacity style={styles.controlButton} onPress={() => zoom(ZOOM_STEP)}>
             <Text style={styles.controlText}>+</Text>
           </TouchableOpacity>
           <View style={styles.controlDivider} />
@@ -416,7 +557,7 @@ export function ClientVenueMap({ seatMap, selectedSeats, onToggleSeat }: Props) 
         <Text style={styles.helpText}>{t('👆 Arrastra para mover · pellizca para zoom', '👆 Drag to pan · pinch to zoom')}</Text>
       </View>
 
-      <View style={styles.viewport} {...panResponder.panHandlers}>
+      <View style={[styles.viewport, { height: viewportHeight }]} {...panResponder.panHandlers}>
         <View
           style={[
             styles.canvas,
@@ -443,15 +584,21 @@ export function ClientVenueMap({ seatMap, selectedSeats, onToggleSeat }: Props) 
             const top = Number(section.mapY || 0) * scale;
             const sectionWidth = Number(section.mapWidth || 100) * scale;
             const sectionHeight = Number(section.mapHeight || 100) * scale;
+            const focused = focusedSectionId === section.id;
+            const dimmed = focusedSectionId && !focused && kind !== 'stage';
 
             return (
-              <View
+              <TouchableOpacity
                 key={section.id}
+                activeOpacity={kind === 'stage' || kind === 'decor' ? 1 : 0.9}
+                disabled={kind === 'stage' || kind === 'decor'}
+                onPress={() => focusSection(section)}
                 style={[
                   styles.section,
                   kind === 'stage' && styles.stageSection,
                   kind === 'decor' && styles.decorSection,
                   kind === 'standing' && styles.standingSection,
+                  focused && styles.focusedSection,
                   {
                     left,
                     top,
@@ -471,6 +618,7 @@ export function ClientVenueMap({ seatMap, selectedSeats, onToggleSeat }: Props) 
                           ? Math.min(sectionWidth, sectionHeight) / 2
                           : 4 * scale,
                     transform: [{ rotate: `${Number(section.rotation || 0)}deg` }],
+                    opacity: dimmed ? 0.34 : 1,
                   },
                 ]}
               >
@@ -490,16 +638,45 @@ export function ClientVenueMap({ seatMap, selectedSeats, onToggleSeat }: Props) 
                 )}
 
                 {kind === 'table' && (
-                  <TableSection section={section} scale={scale} selectedSeats={selectedSeats} onToggleSeat={onToggleSeat} />
+                  <TableSection section={section} scale={scale} selectedSeats={selectedSeats} onToggleSeat={onToggleSeat} onSeatInfo={setActiveInfo} />
                 )}
 
                 {kind === 'seats' && (
-                  <RowSeatsSection section={section} scale={scale} selectedSeats={selectedSeats} onToggleSeat={onToggleSeat} />
+                  <RowSeatsSection section={section} scale={scale} selectedSeats={selectedSeats} onToggleSeat={onToggleSeat} onSeatInfo={setActiveInfo} />
                 )}
-              </View>
+              </TouchableOpacity>
             );
           })}
         </View>
+
+        {activeInfo && (
+          <View style={styles.infoCard} pointerEvents="none">
+            <View style={styles.infoTop}>
+              <View style={styles.infoTextBlock}>
+                <Text style={styles.infoTitle} numberOfLines={1}>{activeInfo.title}</Text>
+                <Text style={styles.infoSubtitle} numberOfLines={1}>{activeInfo.subtitle}</Text>
+              </View>
+              <Text style={styles.infoPrice}>${activeInfo.price.toFixed(2)}</Text>
+            </View>
+            <View style={[styles.infoStatus, styles[`infoStatus_${activeInfo.tone}` as const]]}>
+              <Text style={[styles.infoStatusText, styles[`infoStatusText_${activeInfo.tone}` as const]]}>{activeInfo.status}</Text>
+            </View>
+          </View>
+        )}
+
+        {focusedSectionId && (
+          <View style={styles.focusBar}>
+            <TouchableOpacity style={styles.focusBack} onPress={resetMap}>
+              <Text style={styles.focusBackText}>‹</Text>
+            </TouchableOpacity>
+            <View style={styles.focusCopy}>
+              <Text style={styles.focusTitle} numberOfLines={1}>
+                {sections.find((section) => section.id === focusedSectionId)?.name || t('Sección', 'Section')}
+              </Text>
+              <Text style={styles.focusMeta}>{selectedInFocus} {t('seleccionado(s)', 'selected')}</Text>
+            </View>
+          </View>
+        )}
       </View>
 
       <View style={styles.legend}>
@@ -526,6 +703,26 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     gap: 12,
   },
+  mapHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 14,
+  },
+  mapEyebrow: { color: colors.orange, fontSize: 10.5, fontWeight: '800', letterSpacing: 1.1 },
+  mapTitle: { color: '#F8FAFC', fontSize: 22, lineHeight: 27, fontWeight: '800', marginTop: 3 },
+  zoomBadge: {
+    minWidth: 58,
+    height: 34,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(249,115,22,0.34)',
+    backgroundColor: 'rgba(249,115,22,0.11)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+  },
+  zoomBadgeText: { color: '#FDBA74', fontSize: 12, fontWeight: '800' },
   controls: {
     alignSelf: 'flex-end',
     height: 42,
@@ -547,17 +744,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   viewport: {
-    height: VIEWPORT_HEIGHT,
     marginHorizontal: 16,
-    borderRadius: 12,
+    borderRadius: 18,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    backgroundColor: '#12243A',
+    borderColor: 'rgba(246,198,95,0.18)',
+    backgroundColor: '#0D2138',
   },
   canvas: {
     position: 'absolute',
-    backgroundColor: '#14263D',
+    backgroundColor: '#0D2138',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
   },
@@ -581,6 +777,13 @@ const styles = StyleSheet.create({
     overflow: 'visible',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  focusedSection: {
+    borderWidth: 2.6,
+    shadowColor: colors.orange,
+    shadowOpacity: 0.55,
+    shadowRadius: 16,
+    zIndex: 40,
   },
   stageSection: {
     borderWidth: 2,
@@ -623,17 +826,75 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
+    backgroundColor: '#22415C',
+    shadowColor: '#000000',
+    shadowOpacity: 0.24,
+    shadowRadius: 8,
   },
   tableLabel: {
-    color: '#64748B',
-    fontWeight: '700',
+    color: '#F8FAFC',
+    fontWeight: '900',
     textAlign: 'center',
   },
   seatDot: {
     position: 'absolute',
     borderWidth: 1.5,
     zIndex: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowOffset: { width: 0, height: 2 },
   },
+  wheelchair: { color: '#FFFFFF', fontWeight: '900' },
+  infoCard: {
+    position: 'absolute',
+    left: 18,
+    right: 18,
+    top: 18,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(246,198,95,0.24)',
+    backgroundColor: 'rgba(8,31,51,0.94)',
+    padding: 13,
+    shadowColor: '#000000',
+    shadowOpacity: 0.34,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+  },
+  infoTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 },
+  infoTextBlock: { flex: 1 },
+  infoTitle: { color: '#FFFFFF', fontSize: 15, fontWeight: '900' },
+  infoSubtitle: { color: 'rgba(203,213,225,0.74)', fontSize: 11.5, fontWeight: '700', marginTop: 3 },
+  infoPrice: { color: colors.orange, fontSize: 15, fontWeight: '900' },
+  infoStatus: { alignSelf: 'flex-start', borderRadius: 999, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 5, marginTop: 10 },
+  infoStatus_available: { backgroundColor: 'rgba(34,197,94,0.12)', borderColor: 'rgba(34,197,94,0.28)' },
+  infoStatus_selected: { backgroundColor: 'rgba(249,115,22,0.14)', borderColor: 'rgba(249,115,22,0.36)' },
+  infoStatus_sold: { backgroundColor: 'rgba(148,163,184,0.14)', borderColor: 'rgba(148,163,184,0.25)' },
+  infoStatus_reserved: { backgroundColor: 'rgba(250,204,21,0.14)', borderColor: 'rgba(250,204,21,0.34)' },
+  infoStatusText: { fontSize: 10.5, fontWeight: '900' },
+  infoStatusText_available: { color: '#86EFAC' },
+  infoStatusText_selected: { color: '#FDBA74' },
+  infoStatusText_sold: { color: '#CBD5E1' },
+  infoStatusText_reserved: { color: '#FDE68A' },
+  focusBar: {
+    position: 'absolute',
+    left: 14,
+    right: 14,
+    bottom: 14,
+    minHeight: 62,
+    borderRadius: 20,
+    backgroundColor: 'rgba(15,23,42,0.96)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    gap: 12,
+  },
+  focusBack: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.10)', alignItems: 'center', justifyContent: 'center' },
+  focusBackText: { color: '#FFFFFF', fontSize: 28, fontWeight: '700', marginTop: -2 },
+  focusCopy: { flex: 1 },
+  focusTitle: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
+  focusMeta: { color: 'rgba(203,213,225,0.70)', fontSize: 12, fontWeight: '700', marginTop: 3 },
   legend: {
     flexDirection: 'row',
     flexWrap: 'wrap',
