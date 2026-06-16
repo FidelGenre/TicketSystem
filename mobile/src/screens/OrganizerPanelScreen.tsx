@@ -176,17 +176,7 @@ export function OrganizerPanelScreen({ section, onSectionChange }: PanelProps = 
       try {
         const data = await apiGet<any>('/events/mine/list');
         if (!mounted) return;
-        let raw = listFrom(data);
-
-        if (raw.length === 0) {
-          try {
-            const adminEvents = await apiGet<any>('/admin/events?page=1&limit=50');
-            if (!mounted) return;
-            raw = listFrom(adminEvents);
-          } catch {
-            // Non-admin organizers should keep the normal empty state.
-          }
-        }
+        const raw = listFrom(data);
 
         const byId: Record<string, any> = {};
         raw.forEach((e: any) => { if (e?.id) byId[String(e.id)] = e; });
