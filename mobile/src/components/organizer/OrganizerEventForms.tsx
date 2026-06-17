@@ -7,7 +7,7 @@ import { colors } from '../../theme/colors';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { GradientButton } from '../GradientButton';
 
-type EventStatus = 'draft' | 'published';
+type EventStatus = 'draft' | 'published' | 'cancelled';
 
 type SharedProps = {
   eventTitle: string;

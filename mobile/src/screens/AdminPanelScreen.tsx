@@ -210,7 +210,7 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
   const [editingAdminEvent, setEditingAdminEvent] = useState<any | null>(null);
   const [adminEditTitle, setAdminEditTitle] = useState('');
   const [adminEditVenue, setAdminEditVenue] = useState('');
-  const [adminEditStatus, setAdminEditStatus] = useState<'draft' | 'published'>('published');
+  const [adminEditStatus, setAdminEditStatus] = useState<'draft' | 'published' | 'cancelled'>('published');
 
   // Lazy-loaded section data
   const [analyticsSummary, setAnalyticsSummary] = useState<AnalyticsSummary | null>(null);

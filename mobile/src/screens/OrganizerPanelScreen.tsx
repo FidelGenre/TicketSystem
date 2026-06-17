@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { Alert, Animated, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { colors } from '../theme/colors';
 import { VenueMapEditor } from '../components/organizer/VenueMapEditor';
@@ -99,7 +100,7 @@ function formatEventDate(value?: string) {
 function toOrganizerEvent(event: OrganizerApiEvent, index: number): {
   id: string; title: string; venue: string; date: string; eventDate: string; time: string;
   category: string; capacity: number; sold: number; revenue: string; revenueAmount: number; orders: number;
-  status: 'draft' | 'published'; imageUrl: string; minPrice?: number;
+  status: 'draft' | 'published' | 'cancelled'; imageUrl: string; minPrice?: number;
   creatorCommission?: number; pendingCreatorCommission?: number | null;
 } {
   const capacity = Number(event.capacity || event.totalCapacity || 0);
@@ -118,7 +119,7 @@ function toOrganizerEvent(event: OrganizerApiEvent, index: number): {
     revenue: money(revenueAmount),
     revenueAmount,
     orders: Number(event.totalOrders || 0),
-    status: event.status === 'published' ? 'published' as const : 'draft' as const,
+    status: (['published', 'draft', 'cancelled'].includes(event.status || '') ? event.status : 'draft') as 'draft' | 'published' | 'cancelled',
     imageUrl: getImageUrl(event.imageUrl || event.bannerImageUrl),
     minPrice: event.minPrice ? Number(event.minPrice) : undefined,
     creatorCommission: Number(event.creatorCommission || 0),
@@ -146,7 +147,7 @@ export function OrganizerPanelScreen({ section, onSectionChange }: PanelProps = 
   const [tabsScrollX, setTabsScrollX] = useState(0);
   const [eventTitle, setEventTitle] = useState('Noche de (des)amor');
   const [eventVenue, setEventVenue] = useState('Ambriza');
-  const [eventStatus, setEventStatus] = useState<'draft' | 'published'>('published');
+  const [eventStatus, setEventStatus] = useState<'draft' | 'published' | 'cancelled'>('published');
   const [accessItems, setAccessItems] = useState<{ id: string; title: string; type: string; status: string }[]>([]);
   const [organizerEvents, setOrganizerEvents] = useState<ReturnType<typeof toOrganizerEvent>[]>([]);
   const [organizerEventsError, setOrganizerEventsError] = useState('');
@@ -417,58 +418,94 @@ export function OrganizerPanelScreen({ section, onSectionChange }: PanelProps = 
       {/* Section tabs only in event view — global sections live in the bottom bar. */}
       {selectedEvent && (
       <View style={styles.tabsShell}>
-        <View style={styles.tabsViewport}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.tabsScroller}
-            contentContainerStyle={styles.tabs}
-            onLayout={(event) => setTabsViewportWidth(event.nativeEvent.layout.width)}
-            onContentSizeChange={(width) => setTabsContentWidth(width)}
-            onScroll={(event) => setTabsScrollX(event.nativeEvent.contentOffset.x)}
-            scrollEventThrottle={16}
+        <View style={styles.tabsRow}>
+          {/* Left arrow */}
+          <TouchableOpacity
+            style={styles.tabArrowBtn}
+            onPress={() => {
+              const idx = EVENT_SECTIONS.indexOf(active);
+              if (idx > 0) setActive(EVENT_SECTIONS[idx - 1]);
+            }}
+            disabled={EVENT_SECTIONS.indexOf(active) <= 0}
+            activeOpacity={0.6}
           >
-            <Animated.View
-              style={[
-                styles.organizerSlidingPill,
-                {
-                  left: organizerIndicatorX,
-                  width: organizerIndicatorWidth,
-                },
-              ]}
+            <Ionicons
+              name="chevron-back"
+              size={19}
+              color={EVENT_SECTIONS.indexOf(active) <= 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.85)'}
             />
-            {visibleSections.map((item) => (
-              <OrganizerTab
-                key={item}
-                label={sectionLabel(item, t)}
-                active={active === item}
-                onPress={() => setActive(item)}
-                onLayout={(x, width) => setTabLayouts((current) => ({ ...current, [item]: { x, width } }))}
+          </TouchableOpacity>
+
+          <View style={styles.tabsViewport}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.tabsScroller}
+              contentContainerStyle={styles.tabs}
+              onLayout={(event) => setTabsViewportWidth(event.nativeEvent.layout.width)}
+              onContentSizeChange={(width) => setTabsContentWidth(width)}
+              onScroll={(event) => setTabsScrollX(event.nativeEvent.contentOffset.x)}
+              scrollEventThrottle={16}
+            >
+              <Animated.View
+                style={[
+                  styles.organizerSlidingPill,
+                  {
+                    left: organizerIndicatorX,
+                    width: organizerIndicatorWidth,
+                  },
+                ]}
               />
-            ))}
-          </ScrollView>
+              {visibleSections.map((item) => (
+                <OrganizerTab
+                  key={item}
+                  label={sectionLabel(item, t)}
+                  active={active === item}
+                  onPress={() => setActive(item)}
+                  onLayout={(x, width) => setTabLayouts((current) => ({ ...current, [item]: { x, width } }))}
+                />
+              ))}
+            </ScrollView>
 
-          {showLeftFade && (
-            <LinearGradient
-              pointerEvents="none"
-              colors={['#030B14', 'rgba(3,11,20,0)']}
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
-              style={[styles.tabsFade, styles.tabsFadeLeft]}
+            {showLeftFade && (
+              <LinearGradient
+                pointerEvents="none"
+                colors={['#030B14', 'rgba(3,11,20,0)']}
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+                style={[styles.tabsFade, styles.tabsFadeLeft]}
+              />
+            )}
+
+            {showRightFade && (
+              <LinearGradient
+                pointerEvents="none"
+                colors={['rgba(3,11,20,0)', '#030B14']}
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+                style={[styles.tabsFade, styles.tabsFadeRight]}
+              />
+            )}
+          </View>
+
+          {/* Right arrow */}
+          <TouchableOpacity
+            style={styles.tabArrowBtn}
+            onPress={() => {
+              const idx = EVENT_SECTIONS.indexOf(active);
+              if (idx < EVENT_SECTIONS.length - 1) setActive(EVENT_SECTIONS[idx + 1]);
+            }}
+            disabled={EVENT_SECTIONS.indexOf(active) >= EVENT_SECTIONS.length - 1}
+            activeOpacity={0.6}
+          >
+            <Ionicons
+              name="chevron-forward"
+              size={19}
+              color={EVENT_SECTIONS.indexOf(active) >= EVENT_SECTIONS.length - 1 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.85)'}
             />
-          )}
-
-          {showRightFade && (
-            <LinearGradient
-              pointerEvents="none"
-              colors={['rgba(3,11,20,0)', '#030B14']}
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
-              style={[styles.tabsFade, styles.tabsFadeRight]}
-            />
-          )}
-
+          </TouchableOpacity>
         </View>
+
         <View pointerEvents="none" style={styles.tabsDots}>
           {visibleSections.map((item) => (
             <View key={item} style={[styles.tabsDot, active === item && styles.tabsDotActive]} />
@@ -797,8 +834,10 @@ function subtitleFor(section: Section, t: (es: string, en: string) => string) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: 'transparent' },
-  tabsShell: { height: 78, marginTop: 10, backgroundColor: 'transparent', justifyContent: 'flex-start', overflow: 'visible' },
-  tabsViewport: { height: 62, marginHorizontal: 16, borderRadius: 20, backgroundColor: '#030B14', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', overflow: 'hidden', shadowColor: '#000000', shadowOpacity: 0.22, shadowRadius: 16, shadowOffset: { width: 0, height: 8 } },
+  tabsShell: { height: 78, marginTop: 10, backgroundColor: 'transparent', overflow: 'visible' },
+  tabsRow: { height: 62, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 4, gap: 2 },
+  tabArrowBtn: { width: 32, height: 62, alignItems: 'center', justifyContent: 'center' },
+  tabsViewport: { flex: 1, height: 62, borderRadius: 20, backgroundColor: '#030B14', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', overflow: 'hidden', shadowColor: '#000000', shadowOpacity: 0.22, shadowRadius: 16, shadowOffset: { width: 0, height: 8 } },
   tabsScroller: { height: 62, flexGrow: 0, flexShrink: 0, backgroundColor: 'transparent' },
   tabs: { height: 60, paddingLeft: 6, paddingRight: 46, gap: 6, alignItems: 'center', backgroundColor: 'transparent', position: 'relative' },
   organizerSlidingPill: { position: 'absolute', top: 7, height: 46, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.055)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.26)', zIndex: 0, overflow: 'hidden', shadowColor: '#FFFFFF', shadowOpacity: 0.16, shadowRadius: 13, shadowOffset: { width: 0, height: 6 } },

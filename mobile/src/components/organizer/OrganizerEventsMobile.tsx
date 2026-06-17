@@ -6,7 +6,7 @@ import { useLanguage } from '../../i18n/LanguageContext';
 import { GradientButton } from '../GradientButton';
 import { apiGet } from '../../services/api';
 
-type EventStatus = 'draft' | 'published';
+type EventStatus = 'draft' | 'published' | 'cancelled';
 
 type EventSection = 'details' | 'map' | 'attendees' | 'blocks';
 type FilterKey = 'all' | 'draft' | 'published' | 'cancelled';
@@ -242,15 +242,17 @@ export function OrganizerEventsMobile({ eventTitle, eventVenue, eventStatus, eve
               </TouchableOpacity>
             </View>
 
-            {/* Publish / Draft toggle */}
-            <TouchableOpacity
-              style={styles.publishButton}
-              onPress={() => onTogglePublish ? onTogglePublish(item) : setEventStatus(item.status === 'published' ? 'draft' : 'published')}
-            >
-              <Text style={styles.publishText}>
-                {item.status === 'published' ? t('MOVER A BORRADOR', 'MOVE TO DRAFT') : t('PUBLICAR EVENTO', 'PUBLISH EVENT')}
-              </Text>
-            </TouchableOpacity>
+            {/* Publish / Draft toggle — hidden for cancelled events */}
+            {item.status !== 'cancelled' && (
+              <TouchableOpacity
+                style={styles.publishButton}
+                onPress={() => onTogglePublish ? onTogglePublish(item) : setEventStatus(item.status === 'published' ? 'draft' : 'published')}
+              >
+                <Text style={styles.publishText}>
+                  {item.status === 'published' ? t('MOVER A BORRADOR', 'MOVE TO DRAFT') : t('PUBLICAR EVENTO', 'PUBLISH EVENT')}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         );
       })}
@@ -259,12 +261,13 @@ export function OrganizerEventsMobile({ eventTitle, eventVenue, eventStatus, eve
 }
 
 function StatusBadge({ status }: { status: EventStatus }) {
-  const published = status === 'published';
+  const cfg =
+    status === 'published' ? { bg: styles.statusPublished, text: styles.statusPublishedText, label: 'PUBLICADO' } :
+    status === 'cancelled' ? { bg: styles.statusCancelled, text: styles.statusCancelledText, label: 'CANCELADO' } :
+    { bg: styles.statusDraft, text: styles.statusDraftText, label: 'BORRADOR' };
   return (
-    <View style={[styles.statusBadge, published ? styles.statusPublished : styles.statusDraft]}>
-      <Text style={[styles.statusText, published ? styles.statusPublishedText : styles.statusDraftText]}>
-        {published ? 'PUBLICADO' : 'BORRADOR'}
-      </Text>
+    <View style={[styles.statusBadge, cfg.bg]}>
+      <Text style={[styles.statusText, cfg.text]}>{cfg.label}</Text>
     </View>
   );
 }
@@ -402,6 +405,8 @@ const styles = StyleSheet.create({
   statusBadge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 5, borderWidth: 1 },
   statusPublished: { backgroundColor: 'rgba(34,197,94,0.12)', borderColor: 'rgba(34,197,94,0.34)' },
   statusDraft: { backgroundColor: '#030B14', borderColor: 'rgba(255,255,255,0.14)' },
+  statusCancelled: { backgroundColor: 'rgba(239,68,68,0.12)', borderColor: 'rgba(239,68,68,0.34)' },
+  statusCancelledText: { color: '#FCA5A5' },
   scheduleActive: { backgroundColor: 'rgba(239,68,68,0.12)', borderColor: 'rgba(239,68,68,0.30)' },
   schedulePast: { backgroundColor: 'rgba(148,163,184,0.10)', borderColor: 'rgba(148,163,184,0.24)' },
   statusText: { fontSize: 9, letterSpacing: 0, fontWeight: '700' },

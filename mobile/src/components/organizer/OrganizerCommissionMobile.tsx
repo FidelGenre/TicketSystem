@@ -7,7 +7,7 @@ import { GradientButton } from '../GradientButton';
 
 type Props = {
   eventId?: string;
-  eventStatus?: 'draft' | 'published';
+  eventStatus?: 'draft' | 'published' | 'cancelled';
   sections: any[];
   initialCommission?: number;
   pendingCommission?: number | null;
