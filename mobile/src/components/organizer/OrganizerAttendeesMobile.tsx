@@ -277,12 +277,6 @@ export function OrganizerAttendeesMobile({ attendees, revenueLabel, onToggle, on
           );
         })}
 
-        {/* Quick nav */}
-        <View style={styles.bottomActions}>
-          <Button label={t('SCAN QR', 'SCAN QR')} muted onPress={() => goTo('scan')} />
-          <Button label={t('MAPA', 'MAP')} muted onPress={() => goTo('map')} />
-          <Button label={t('BLOQUEOS', 'BLOCKS')} muted onPress={() => goTo('blocks')} />
-        </View>
       </View>
 
       {/* Reminders modal */}

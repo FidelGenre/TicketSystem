@@ -287,26 +287,25 @@ export function VenueMapEditor({ eventId }: Props) {
         </TouchableOpacity>
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View style={styles.workbench}>
-          <View style={styles.leftRail}>
-          <Tool icon="▦" label={t('Mesa', 'Table')} onPress={() => addItem('table')} />
-          <Tool icon="□" label={t('Área', 'Area')} onPress={() => addItem('area')} />
-          <Tool icon="▬" label={t('Barra', 'Bar')} onPress={() => addItem('bar')} />
-          <Tool icon="▰" label={t('Escenario', 'Stage')} onPress={() => addItem('stage')} />
-          <Tool icon="●" label={t('Asiento', 'Seat')} onPress={() => addItem('seat')} />
-
-          <View style={styles.railZoom}>
-            <TouchableOpacity onPress={() => setZoom((current) => Math.max(0.4, Number((current - 0.15).toFixed(2))))} style={styles.railZoomButton}>
-              <Text style={styles.railZoomText}>-</Text>
-            </TouchableOpacity>
-            <Text style={styles.railZoomValue}>{Math.round(zoom * 100)}%</Text>
-            <TouchableOpacity onPress={() => setZoom((current) => Math.min(2.4, Number((current + 0.15).toFixed(2))))} style={styles.railZoomButton}>
-              <Text style={styles.railZoomText}>+</Text>
-            </TouchableOpacity>
-          </View>
+      {/* Horizontal toolbar */}
+      <View style={styles.toolbar}>
+        <Tool icon="▦" label={t('Mesa', 'Table')} onPress={() => addItem('table')} />
+        <Tool icon="□" label={t('Área', 'Area')} onPress={() => addItem('area')} />
+        <Tool icon="▬" label={t('Barra', 'Bar')} onPress={() => addItem('bar')} />
+        <Tool icon="▰" label={t('Escenario', 'Stage')} onPress={() => addItem('stage')} />
+        <Tool icon="●" label={t('Asiento', 'Seat')} onPress={() => addItem('seat')} />
+        <View style={styles.zoomGroup}>
+          <TouchableOpacity onPress={() => setZoom((current) => Math.max(0.4, Number((current - 0.15).toFixed(2))))} style={styles.railZoomButton}>
+            <Text style={styles.railZoomText}>-</Text>
+          </TouchableOpacity>
+          <Text style={styles.railZoomValue}>{Math.round(zoom * 100)}%</Text>
+          <TouchableOpacity onPress={() => setZoom((current) => Math.min(2.4, Number((current + 0.15).toFixed(2))))} style={styles.railZoomButton}>
+            <Text style={styles.railZoomText}>+</Text>
+          </TouchableOpacity>
         </View>
+      </View>
 
+      <View style={styles.workbench}>
           <View style={styles.canvasViewport}>
             <View
             style={[styles.canvas, canvasTransformStyle]}
@@ -371,8 +370,9 @@ export function VenueMapEditor({ eventId }: Props) {
               })}
             </View>
           </View>
+      </View>
 
-          <View style={styles.inspector}>
+      <View style={styles.inspector}>
             <View style={styles.inspectorHeader}>
               <Text style={styles.inspectorTitle}>{t('INSPECTOR DE OBJETO', 'OBJECT INSPECTOR')}</Text>
               <TouchableOpacity onPress={duplicateSelected}><Text style={styles.iconButton}>{t('COPIAR', 'COPY')}</Text></TouchableOpacity>
@@ -437,8 +437,6 @@ export function VenueMapEditor({ eventId }: Props) {
               </ScrollView>
             )}
           </View>
-        </View>
-      </ScrollView>
     </View>
   );
 }
@@ -580,8 +578,10 @@ const styles = StyleSheet.create({
   capacityText: { color: '#F97316', fontSize: 10, fontWeight: '700' },
   saveButton: { height: 36, borderRadius: 12, paddingHorizontal: 14, backgroundColor: '#F97316', justifyContent: 'center', shadowColor: '#F97316', shadowOpacity: 0.20, shadowRadius: 12, shadowOffset: { width: 0, height: 6 } },
   saveText: { color: '#FFFFFF', fontSize: 11, fontWeight: '700' },
-  workbench: { width: 1030, height: 560, flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.018)' },
-  leftRail: { width: 58, backgroundColor: '#030B14', borderRightWidth: 1, borderRightColor: 'rgba(255,255,255,0.14)', alignItems: 'center', paddingTop: 16, gap: 14 },
+  toolbar: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: '#030B14', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)', flexWrap: 'wrap' },
+  zoomGroup: { flexDirection: 'row', alignItems: 'center', gap: 6, marginLeft: 'auto' },
+  workbench: { height: 440, backgroundColor: '#020712' },
+  leftRail: { display: 'none', width: 0 },
   tool: { alignItems: 'center', gap: 5 },
   toolIcon: { width: 22, height: 16, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' },
   iconTable: { width: 28, height: 24, alignItems: 'center', justifyContent: 'center', gap: 2 },
@@ -597,7 +597,7 @@ const styles = StyleSheet.create({
   railZoomText: { color: '#FFFFFF', fontSize: 18, fontWeight: '700' },
   railZoomValue: { color: 'rgba(226,232,240,0.64)', fontSize: 9, fontWeight: '700' },
   toolText: { color: 'rgba(226,232,240,0.64)', fontSize: 9, fontWeight: '700' },
-  canvasViewport: { width: 704, height: 560, overflow: 'hidden', position: 'relative', backgroundColor: '#020712' },
+  canvasViewport: { flex: 1, height: 440, overflow: 'hidden', position: 'relative', backgroundColor: '#020712' },
   zoomControls: { position: 'absolute', right: 14, top: 14, height: 34, borderRadius: 17, backgroundColor: '#0A375A', flexDirection: 'row', alignItems: 'center', overflow: 'hidden', zIndex: 20 },
   zoomButton: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center', backgroundColor: '#1f2937' },
   zoomButtonText: { color: '#FFFFFF', fontSize: 18, fontWeight: '700' },
@@ -618,8 +618,8 @@ const styles = StyleSheet.create({
   cornerTR: { right: -7, top: -7 },
   cornerBL: { left: -7, bottom: -7 },
   cornerBR: { right: -7, bottom: -7 },
-  inspector: { width: 272, backgroundColor: '#030B14', borderLeftWidth: 1, borderLeftColor: 'rgba(255,255,255,0.14)' },
-  inspectorHeader: { height: 58, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.12)', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 10 },
+  inspector: { backgroundColor: '#030B14', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.14)' },
+  inspectorHeader: { minHeight: 52, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.12)', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 10, paddingVertical: 8 },
   inspectorTitle: { flex: 1, color: '#F8FAFC', fontSize: 12, fontWeight: '700' },
   iconButton: { color: '#F97316', fontSize: 10, fontWeight: '700' },
   deleteText: { color: '#ef4444', fontSize: 10, fontWeight: '700' },

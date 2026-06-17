@@ -400,23 +400,6 @@ export function OrganizerDetailsMobile({ eventTitle, setEventTitle, eventVenue, 
         <Field label={t('Direccion', 'Address')} value={address} onChangeText={setAddress} multiline />
         <Field label={t('Máx. entradas por transacción', 'Max tickets per transaction')} value={maxTickets} onChangeText={setMaxTickets} keyboardType="number-pad" />
 
-        <View style={styles.focalHeader}>
-          <Text style={styles.fieldLabel}>{t('ALINEACIÓN FOCAL / VERTICAL', 'FOCAL / VERTICAL ALIGNMENT')}</Text>
-          <Text style={styles.focalPct}>{focalY}%</Text>
-        </View>
-        <View style={styles.segmentGroup}>
-          {([{ label: t('Arriba', 'Top'), val: 0 }, { label: t('Centro', 'Center'), val: 50 }, { label: t('Abajo', 'Bottom'), val: 100 }] as const).map(({ label, val }) => (
-            <TouchableOpacity key={val} onPress={() => setFocalY(val)} style={[styles.segment, focalY === val && styles.segmentActive]}>
-              <Text style={[styles.segmentText, focalY === val && styles.segmentTextActive]}>{label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-        <BannerSlider value={focalY} onChange={setFocalY} />
-        <View style={styles.focalLabels}>
-          <Text style={styles.focalTickLabel}>TOP</Text>
-          <Text style={styles.focalTickLabel}>CENTER</Text>
-          <Text style={styles.focalTickLabel}>BOTTOM</Text>
-        </View>
 
         <Text style={styles.fieldLabel}>{t('Estado', 'Status')}</Text>
         <View style={styles.segmentGroup}>
@@ -435,6 +418,24 @@ export function OrganizerDetailsMobile({ eventTitle, setEventTitle, eventVenue, 
         <View style={styles.mediaGrid}>
           <MediaBox title={t('Miniatura', 'Thumbnail')} copy={t('Imagen que aparece en listados y tarjetas', 'Image shown in listings and cards')} eventId={selectedEventId} kind="thumbnail" initialUrl={event?.imageUrl} canDelete />
           <MediaBox title={t('Banner', 'Banner')} copy={t('Imagen grande del detalle y home', 'Large image for details and home')} eventId={selectedEventId} kind="banner" initialUrl={event?.bannerImageUrl} canDelete />
+        </View>
+
+        <View style={styles.focalHeader}>
+          <Text style={styles.fieldLabel}>{t('ALINEACIÓN FOCAL / VERTICAL', 'FOCAL / VERTICAL ALIGNMENT')}</Text>
+          <Text style={styles.focalPct}>{focalY}%</Text>
+        </View>
+        <View style={styles.segmentGroup}>
+          {([{ label: t('Arriba', 'Top'), val: 0 }, { label: t('Centro', 'Center'), val: 50 }, { label: t('Abajo', 'Bottom'), val: 100 }] as const).map(({ label, val }) => (
+            <TouchableOpacity key={val} onPress={() => setFocalY(val)} style={[styles.segment, focalY === val && styles.segmentActive]}>
+              <Text style={[styles.segmentText, focalY === val && styles.segmentTextActive]}>{label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <BannerSlider value={focalY} onChange={setFocalY} />
+        <View style={styles.focalLabels}>
+          <Text style={styles.focalTickLabel}>TOP</Text>
+          <Text style={styles.focalTickLabel}>CENTER</Text>
+          <Text style={styles.focalTickLabel}>BOTTOM</Text>
         </View>
       </View>
 
