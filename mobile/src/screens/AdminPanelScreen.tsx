@@ -2108,21 +2108,23 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
               </TouchableOpacity>
             </View>
 
-            {/* ─── Stat cards ─── */}
-            {[
-              { label: t('Total views', 'Total views'), value: analyticsSummary?.totalViews ?? 0, icon: 'eye-outline' as const },
-              { label: t('Unique visitors', 'Unique visitors'), value: analyticsSummary?.uniqueVisitors ?? 0, icon: 'people-outline' as const },
-              { label: t('Viewed events', 'Viewed events'), value: analyticsSummary?.topEvents.length ?? 0, icon: 'flash-outline' as const },
-              { label: t('Viewed pages', 'Viewed pages'), value: (analyticsSummary?.topPages ?? []).length, icon: 'bar-chart-outline' as const },
-            ].map((s) => (
-              <View key={s.label} style={styles.anStatCard}>
-                <View style={styles.anStatTop}>
-                  <Text style={styles.anStatLabel}>{s.label}</Text>
-                  <View style={styles.anStatIconBox}><Ionicons name={s.icon} size={18} color={colors.orange} /></View>
+            {/* ─── Stat cards 2-col grid ─── */}
+            <View style={styles.anStatGrid}>
+              {[
+                { label: t('Total views', 'Total views'), value: analyticsSummary?.totalViews ?? 0, icon: 'eye-outline' as const },
+                { label: t('Unique visitors', 'Unique visitors'), value: analyticsSummary?.uniqueVisitors ?? 0, icon: 'people-outline' as const },
+                { label: t('Viewed events', 'Viewed events'), value: analyticsSummary?.topEvents.length ?? 0, icon: 'flash-outline' as const },
+                { label: t('Viewed pages', 'Viewed pages'), value: (analyticsSummary?.topPages ?? []).length, icon: 'bar-chart-outline' as const },
+              ].map((s) => (
+                <View key={s.label} style={styles.anStatCard}>
+                  <View style={styles.anStatTop}>
+                    <Text style={styles.anStatLabel}>{s.label}</Text>
+                    <View style={styles.anStatIconBox}><Ionicons name={s.icon} size={16} color={colors.orange} /></View>
+                  </View>
+                  <Text style={styles.anStatValue}>{s.value >= 1000 ? `${(s.value / 1000).toFixed(1)}k` : String(s.value)}</Text>
                 </View>
-                <Text style={styles.anStatValue}>{s.value >= 1000 ? `${(s.value / 1000).toFixed(1)}k` : String(s.value)}</Text>
-              </View>
-            ))}
+              ))}
+            </View>
 
             {analyticsLoading && (
               <View style={styles.anStatCard}><Text style={styles.anStatLabel}>{t('Cargando...', 'Loading...')}</Text></View>
@@ -2169,7 +2171,7 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
                   </View>
                 </TouchableOpacity>
                 {analyticsRecentOpen && (
-                  <>
+                  <ScrollView style={styles.anTableScroll} nestedScrollEnabled showsVerticalScrollIndicator>
                     <View style={styles.anTableHeader}>
                       <Text style={[styles.anTableCol, { flex: 2 }]}>PATH</Text>
                       <Text style={[styles.anTableCol, { flex: 1, textAlign: 'right' }]}>EVENT</Text>
@@ -2180,7 +2182,7 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
                         <Text style={[styles.anTableEvent, { flex: 1, textAlign: 'right' }]} numberOfLines={1}>{view.eventSlug ? view.eventSlug.split('-').slice(0, 2).join('-') + (view.eventSlug.split('-').length > 2 ? '...' : '') : '-'}</Text>
                       </View>
                     ))}
-                  </>
+                  </ScrollView>
                 )}
               </View>
             )}
@@ -3429,11 +3431,12 @@ const styles = StyleSheet.create({
   anSubtitle: { color: 'rgba(226,232,240,0.55)', fontSize: 13, fontWeight: '500' },
   anDayBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', backgroundColor: 'rgba(255,255,255,0.04)', marginTop: 4 },
   anDayBtnText: { color: '#F8FAFC', fontSize: 13, fontWeight: '600' },
-  anStatCard: { padding: 20, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: 'rgba(255,255,255,0.018)', marginBottom: 12 },
-  anStatTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
-  anStatLabel: { color: 'rgba(226,232,240,0.6)', fontSize: 13, fontWeight: '600' },
+  anStatGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 },
+  anStatCard: { flex: 1, minWidth: '47%', padding: 16, borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: 'rgba(255,255,255,0.018)' },
+  anStatTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
+  anStatLabel: { color: 'rgba(226,232,240,0.6)', fontSize: 12, fontWeight: '600', flex: 1 },
   anStatIconBox: { width: 36, height: 36, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(249,115,22,0.35)', backgroundColor: 'rgba(249,115,22,0.1)', alignItems: 'center', justifyContent: 'center' },
-  anStatValue: { color: '#F8FAFC', fontSize: 36, fontWeight: '800', letterSpacing: -1 },
+  anStatValue: { color: '#F8FAFC', fontSize: 30, fontWeight: '800', letterSpacing: -1 },
   anSection: { padding: 20, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: 'rgba(255,255,255,0.018)', marginBottom: 12 },
   anSectionTitle: { color: '#F8FAFC', fontSize: 18, fontWeight: '800', marginBottom: 14 },
   anRankRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
@@ -3446,6 +3449,7 @@ const styles = StyleSheet.create({
   anRecentToggle: { width: 34, height: 34, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(249,115,22,0.3)', backgroundColor: 'rgba(249,115,22,0.08)', alignItems: 'center', justifyContent: 'center' },
   anTableHeader: { flexDirection: 'row', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)', marginBottom: 4 },
   anTableCol: { color: 'rgba(226,232,240,0.4)', fontSize: 11, fontWeight: '800', letterSpacing: 0.8, textTransform: 'uppercase' },
+  anTableScroll: { maxHeight: 260 },
   anTableRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
   anTablePath: { color: '#F8FAFC', fontSize: 13, fontWeight: '500' },
   anTableEvent: { color: 'rgba(226,232,240,0.5)', fontSize: 12, fontWeight: '500' },
