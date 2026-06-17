@@ -65,13 +65,8 @@ export function OrganizerAnalyticsMobile({ sales, attendees, sections, eventTitl
       acc[key].revenue += Number(o.subtotal ?? o.total ?? 0);
       return acc;
     }, {});
-    const today = new Date();
-    const recentKeys = Array.from({ length: 3 }).map((_, i) => {
-      const d = new Date(today);
-      d.setDate(today.getDate() - (2 - i));
-      return dayKey(d.toISOString());
-    });
-    const salesByDay = recentKeys.map((date) => rawByDay[date] || { date, orders: 0, tickets: 0, revenue: 0 });
+    // Show ALL days with sales, sorted chronologically.
+    const salesByDay = Object.values(rawByDay).sort((a, b) => a.date.localeCompare(b.date));
 
     const salesBySection = Object.values(
       attendees.reduce<Record<string, { section: string; tickets: number; scanned: number; pending: number }>>((acc, a) => {

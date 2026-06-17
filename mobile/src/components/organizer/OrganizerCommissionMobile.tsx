@@ -85,7 +85,7 @@ export function OrganizerCommissionMobile({ eventId, eventStatus, sections, init
     }
   };
 
-  const sampleSections = ticketSections.slice(0, 3);
+  const sampleSections = ticketSections;
 
   return (
     <View style={styles.wrap}>

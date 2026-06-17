@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
-import { Alert, Modal, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Alert, Modal, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { GradientButton } from '../GradientButton';
@@ -25,28 +26,43 @@ type Props = {
   eventId?: string;
   event?: any;
   eventTitle?: string;
+  sales?: any;
 };
 
-export function OrganizerAttendeesMobile({ attendees, revenueLabel, onToggle, onResend, goTo, eventId, event, eventTitle }: Props) {
-  const { t } = useLanguage();
-  const scanned = attendees.filter((item) => item.status === 'SCANNED').length;
-  const pending = attendees.length - scanned;
+type BuyerGroup = {
+  email: string;
+  name: string;
+  initials: string;
+  tickets: Attendee[];
+  scanned: number;
+  spent: number;
+};
 
-  // Reminder settings (mirror of the web editor's reminder modal).
+function parseTotal(str: string): number {
+  return parseFloat(str.replace(/[^0-9.]/g, '')) || 0;
+}
+
+function initials(name: string) {
+  return name.split(' ').map((w) => w[0] || '').join('').slice(0, 2).toUpperCase();
+}
+
+export function OrganizerAttendeesMobile({ attendees, revenueLabel, onToggle, onResend, goTo, eventId, event, eventTitle, sales }: Props) {
+  const { t } = useLanguage();
+  const [search, setSearch] = useState('');
+  const [expandedBuyer, setExpandedBuyer] = useState<string | null>(null);
+  const [detailBuyer, setDetailBuyer] = useState<BuyerGroup | null>(null);
+
+  // Reminder state
   const [showReminder, setShowReminder] = useState(false);
-  const [autoEnabled, setAutoEnabled] = useState(false);
-  const [autoDays, setAutoDays] = useState('0');
-  const [autoMsg, setAutoMsg] = useState('');
+  const [autoEnabled, setAutoEnabled] = useState(!!event?.autoReminderEnabled);
+  const [autoDays, setAutoDays] = useState(String(event?.autoReminderDays || 0));
+  const [autoMsg, setAutoMsg] = useState(event?.autoReminderMessage || '');
   const [sendMsg, setSendMsg] = useState('');
   const [savingSettings, setSavingSettings] = useState(false);
   const [sendingReminder, setSendingReminder] = useState(false);
 
-  useEffect(() => {
-    if (!event) return;
-    setAutoEnabled(!!event.autoReminderEnabled);
-    setAutoDays(String(event.autoReminderDays || 0));
-    setAutoMsg(event.autoReminderMessage || '');
-  }, [event]);
+  const scanned = attendees.filter((a) => a.status === 'SCANNED').length;
+  const pending = attendees.length - scanned;
 
   const daysUntilEvent = (() => {
     if (!event?.eventDate) return 0;
@@ -54,6 +70,40 @@ export function OrganizerAttendeesMobile({ attendees, revenueLabel, onToggle, on
     const d = new Date(event.eventDate); d.setHours(0, 0, 0, 0);
     return Math.max(0, Math.ceil((d.getTime() - today.getTime()) / (1000 * 3600 * 24)));
   })();
+
+  // Group attendees by email → buyers
+  const buyers = useMemo<BuyerGroup[]>(() => {
+    const map = new Map<string, BuyerGroup>();
+    attendees.forEach((a) => {
+      const key = a.email || a.name || a.id;
+      if (!map.has(key)) {
+        map.set(key, {
+          email: a.email,
+          name: a.name,
+          initials: initials(a.name),
+          tickets: [],
+          scanned: 0,
+          spent: 0,
+        });
+      }
+      const g = map.get(key)!;
+      g.tickets.push(a);
+      if (a.status === 'SCANNED') g.scanned += 1;
+      g.spent += parseTotal(a.total);
+    });
+    return Array.from(map.values());
+  }, [attendees]);
+
+  const filteredBuyers = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return buyers;
+    return buyers.filter(
+      (b) =>
+        b.name.toLowerCase().includes(q) ||
+        b.email.toLowerCase().includes(q) ||
+        b.tickets.some((tk) => tk.code.toLowerCase().includes(q) || tk.ticket.toLowerCase().includes(q)),
+    );
+  }, [buyers, search]);
 
   const saveReminderSettings = async () => {
     if (!eventId) return;
@@ -90,7 +140,7 @@ export function OrganizerAttendeesMobile({ attendees, revenueLabel, onToggle, on
     }
   };
 
-  const onExportCsv = () => {
+  const onExportAttendeesCsv = () => {
     const rows: (string | number)[][] = [
       [t('Nombre', 'Name'), 'Email', t('Ticket', 'Ticket'), t('Código', 'Code'), t('Estado', 'Status')],
       ...attendees.map((a) => [a.name, a.email, a.ticket, a.code, a.status]),
@@ -98,10 +148,33 @@ export function OrganizerAttendeesMobile({ attendees, revenueLabel, onToggle, on
     exportCsv(`${(eventTitle || 'event').replace(/\s+/g, '-').toLowerCase()}-attendees.csv`, rows);
   };
 
+  const onExportSalesCsv = () => {
+    if (sales?.orders && Array.isArray(sales.orders)) {
+      const rows: (string | number)[][] = [
+        [t('Cliente', 'Client'), 'Email', t('Tickets', 'Tickets'), t('Total', 'Total'), t('Fecha', 'Date')],
+        ...sales.orders.map((o: any) => {
+          const u = o.user || {};
+          const name = [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email || 'Guest';
+          const date = o.paidAt ? new Date(o.paidAt).toLocaleDateString() : '';
+          return [name, u.email || '', Number(o.ticketCount || 0), Number(o.subtotal ?? o.total ?? 0).toFixed(2), date];
+        }),
+      ];
+      exportCsv(`${(eventTitle || 'event').replace(/\s+/g, '-').toLowerCase()}-sales.csv`, rows);
+    } else {
+      // Derive from buyer groups
+      const rows: (string | number)[][] = [
+        [t('Cliente', 'Client'), 'Email', t('Tickets', 'Tickets'), t('Total', 'Total')],
+        ...buyers.map((b) => [b.name, b.email, b.tickets.length, b.spent.toFixed(2)]),
+      ];
+      exportCsv(`${(eventTitle || 'event').replace(/\s+/g, '-').toLowerCase()}-sales.csv`, rows);
+    }
+  };
+
   return (
     <View>
+      {/* KPI tiles */}
       <View style={styles.metricsGrid}>
-        <Metric label={t('Compradores', 'Buyers')} value={String(attendees.length)} />
+        <Metric label={t('Compradores', 'Buyers')} value={String(buyers.length)} />
         <Metric label={t('Escaneados', 'Scanned')} value={String(scanned)} />
         <Metric label={t('Pendientes', 'Pending')} value={String(pending)} />
         <Metric label={t('Ingresos', 'Revenue')} value={revenueLabel || '—'} />
@@ -109,87 +182,139 @@ export function OrganizerAttendeesMobile({ attendees, revenueLabel, onToggle, on
 
       <View style={styles.panel}>
         <Text style={styles.eyebrow}>{t('ASISTENTES', 'ATTENDEES')}</Text>
-        <Text style={styles.title}>{t('Asistentes y ventas', 'Attendees and sales')}</Text>
-        <Text style={styles.copy}>{t('Compradores, tickets, estado de acceso, codigo QR y acciones rapidas.', 'Buyers, tickets, access status, QR code and quick actions.')}</Text>
+        <Text style={styles.title}>{t('Asistentes y ventas', 'Attendees & Sales')}</Text>
+        <Text style={styles.copy}>{t('Compradores agrupados por email, tickets, estado de acceso y exportación.', 'Buyers grouped by email, tickets, access status and export.')}</Text>
 
+        {/* Functional search */}
         <View style={styles.searchBox}>
-          <Text style={styles.searchIcon}>⌕</Text>
-          <Text style={styles.searchText}>{t('Buscar por nombre, email o codigo', 'Search by name, email or code')}</Text>
+          <Ionicons name="search-outline" size={16} color="rgba(148,163,184,0.65)" />
+          <TextInput
+            style={styles.searchInput}
+            value={search}
+            onChangeText={setSearch}
+            placeholder={t('Buscar por nombre, email o código', 'Search by name, email or code')}
+            placeholderTextColor="rgba(148,163,184,0.5)"
+          />
+          {search.length > 0 && (
+            <TouchableOpacity onPress={() => setSearch('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="close-circle" size={15} color="rgba(148,163,184,0.55)" />
+            </TouchableOpacity>
+          )}
         </View>
 
         {attendees.length === 0 && (
-          <View style={styles.codeRow}>
-            <Text style={styles.searchText}>{t('Aún no hay asistentes para este evento.', 'No attendees for this event yet.')}</Text>
-          </View>
+          <Text style={styles.empty}>{t('Aún no hay asistentes para este evento.', 'No attendees for this event yet.')}</Text>
         )}
 
-        {attendees.map((item) => (
-          <View key={item.id} style={styles.attendeeCard}>
-            <View style={styles.attendeeTop}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{item.name.split(' ').map((part) => part[0]).join('').slice(0, 2)}</Text>
-              </View>
+        {filteredBuyers.length === 0 && attendees.length > 0 && (
+          <Text style={styles.empty}>{t('Ningún comprador coincide con la búsqueda.', 'No buyers match the search.')}</Text>
+        )}
 
-              <View style={styles.attendeeMain}>
-                <Text style={styles.name}>{item.name}</Text>
-                <Text style={styles.email}>{item.email}</Text>
-                <Text style={styles.ticket}>{item.ticket} · {item.total}</Text>
-              </View>
+        {/* Buyer groups */}
+        {filteredBuyers.map((buyer) => {
+          const expanded = expandedBuyer === buyer.email;
+          return (
+            <View key={buyer.email} style={styles.buyerCard}>
+              {/* Buyer header row */}
+              <TouchableOpacity
+                style={styles.buyerTop}
+                onPress={() => setExpandedBuyer(expanded ? null : buyer.email)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>{buyer.initials}</Text>
+                </View>
 
-              <Status status={item.status} />
-            </View>
+                <View style={styles.buyerMain}>
+                  <Text style={styles.buyerName}>{buyer.name}</Text>
+                  <Text style={styles.buyerEmail} numberOfLines={1}>{buyer.email}</Text>
+                  <Text style={styles.buyerMeta}>
+                    {buyer.tickets.length} {buyer.tickets.length === 1 ? t('ticket', 'ticket') : t('tickets', 'tickets')}
+                    {' · '}
+                    ${buyer.spent.toFixed(2)}
+                    {' · '}
+                    {buyer.scanned}/{buyer.tickets.length} {t('esc.', 'scn.')}
+                  </Text>
+                </View>
 
-            <View style={styles.codeRow}>
-              <Text style={styles.codeLabel}>{t('Codigo de ticket', 'Ticket code')}</Text>
-              <Text style={styles.codeValue}>{item.code}</Text>
-            </View>
-
-            <View style={styles.actions}>
-              <TouchableOpacity onPress={() => onToggle(item.id)} style={styles.primaryAction}>
-                <Text style={styles.primaryText}>{item.status === 'SCANNED' ? 'UNDO SCAN' : 'CHECK IN'}</Text>
+                <View style={styles.buyerRight}>
+                  <View style={[styles.badge, buyer.scanned === buyer.tickets.length && buyer.tickets.length > 0 ? styles.badgeGreen : styles.badgeOrange]}>
+                    <Text style={[styles.badgeText, buyer.scanned === buyer.tickets.length && buyer.tickets.length > 0 ? styles.badgeGreenText : styles.badgeOrangeText]}>
+                      {buyer.scanned === buyer.tickets.length && buyer.tickets.length > 0 ? '✓' : `${buyer.scanned}/${buyer.tickets.length}`}
+                    </Text>
+                  </View>
+                  <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={14} color="rgba(148,163,184,0.7)" style={{ marginTop: 4 }} />
+                </View>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => onResend?.(item.id)} style={styles.secondaryAction}>
-                <Text style={styles.secondaryText}>{t('REENVIAR', 'RESEND')}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ))}
 
+              {/* Expanded ticket list */}
+              {expanded && (
+                <View style={styles.ticketList}>
+                  {buyer.tickets.map((tk) => (
+                    <View key={tk.id} style={styles.ticketRow}>
+                      <View style={styles.ticketInfo}>
+                        <Text style={styles.ticketSeat}>{tk.ticket}</Text>
+                        <Text style={styles.ticketCode}>{tk.code}</Text>
+                      </View>
+                      <View style={styles.ticketActions}>
+                        <StatusBadge status={tk.status} />
+                        <TouchableOpacity onPress={() => onToggle(tk.id)} style={styles.smallBtn}>
+                          <Text style={styles.smallBtnText}>{tk.status === 'SCANNED' ? 'UNDO' : 'CHECK IN'}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => onResend?.(tk.id)} style={[styles.smallBtn, styles.smallBtnMuted]}>
+                          <Ionicons name="send-outline" size={12} color="#F97316" />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          );
+        })}
+
+        {/* Bottom actions */}
         <View style={styles.bottomActions}>
           <Button label={t('RECORDATORIOS', 'REMINDERS')} onPress={() => setShowReminder(true)} />
-          <Button label={t('EXPORTAR CSV', 'EXPORT CSV')} muted onPress={onExportCsv} />
+          <Button label={t('EXPORTAR ASISTENTES', 'EXPORT ATTENDEES')} muted onPress={onExportAttendeesCsv} />
+          <Button label={t('EXPORTAR VENTAS', 'EXPORT SALES')} muted onPress={onExportSalesCsv} />
           <Button label={t('SCAN QR', 'SCAN QR')} muted onPress={() => goTo('scan')} />
           <Button label={t('MAPA', 'MAP')} muted onPress={() => goTo('map')} />
           <Button label={t('BLOQUEOS', 'BLOCKS')} muted onPress={() => goTo('blocks')} />
         </View>
       </View>
 
+      {/* Reminders modal */}
       <Modal visible={showReminder} transparent animationType="fade" onRequestClose={() => setShowReminder(false)}>
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{t('Recordatorios', 'Reminders')}</Text>
-              <TouchableOpacity onPress={() => setShowReminder(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowReminder(false)}>
+                <Ionicons name="close" size={20} color="rgba(248,250,252,0.7)" />
+              </TouchableOpacity>
             </View>
 
-            <View style={styles.modalSection}>
-              <View style={styles.switchRow}>
-                <Text style={styles.modalLabel}>{t('Recordatorio automático', 'Automatic reminder')}</Text>
-                <Switch value={autoEnabled} onValueChange={setAutoEnabled} trackColor={{ true: colors.orange, false: '#334155' }} thumbColor="#fff" />
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 440 }}>
+              <View style={styles.modalSection}>
+                <View style={styles.switchRow}>
+                  <Text style={styles.modalLabel}>{t('Recordatorio automático', 'Automatic reminder')}</Text>
+                  <Switch value={autoEnabled} onValueChange={setAutoEnabled} trackColor={{ true: colors.orange, false: '#334155' }} thumbColor="#fff" />
+                </View>
+                <Text style={styles.modalFieldLabel}>{t('Días antes del evento', 'Days before the event')}</Text>
+                <TextInput value={autoDays} onChangeText={setAutoDays} keyboardType="number-pad" style={styles.modalInput} placeholderTextColor="#9CA3AF" />
+                <Text style={styles.modalFieldLabel}>{t('Mensaje (opcional)', 'Message (optional)')}</Text>
+                <TextInput value={autoMsg} onChangeText={setAutoMsg} multiline style={[styles.modalInput, styles.modalTextArea]} placeholderTextColor="#9CA3AF" />
+                <GradientButton label={savingSettings ? t('GUARDANDO...', 'SAVING...') : t('GUARDAR AJUSTES', 'SAVE SETTINGS')} onPress={saveReminderSettings} height={48} style={{ marginTop: 10 }} />
               </View>
-              <Text style={styles.modalFieldLabel}>{t('Días antes del evento', 'Days before the event')}</Text>
-              <TextInput value={autoDays} onChangeText={setAutoDays} keyboardType="number-pad" style={styles.modalInput} placeholderTextColor="#9CA3AF" />
-              <Text style={styles.modalFieldLabel}>{t('Mensaje (opcional)', 'Message (optional)')}</Text>
-              <TextInput value={autoMsg} onChangeText={setAutoMsg} multiline style={[styles.modalInput, styles.modalTextArea]} placeholderTextColor="#9CA3AF" />
-              <GradientButton label={savingSettings ? t('GUARDANDO...', 'SAVING...') : t('GUARDAR AJUSTES', 'SAVE SETTINGS')} onPress={saveReminderSettings} height={48} style={{ marginTop: 10 }} />
-            </View>
 
-            <View style={[styles.modalSection, { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)', paddingTop: 14 }]}>
-              <Text style={styles.modalLabel}>{t('Enviar ahora', 'Send now')}</Text>
-              <Text style={styles.modalHint}>{t(`Faltan ${daysUntilEvent} días para el evento.`, `${daysUntilEvent} days until the event.`)}</Text>
-              <TextInput value={sendMsg} onChangeText={setSendMsg} multiline placeholder={t('Mensaje personalizado (opcional)', 'Custom message (optional)')} style={[styles.modalInput, styles.modalTextArea]} placeholderTextColor="#9CA3AF" />
-              <GradientButton label={sendingReminder ? t('ENVIANDO...', 'SENDING...') : t('ENVIAR RECORDATORIO', 'SEND REMINDER')} onPress={sendReminderNow} height={48} style={{ marginTop: 10 }} />
-            </View>
+              <View style={[styles.modalSection, { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)', paddingTop: 14, marginTop: 14 }]}>
+                <Text style={styles.modalLabel}>{t('Enviar ahora', 'Send now')}</Text>
+                <Text style={styles.modalHint}>{t(`Faltan ${daysUntilEvent} días para el evento.`, `${daysUntilEvent} days until the event.`)}</Text>
+                <TextInput value={sendMsg} onChangeText={setSendMsg} multiline placeholder={t('Mensaje personalizado (opcional)', 'Custom message (optional)')} style={[styles.modalInput, styles.modalTextArea]} placeholderTextColor="#9CA3AF" />
+                <GradientButton label={sendingReminder ? t('ENVIANDO...', 'SENDING...') : t('ENVIAR RECORDATORIO', 'SEND REMINDER')} onPress={sendReminderNow} height={48} style={{ marginTop: 10 }} />
+              </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -206,23 +331,22 @@ function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Status({ status }: { status: string }) {
+function StatusBadge({ status }: { status: string }) {
   const scanned = status === 'SCANNED';
   return (
-    <View style={[styles.status, scanned ? styles.statusGreen : styles.statusOrange]}>
-      <Text style={[styles.statusText, scanned ? styles.statusTextGreen : styles.statusTextOrange]}>{status}</Text>
+    <View style={[styles.badge, scanned ? styles.badgeGreen : styles.badgeOrange]}>
+      <Text style={[styles.badgeText, scanned ? styles.badgeGreenText : styles.badgeOrangeText]}>{status}</Text>
     </View>
   );
 }
 
 function Button({ label, muted, onPress }: { label: string; muted?: boolean; onPress?: () => void }) {
   if (!muted) {
-    return <GradientButton label={label} onPress={onPress} height={46} style={styles.button} textStyle={styles.buttonText} />;
+    return <GradientButton label={label} onPress={onPress} height={46} style={styles.btn} textStyle={styles.btnText} />;
   }
-
   return (
-    <TouchableOpacity onPress={onPress} style={[styles.button, styles.buttonMuted]}>
-      <Text style={[styles.buttonText, styles.buttonTextMuted]}>{label}</Text>
+    <TouchableOpacity onPress={onPress} style={[styles.btn, styles.btnMuted]}>
+      <Text style={[styles.btnText, styles.btnTextMuted]}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -232,81 +356,58 @@ const styles = StyleSheet.create({
   metric: { width: '48%', backgroundColor: '#030B14', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', padding: 16 },
   metricValue: { color: colors.orange, fontSize: 25, fontWeight: '700', marginBottom: 4 },
   metricLabel: { color: 'rgba(226,232,240,0.64)', fontSize: 12, fontWeight: '700' },
-  panel: {
-    backgroundColor: 'rgba(255,255,255,0.018)',
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
-    padding: 18,
-    marginBottom: 16,
-    shadowColor: '#000000',
-    shadowOpacity: 0.16,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
-  },
-  eyebrow: { color: colors.orange, fontSize: 12, letterSpacing: 0, fontWeight: '700', marginBottom: 8 },
+  panel: { backgroundColor: 'rgba(255,255,255,0.018)', borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', padding: 18, marginBottom: 16 },
+  eyebrow: { color: colors.orange, fontSize: 12, fontWeight: '700', marginBottom: 8 },
   title: { color: '#F8FAFC', fontSize: 26, fontWeight: '700', marginBottom: 8 },
-  copy: { color: 'rgba(226,232,240,0.64)', fontSize: 14, lineHeight: 21, fontWeight: '400', marginBottom: 16 },
-  searchBox: {
-    height: 54,
-    borderRadius: 17,
-    backgroundColor: '#030B14',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 15,
-    marginBottom: 14,
-  },
-  searchIcon: { color: '#F8FAFC', fontSize: 22, fontWeight: '700' },
-  searchText: { color: 'rgba(226,232,240,0.64)', fontSize: 14, fontWeight: '700' },
-  attendeeCard: {
-    backgroundColor: '#030B14',
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
-    padding: 15,
-    marginBottom: 12,
-  },
-  attendeeTop: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginBottom: 14 },
-  avatar: { width: 52, height: 52, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.045)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' },
+  copy: { color: 'rgba(226,232,240,0.64)', fontSize: 14, lineHeight: 21, marginBottom: 16 },
+  empty: { color: 'rgba(203,213,225,0.7)', fontSize: 13, textAlign: 'center', paddingVertical: 18 },
+
+  // Search
+  searchBox: { flexDirection: 'row', alignItems: 'center', gap: 9, height: 46, borderRadius: 13, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: '#030B14', paddingHorizontal: 13, marginBottom: 14 },
+  searchInput: { flex: 1, color: '#F8FAFC', fontSize: 14, fontWeight: '500' },
+
+  // Buyer card
+  buyerCard: { backgroundColor: '#030B14', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', marginBottom: 10, overflow: 'hidden' },
+  buyerTop: { flexDirection: 'row', gap: 11, alignItems: 'center', padding: 13 },
+  avatar: { width: 46, height: 46, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.045)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' },
   avatarText: { color: '#F8FAFC', fontSize: 14, fontWeight: '700' },
-  attendeeMain: { flex: 1 },
-  name: { color: '#F8FAFC', fontSize: 17, fontWeight: '700', marginBottom: 3 },
-  email: { color: 'rgba(226,232,240,0.64)', fontSize: 12, fontWeight: '400', marginBottom: 4 },
-  ticket: { color: '#CBD5E1', fontSize: 13, fontWeight: '700' },
-  status: { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 7, borderWidth: 1 },
-  statusGreen: { backgroundColor: 'rgba(249,115,22,0.12)', borderColor: 'rgba(249,115,22,0.36)' },
-  statusOrange: { backgroundColor: 'rgba(255,255,255,0.045)', borderColor: 'rgba(255,255,255,0.14)' },
-  statusText: { fontSize: 9, letterSpacing: 0, fontWeight: '700' },
-  statusTextGreen: { color: colors.orange },
-  statusTextOrange: { color: '#CBD5E1' },
-  codeRow: {
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
-    padding: 12,
-    marginBottom: 12,
-  },
-  codeLabel: { color: 'rgba(226,232,240,0.64)', fontSize: 10, letterSpacing: 0, fontWeight: '700', marginBottom: 4 },
-  codeValue: { color: '#F8FAFC', fontSize: 13, fontWeight: '700' },
-  actions: { flexDirection: 'row', gap: 10 },
-  primaryAction: { flex: 1, height: 44, borderRadius: 8, backgroundColor: colors.orange, alignItems: 'center', justifyContent: 'center' },
-  primaryText: { color: '#FFFFFF', fontSize: 14, letterSpacing: 0, fontWeight: '700' },
-  secondaryAction: { width: 104, height: 44, borderRadius: 14, backgroundColor: '#030B14', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' },
-  secondaryText: { color: '#F8FAFC', fontSize: 11, letterSpacing: 0, fontWeight: '700' },
-  bottomActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 6 },
-  button: { minHeight: 46, borderRadius: 8, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 15, flexGrow: 1 },
-  buttonMuted: { backgroundColor: '#030B14', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' },
-  buttonText: { color: '#FFFFFF', fontSize: 14, letterSpacing: 0, fontWeight: '700' },
-  buttonTextMuted: { color: '#F8FAFC' },
+  buyerMain: { flex: 1, minWidth: 0 },
+  buyerName: { color: '#F8FAFC', fontSize: 15, fontWeight: '700' },
+  buyerEmail: { color: 'rgba(226,232,240,0.6)', fontSize: 11, marginTop: 2 },
+  buyerMeta: { color: '#CBD5E1', fontSize: 12, fontWeight: '600', marginTop: 4 },
+  buyerRight: { alignItems: 'center', gap: 2 },
+
+  // Ticket list (expanded)
+  ticketList: { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 13, paddingBottom: 10, paddingTop: 4 },
+  ticketRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
+  ticketInfo: { flex: 1 },
+  ticketSeat: { color: '#F8FAFC', fontSize: 12, fontWeight: '700' },
+  ticketCode: { color: 'rgba(226,232,240,0.55)', fontSize: 10, marginTop: 2 },
+  ticketActions: { flexDirection: 'row', gap: 6, alignItems: 'center' },
+  smallBtn: { height: 30, paddingHorizontal: 8, borderRadius: 8, backgroundColor: colors.orange, alignItems: 'center', justifyContent: 'center' },
+  smallBtnMuted: { backgroundColor: '#030B14', borderWidth: 1, borderColor: 'rgba(249,115,22,0.3)' },
+  smallBtnText: { color: '#FFFFFF', fontSize: 9, fontWeight: '800' },
+
+  // Badges
+  badge: { borderRadius: 999, paddingHorizontal: 7, paddingVertical: 4, borderWidth: 1 },
+  badgeGreen: { backgroundColor: 'rgba(34,197,94,0.12)', borderColor: 'rgba(34,197,94,0.34)' },
+  badgeOrange: { backgroundColor: 'rgba(249,115,22,0.1)', borderColor: 'rgba(249,115,22,0.28)' },
+  badgeText: { fontSize: 9, fontWeight: '800' },
+  badgeGreenText: { color: '#4ADE80' },
+  badgeOrangeText: { color: '#F97316' },
+
+  // Bottom actions
+  bottomActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
+  btn: { minHeight: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 13, flexGrow: 1 },
+  btnMuted: { backgroundColor: '#030B14', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' },
+  btnText: { color: '#FFFFFF', fontSize: 11, fontWeight: '700' },
+  btnTextMuted: { color: '#F8FAFC' },
+
+  // Reminder modal
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(2,8,15,0.78)', alignItems: 'center', justifyContent: 'center', padding: 18 },
   modalCard: { width: '100%', maxWidth: 460, borderRadius: 22, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: '#0A1420', padding: 18 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   modalTitle: { color: '#F8FAFC', fontSize: 18, fontWeight: '800' },
-  modalClose: { color: 'rgba(248,250,252,0.7)', fontSize: 18, fontWeight: '700' },
   modalSection: { gap: 8 },
   switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   modalLabel: { color: '#F8FAFC', fontSize: 14, fontWeight: '800' },

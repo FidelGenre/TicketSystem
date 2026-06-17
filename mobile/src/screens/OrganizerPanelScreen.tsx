@@ -619,6 +619,7 @@ export function OrganizerPanelScreen({ section, onSectionChange }: PanelProps = 
             eventId={selectedEvent?.id}
             event={selectedEvent ? rawEventsById[selectedEvent.id] : undefined}
             eventTitle={selectedEvent?.title}
+            sales={eventSales}
           />
         )}
 
@@ -792,12 +793,12 @@ function sectionLabel(section: Section, t: (es: string, en: string) => string) {
     events: t('Mis eventos', 'My events'),
     create: t('Crear evento', 'Create event'),
     analytics: t('Analytics', 'Analytics'),
-    details: t('Detalles', 'Details'),
-    overview: t('Resumen', 'Overview'),
-    map: t('Mapa visual', 'Visual map'),
-    attendees: t('Asistentes', 'Attendees'),
+    details: t('Detalles', 'Details & Media'),
+    overview: t('Secciones', 'Sections'),
+    map: t('Mapa visual', 'Venue Map'),
+    attendees: t('Asistentes', 'Attendees & Sales'),
     blocks: t('Bloqueos', 'Blocks'),
-    commission: t('Comisión', 'Commission'),
+    commission: t('Recompensas', 'Rewards'),
     rewards: t('Recompensas', 'Rewards'),
     scan: t('Escanear', 'Scan'),
   };
