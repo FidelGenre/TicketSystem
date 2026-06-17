@@ -300,6 +300,17 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
   const [ordersError, setOrdersError] = useState('');
   const [campaignSubjectDraft, setCampaignSubjectDraft] = useState('');
   const [campaignBodyDraft, setCampaignBodyDraft] = useState('');
+  const [campaignName, setCampaignName] = useState('');
+  const [campaignPreheader, setCampaignPreheader] = useState('');
+  const [campaignLink, setCampaignLink] = useState('');
+  const [emailArtData, setEmailArtData] = useState('');
+  const [emailArtFileName, setEmailArtFileName] = useState('');
+  const [emailAudience, setEmailAudience] = useState<'all' | 'specify'>('all');
+  const [smsMessage, setSmsMessage] = useState('');
+  const [whatsappMessage, setWhatsappMessage] = useState('');
+  const [waLang, setWaLang] = useState<'es' | 'en'>('es');
+  const [sending, setSending] = useState<'' | 'email' | 'sms' | 'whatsapp'>('');
+  const [bannerStatus, setBannerStatus] = useState<'draft' | 'active'>('draft');
   const [specialCodeOwnerDraft, setSpecialCodeOwnerDraft] = useState('');
   const [ownerSearchQuery, setOwnerSearchQuery] = useState('');
   const [ownerSearchResults, setOwnerSearchResults] = useState<{ id: string; name: string; email: string }[]>([]);
@@ -549,7 +560,9 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
       apiGet<any>('/marketing/banner/home'),
       apiGet<any[]>('/marketing/admin/recipients'),
     ]).then(([bannerRes, recipientsRes]) => {
-      setHomeBanner(bannerRes.status === 'fulfilled' ? (bannerRes.value || false) : false);
+      const banner = bannerRes.status === 'fulfilled' ? (bannerRes.value || false) : false;
+      setHomeBanner(banner);
+      if (banner && (banner as any).imageData) setBannerStatus('active');
       if (recipientsRes.status === 'fulfilled') setRecipientsCount((recipientsRes.value || []).length);
     });
   }, [active, homeBanner]);
@@ -914,20 +927,63 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
   // ── Marketing campaigns ────────────────────────────────────────────────────
 
   const sendEmailCampaign = async () => {
-    const subject = campaignSubjectDraft.trim();
-    const body = campaignBodyDraft.trim();
+    const subject = campaignSubjectDraft.trim() || campaignName.trim();
     if (!subject) {
-      Alert.alert(t('Asunto requerido', 'Subject required'), t('Ingresa un asunto para el email.', 'Enter a subject for the email.'));
+      Alert.alert(t('Asunto requerido', 'Subject required'), t('Ingresa un asunto o nombre de campaña.', 'Enter a subject or campaign name.'));
       return;
     }
+    setSending('email');
     try {
-      const result = await apiPost<{ sent: number; failed: number; total: number }>('/marketing/admin/email-campaign', { subject, title: subject, preheader: body });
+      const result = await apiPost<{ sent: number; failed: number; total: number }>('/marketing/admin/email-campaign', {
+        subject,
+        title: campaignName || subject,
+        preheader: campaignPreheader || campaignBodyDraft,
+        link: campaignLink || undefined,
+        imageData: emailArtData || undefined,
+      });
       Alert.alert(t('Campaña enviada', 'Campaign sent'), t(`Enviados: ${result.sent} / ${result.total}`, `Sent: ${result.sent} / ${result.total}`));
       setCampaignSubjectDraft('');
       setCampaignBodyDraft('');
+      setCampaignName('');
+      setCampaignPreheader('');
+      setCampaignLink('');
     } catch {
       Alert.alert(t('Error', 'Error'), t('No se pudo enviar la campaña.', 'Could not send campaign.'));
-    }
+    } finally { setSending(''); }
+  };
+
+  const pickEmailArt = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) { Alert.alert(t('Permiso necesario', 'Permission needed'), t('Concede acceso a tus fotos.', 'Grant photo access.')); return; }
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.85, base64: true });
+    if (res.canceled || !res.assets?.length) return;
+    const a = res.assets[0];
+    setEmailArtData(a.base64 ? `data:${a.mimeType || 'image/jpeg'};base64,${a.base64}` : a.uri);
+    setEmailArtFileName(a.fileName || 'email-art.jpg');
+  };
+
+  const sendSms = async () => {
+    if (!smsMessage.trim()) { Alert.alert(t('Mensaje vacío', 'Empty message'), t('Escribe un mensaje.', 'Write a message.')); return; }
+    setSending('sms');
+    try {
+      const result = await apiPost<{ sent: number; failed: number; total: number }>('/marketing/admin/sms-campaign', { message: smsMessage });
+      Alert.alert(t('SMS enviado', 'SMS sent'), t(`Enviados: ${result.sent} / ${result.total}`, `Sent: ${result.sent} / ${result.total}`));
+      setSmsMessage('');
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || t('No se pudo enviar el SMS.', 'Could not send SMS.'));
+    } finally { setSending(''); }
+  };
+
+  const sendWhatsapp = async () => {
+    if (!whatsappMessage.trim()) { Alert.alert(t('Mensaje vacío', 'Empty message'), t('Escribe un mensaje.', 'Write a message.')); return; }
+    setSending('whatsapp');
+    try {
+      const result = await apiPost<{ sent: number; failed: number; total: number }>('/marketing/admin/whatsapp-campaign', { message: whatsappMessage, lang: waLang });
+      Alert.alert(t('WhatsApp enviado', 'WhatsApp sent'), t(`Enviados: ${result.sent} / ${result.total}`, `Sent: ${result.sent} / ${result.total}`));
+      setWhatsappMessage('');
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || t('No se pudo enviar el WhatsApp.', 'Could not send WhatsApp.'));
+    } finally { setSending(''); }
   };
 
   // ── Home banner management (base64 data URLs, like the web) ────────────────
@@ -958,6 +1014,7 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
       });
       Alert.alert(t('Publicado', 'Published'), t('Banner publicado en el home.', 'Banner published on the home page.'));
       setHomeBanner({ isActive: true });
+      setBannerStatus('active');
     } catch (err: any) {
       Alert.alert('Error', err?.message || t('No se pudo publicar el banner.', 'Could not publish the banner.'));
     } finally {
@@ -2391,51 +2448,288 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
 
         {active === 'marketing' && (
           <>
-            <PanelCard
-              title={t('Banner home', 'Home banner')}
-              eyebrow={t('BANNER ACTUAL', 'CURRENT BANNER')}
-              copy={homeBanner === null
-                ? t('Cargando...', 'Loading...')
-                : homeBanner
-                  ? t(`Activo — ${(homeBanner as any).title || 'Banner home'}`, `Active — ${(homeBanner as any).title || 'Home banner'}`)
-                  : t('Sin banner activo.', 'No active banner.')}
-            />
+            {/* ─── Hero overview ─── */}
+            <View style={styles.mktHero}>
+              <View style={styles.mktHeroEyebrow}>
+                <Ionicons name="megaphone-outline" size={13} color={colors.orange} />
+                <Text style={styles.mktHeroEyebrowText}>MARKETING</Text>
+              </View>
+              <Text style={styles.mktHeroTitle}>{t('Centro de marketing', 'Marketing center')}</Text>
+              <Text style={styles.mktHeroCopy}>{t('Administra banners y prepara campanas visuales premium antes de activar envios reales.', 'Manage banners and prepare premium visual campaigns before activating real sends.')}</Text>
+              <GradientButton
+                label={t('✦ DISEÑAR EMAIL', '✦ DESIGN EMAIL')}
+                onPress={() => {}}
+                height={46}
+                style={{ alignSelf: 'flex-start', minWidth: 170 }}
+              />
+              <View style={styles.mktStatGrid}>
+                {[
+                  { label: t('Banners activos', 'Active banners'), value: bannerStatus === 'active' ? '1' : '0', icon: 'image-outline' as const },
+                  { label: t('Audiencias', 'Audiences'), value: '0', icon: 'people-outline' as const },
+                  { label: t('Campanas', 'Campaigns'), value: emailArtData || campaignName ? '1' : '0', icon: 'stats-chart-outline' as const },
+                  { label: t('Clicks', 'Clicks'), value: '0', icon: 'hand-left-outline' as const },
+                ].map((s) => (
+                  <View key={s.label} style={styles.mktStatCard}>
+                    <View style={styles.mktStatCardTop}>
+                      <Text style={styles.mktStatLabel}>{s.label}</Text>
+                      <View style={styles.mktStatIcon}><Ionicons name={s.icon} size={18} color={colors.orange} /></View>
+                    </View>
+                    <Text style={styles.mktStatValue}>{s.value}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
 
-            <PanelCard title={t('Campaña de email', 'Email campaign')} eyebrow={`RECIPIENTS: ${recipientsCount}`} copy={t('Se enviará a todos los usuarios activos.', 'Will be sent to all active users.')}>
-              <TextInput
-                value={campaignSubjectDraft}
-                onChangeText={setCampaignSubjectDraft}
-                placeholder={t('Asunto del email', 'Email subject')}
-                placeholderTextColor="#9CA3AF"
-                style={[styles.createInput, { marginBottom: 10 }]}
-              />
-              <TextInput
-                value={campaignBodyDraft}
-                onChangeText={setCampaignBodyDraft}
-                placeholder={t('Mensaje / preheader (opcional)', 'Message / preheader (optional)')}
-                placeholderTextColor="#9CA3AF"
-                multiline
-                numberOfLines={3}
-                style={[styles.createInput, { height: 80, textAlignVertical: 'top', paddingTop: 14 }]}
-              />
-              <TouchableOpacity onPress={sendEmailCampaign} style={styles.primaryButton}>
-                <Text style={styles.primaryButtonText}>{t('ENVIAR CAMPAÑA', 'SEND CAMPAIGN')}</Text>
+            {/* ─── Email designer ─── */}
+            <View style={styles.mktCard}>
+              <View style={styles.mktCardHeader}>
+                <View style={styles.mktCardIcon}><Ionicons name="mail-outline" size={20} color={colors.orange} /></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.mktCardTitle}>{t('Diseñador de Email Marketing', 'Email Marketing Designer')}</Text>
+                  <Text style={styles.mktCardSub}>{t('Envía correos reales a los destinatarios seleccionados.', 'Send real emails to selected recipients.')}</Text>
+                </View>
+              </View>
+
+              {/* Steps */}
+              <View style={styles.mktStepsRow}>
+                {[t('Diseño', 'Design'), t('Prueba', 'Test'), t('Envío', 'Send')].map((step, i) => (
+                  <View key={step} style={styles.mktStep}>
+                    <Text style={styles.mktStepNum}>{t(`PASO ${i + 1}`, `STEP ${i + 1}`)}</Text>
+                    <Text style={styles.mktStepName}>{step}</Text>
+                  </View>
+                ))}
+              </View>
+
+              <TextInput value={campaignName} onChangeText={setCampaignName} placeholder={t('Nombre interno de campaña', 'Internal campaign name')} placeholderTextColor="rgba(226,232,240,0.35)" style={styles.mktInput} />
+              <TextInput value={campaignSubjectDraft} onChangeText={setCampaignSubjectDraft} placeholder={t('Asunto del correo', 'Email subject')} placeholderTextColor="rgba(226,232,240,0.35)" style={styles.mktInput} />
+              <TextInput value={campaignPreheader} onChangeText={setCampaignPreheader} placeholder={t('Preheader / texto corto bajo el asunto', 'Preheader / short text below subject')} placeholderTextColor="rgba(226,232,240,0.35)" style={styles.mktInput} />
+
+              {/* Audience selector */}
+              <View style={styles.mktSelect}>
+                <TouchableOpacity onPress={() => setEmailAudience(emailAudience === 'all' ? 'specify' : 'all')} style={styles.mktSelectInner}>
+                  <Text style={styles.mktSelectText}>{emailAudience === 'all' ? t('Enviar a todos los usuarios', 'Send to all users') : t('Especificar destinatarios', 'Specify recipients')}</Text>
+                  <Ionicons name="chevron-down" size={14} color="rgba(226,232,240,0.5)" />
+                </TouchableOpacity>
+              </View>
+
+              <TextInput value={campaignLink} onChangeText={setCampaignLink} placeholder={t('Link del botón o evento', 'Button or event link')} placeholderTextColor="rgba(226,232,240,0.35)" autoCapitalize="none" style={styles.mktInput} />
+
+              {/* Upload art */}
+              <TouchableOpacity onPress={pickEmailArt} style={styles.mktUploadArt}>
+                <Ionicons name="cloud-upload-outline" size={32} color={colors.orange} />
+                <Text style={styles.mktUploadTitle}>{t('Subir arte principal del email', 'Upload main email art')}</Text>
+                <Text style={styles.mktUploadSub}>{t('Recomendado: 1200 px de ancho, JPG optimizado, menos de 1 MB.', 'Recommended: 1200px wide, optimized JPG, under 1 MB.')}</Text>
               </TouchableOpacity>
-            </PanelCard>
+              {emailArtFileName ? (
+                <View style={styles.mktArtFile}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.mktArtFileName} numberOfLines={1}>{emailArtFileName}</Text>
+                    <Text style={styles.mktArtFileSub}>{t('Arte cargado para preview', 'Art loaded for preview')}</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => { setEmailArtData(''); setEmailArtFileName(''); }} style={styles.mktArtRemove}>
+                    <Ionicons name="close" size={16} color="#FCA5A5" />
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+              {emailArtData ? <Image source={{ uri: emailArtData }} style={styles.mktArtPreview} resizeMode="contain" /> : null}
 
-            <MarketingRow
-              title={t('Eventos destacados', 'Featured events')}
-              copy={t('Controla los eventos que aparecen como destacados.', 'Control events that appear as featured.')}
-              enabled={marketingFeaturedEnabled}
-              onToggle={() => setMarketingFeaturedEnabled(!marketingFeaturedEnabled)}
-            />
+              <GradientButton label={sending === 'email' ? t('ENVIANDO...', 'SENDING...') : t('ENVIAR CAMPAÑA POR EMAIL', 'SEND EMAIL CAMPAIGN')} onPress={sendEmailCampaign} height={50} style={{ marginTop: 12 }} />
+              <Text style={styles.mktFootNote}>{t('Se envía a todos los usuarios registrados.', 'Sent to all registered users.')}</Text>
+            </View>
 
-            <MarketingRow
-              title={t('Promociones', 'Promotions')}
-              copy={t('Activa mensajes comerciales, descuentos o campanas.', 'Enable commercial messages, discounts or campaigns.')}
-              enabled={marketingPromoEnabled}
-              onToggle={() => setMarketingPromoEnabled(!marketingPromoEnabled)}
-            />
+            {/* ─── Preview premium ─── */}
+            <View style={styles.mktCard}>
+              <View style={styles.mktPreviewHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.mktCardTitle}>{t('Preview premium', 'Premium preview')}</Text>
+                  <Text style={styles.mktCardSub}>{t('Vista tipo email para aprobar el arte antes de activar pruebas.', 'Email-type view to approve art before activating tests.')}</Text>
+                </View>
+                <View style={styles.mktPreviewMailBadge}><Text style={styles.mktPreviewMailText}>Mail</Text></View>
+              </View>
+              <View style={styles.mktEmailPreview}>
+                {/* Logo */}
+                <View style={styles.mktPreviewLogoRow}>
+                  <View style={styles.mktPreviewLogo}>
+                    <Text style={styles.mktPreviewLogoText}>≡LP LPTicket</Text>
+                  </View>
+                </View>
+                {/* Art */}
+                {emailArtData ? (
+                  <Image source={{ uri: emailArtData }} style={styles.mktPreviewArt} resizeMode="contain" />
+                ) : (
+                  <View style={styles.mktPreviewArtEmpty}>
+                    <Ionicons name="image-outline" size={38} color="rgba(226,232,240,0.25)" />
+                    <Text style={styles.mktPreviewArtText}>{t('Tu arte de Photoshop aparecerá aquí', 'Your Photoshop art will appear here')}</Text>
+                  </View>
+                )}
+                {/* Body */}
+                <View style={styles.mktPreviewBody}>
+                  <Text style={styles.mktPreviewBodyTitle}>{campaignName || t('Titulo opcional de campaña', 'Optional campaign title')}</Text>
+                  <Text style={styles.mktPreviewBodyCopy}>{campaignPreheader || t('Texto breve opcional para acompañar la imagen principal del email.', 'Optional brief text to accompany the main email image.')}</Text>
+                  <View style={styles.mktPreviewBtn}><Text style={styles.mktPreviewBtnText}>{campaignLink ? 'VER DETALLES' : 'VER EVENTO'}</Text></View>
+                </View>
+              </View>
+            </View>
+
+            {/* ─── SMS ─── */}
+            <View style={styles.mktCard}>
+              <View style={styles.mktCardHeader}>
+                <View style={[styles.mktCardIcon, { backgroundColor: 'rgba(10,55,90,0.5)' }]}><Ionicons name="phone-portrait-outline" size={20} color="#CBD5E1" /></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.mktCardTitle}>SMS</Text>
+                  <Text style={styles.mktCardSub}>{t('Recordatorios, accesos y promociones urgentes.', 'Reminders, access and urgent promotions.')}</Text>
+                </View>
+              </View>
+              <View style={styles.mktSelect}>
+                <View style={styles.mktSelectInner}>
+                  <Text style={styles.mktSelectText}>{t('Enviar a todos los usuarios', 'Send to all users')}</Text>
+                  <Ionicons name="chevron-down" size={14} color="rgba(226,232,240,0.5)" />
+                </View>
+              </View>
+              <TextInput value={smsMessage} onChangeText={setSmsMessage} placeholder={t('Escribe tu mensaje SMS...', 'Write your SMS message...')} placeholderTextColor="rgba(226,232,240,0.35)" multiline numberOfLines={4} maxLength={320} style={styles.mktTextArea} />
+              <Text style={styles.mktCharCount}>{smsMessage.length}/320</Text>
+              <GradientButton label={sending === 'sms' ? t('ENVIANDO...', 'SENDING...') : t('ENVIAR SMS', 'SEND SMS')} onPress={sendSms} height={48} style={{ marginTop: 8 }} />
+            </View>
+
+            {/* ─── WhatsApp ─── */}
+            <View style={styles.mktCard}>
+              <View style={styles.mktCardHeader}>
+                <View style={[styles.mktCardIcon, { backgroundColor: 'rgba(7,94,84,0.25)', borderColor: 'rgba(37,211,102,0.3)' }]}><Ionicons name="logo-whatsapp" size={20} color="#25D366" /></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.mktCardTitle}>WhatsApp</Text>
+                  <Text style={styles.mktCardSub}>{t('Mensajes directos para audiencias segmentadas.', 'Direct messages for segmented audiences.')}</Text>
+                </View>
+              </View>
+              <View style={styles.mktWaLangRow}>
+                <Text style={styles.mktWaLangLabel}>{t('Plantilla:', 'Template:')}</Text>
+                <TouchableOpacity onPress={() => setWaLang('es')} style={[styles.mktWaLangBtn, waLang === 'es' && styles.mktWaLangBtnActive]}>
+                  <Text style={[styles.mktWaLangBtnText, waLang === 'es' && styles.mktWaLangBtnTextActive]}>ES</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setWaLang('en')} style={[styles.mktWaLangBtn, waLang === 'en' && styles.mktWaLangBtnActive]}>
+                  <Text style={[styles.mktWaLangBtnText, waLang === 'en' && styles.mktWaLangBtnTextActive]}>EN</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.mktSelect}>
+                <View style={styles.mktSelectInner}>
+                  <Text style={styles.mktSelectText}>{t('Enviar a todos los usuarios', 'Send to all users')}</Text>
+                  <Ionicons name="chevron-down" size={14} color="rgba(226,232,240,0.5)" />
+                </View>
+              </View>
+              <Text style={styles.mktWaHint}>
+                {t('Tu texto va en ', 'Your text goes in ')}<Text style={{ color: colors.orange, fontWeight: '800' }}>{'{{2}}'}</Text>{t('. El nombre del cliente se completa solo en ', '. The customer name is filled in ')}<Text style={{ color: colors.orange, fontWeight: '800' }}>{'{{1}}'}</Text>{t('. Si quieres un enlace, escríbelo dentro del mensaje.', '. To add a link, write it inside the message.')}
+              </Text>
+              <TextInput value={whatsappMessage} onChangeText={setWhatsappMessage} placeholder={waLang === 'es' ? t('Escribe tu mensaje...', 'Write your message...') : 'Write your message...'} placeholderTextColor="rgba(226,232,240,0.35)" multiline numberOfLines={4} maxLength={1000} style={styles.mktTextArea} />
+              <Text style={styles.mktCharCount}>{whatsappMessage.length}/1000</Text>
+              {/* Preview */}
+              <View style={styles.mktWaPreview}>
+                <Text style={styles.mktWaPreviewLabel}>{t('VISTA PREVIA', 'PREVIEW')}</Text>
+                <View style={styles.mktWaBubble}>
+                  <Text style={styles.mktWaBubbleText}>{waLang === 'es' ? `Hola [Nombre] 👋 ${whatsappMessage || t('tu mensaje aquí', 'your message here')}` : `Hi [Name] 👋 ${whatsappMessage || 'your message here'}`}</Text>
+                </View>
+                <Text style={styles.mktWaPreviewSub}>{t(`Referencial — el marco lo define la plantilla aprobada (${waLang.toUpperCase()}).`, `Referential — the frame is defined by the approved template (${waLang.toUpperCase()}).`)}</Text>
+              </View>
+              <GradientButton label={sending === 'whatsapp' ? t('ENVIANDO...', 'SENDING...') : t(`ENVIAR WHATSAPP (${waLang.toUpperCase()})`, `SEND WHATSAPP (${waLang.toUpperCase()})`)} onPress={sendWhatsapp} height={48} style={{ marginTop: 8 }} />
+            </View>
+
+            {/* ─── Banner Home preview ─── */}
+            <View style={styles.mktCard}>
+              <View style={styles.mktBannerPreviewHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.mktBannerPreviewEyebrow}>BANNER HOME</Text>
+                  <Text style={styles.mktCardSub}>{t('Vista compacta del banner publicado en el carrusel principal.', 'Compact view of the banner published in the main carousel.')}</Text>
+                </View>
+                <View style={[styles.mktStatusBadge, bannerStatus === 'active' ? styles.mktStatusActive : styles.mktStatusDraft]}>
+                  <Text style={[styles.mktStatusText, bannerStatus === 'active' ? { color: '#4ADE80' } : { color: colors.orange }]}>{bannerStatus === 'active' ? t('Publicado', 'Published') : t('Borrador', 'Draft')}</Text>
+                </View>
+              </View>
+              {bannerDesktop ? (
+                <Image source={{ uri: bannerDesktop.data }} style={styles.mktBannerImg} resizeMode="cover" />
+              ) : (
+                <View style={styles.mktBannerEmpty}><Text style={styles.mktBannerEmptyText}>{t('Sin banner publicado', 'No published banner')}</Text></View>
+              )}
+              <Text style={[styles.mktBannerPreviewEyebrow, { marginTop: 14 }]}>MOVIL</Text>
+              <Text style={[styles.mktCardSub, { marginBottom: 8 }]}>{t('Formato flyer para celulares.', 'Vertical flyer for mobile devices.')}</Text>
+              {bannerMobile ? (
+                <Image source={{ uri: bannerMobile.data }} style={styles.mktBannerMobileImg} resizeMode="cover" />
+              ) : (
+                <View style={[styles.mktBannerEmpty, { aspectRatio: 3 / 4, maxWidth: 180, alignSelf: 'center' }]}><Text style={styles.mktBannerEmptyText}>{t('Sin flyer móvil', 'No mobile flyer')}</Text></View>
+              )}
+            </View>
+
+            {/* ─── Upload banner ─── */}
+            <View style={styles.mktCard}>
+              <View style={styles.mktCardHeader}>
+                <View style={styles.mktCardIcon}><Ionicons name="cloud-upload-outline" size={20} color={colors.orange} /></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.mktCardTitle}>{t('Subir banner', 'Upload banner')}</Text>
+                  <Text style={styles.mktCardSub}>{t('Arte horizontal para Home.', 'Horizontal art for Home.')}</Text>
+                </View>
+              </View>
+              <TouchableOpacity onPress={() => pickBanner('desktop')} style={styles.mktUploadBox}>
+                <Ionicons name="cloud-upload-outline" size={28} color={colors.orange} />
+                <Text style={styles.mktUploadBoxTitle}>{t('Cambiar banner', 'Change banner')}</Text>
+                <Text style={styles.mktUploadBoxSub}>{t('Recomendado: 1600 × 520 px.', 'Recommended: 1600 × 520 px.')}</Text>
+              </TouchableOpacity>
+              {bannerDesktop && (
+                <View style={styles.mktFileRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.mktFileName} numberOfLines={1}>{bannerDesktop.name}</Text>
+                    <Text style={styles.mktFileSub}>{t('Estado:', 'Status:')} {bannerStatus === 'active' ? t('Publicado', 'Published') : t('Borrador', 'Draft')}</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => { setBannerDesktop(null); setBannerStatus('draft'); }} style={styles.mktFileRemove}>
+                    <Ionicons name="close" size={16} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+
+            {/* ─── Upload banner movil ─── */}
+            <View style={styles.mktCard}>
+              <View style={styles.mktCardHeader}>
+                <View style={[styles.mktCardIcon, { backgroundColor: 'rgba(10,55,90,0.5)' }]}><Ionicons name="phone-portrait-outline" size={20} color="#CBD5E1" /></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.mktCardTitle}>{t('Subir banner móvil', 'Upload mobile banner')}</Text>
+                  <Text style={styles.mktCardSub}>{t('Flyer vertical para celulares.', 'Vertical flyer for mobile devices.')}</Text>
+                </View>
+              </View>
+              <TouchableOpacity onPress={() => pickBanner('mobile')} style={styles.mktUploadBox}>
+                <Ionicons name="phone-portrait-outline" size={28} color="#CBD5E1" />
+                <Text style={styles.mktUploadBoxTitle}>{t('Cambiar flyer móvil', 'Change mobile flyer')}</Text>
+                <Text style={styles.mktUploadBoxSub}>{t('Recomendado: 1080 × 1440 px.', 'Recommended: 1080 × 1440 px.')}</Text>
+              </TouchableOpacity>
+              {bannerMobile && (
+                <View style={styles.mktFileRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.mktFileName} numberOfLines={1}>{bannerMobile.name}</Text>
+                    <Text style={styles.mktFileSub}>{t('Móvil', 'Mobile')}</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => setBannerMobile(null)} style={styles.mktFileRemove}>
+                    <Ionicons name="close" size={16} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+
+            {/* ─── Publicación ─── */}
+            <View style={styles.mktCard}>
+              <View style={styles.mktCardHeader}>
+                <View style={[styles.mktCardIcon, { backgroundColor: 'rgba(16,185,129,0.12)', borderColor: 'rgba(16,185,129,0.3)' }]}><Ionicons name="checkmark-circle-outline" size={20} color="#34D399" /></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.mktCardTitle}>{t('Publicación', 'Publication')}</Text>
+                  <Text style={styles.mktCardSub}>{t('Guarda el banner en el Home.', 'Save the banner to the Home.')}</Text>
+                </View>
+              </View>
+              <View style={styles.mktRotationCard}>
+                <Text style={styles.mktRotationTitle}>{t('Rotación en Home', 'Home Rotation')}</Text>
+                <Text style={styles.mktRotationCopy}>{t('El banner se mezcla con eventos destacados y aparece dentro del carrusel.', 'The banner mixes with featured events and appears inside the carousel.')}</Text>
+              </View>
+              <TouchableOpacity onPress={publishBanner} style={styles.mktPublishBtn}>
+                <Text style={styles.mktPublishBtnText}>{publishingBanner ? t('Publicando...', 'Publishing...') : t('Publicar banner', 'Publish banner')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => pickBanner('desktop')} style={styles.mktChangeImgBtn}>
+                <Text style={styles.mktChangeImgBtnText}>{t('Cambiar imagen', 'Change image')}</Text>
+              </TouchableOpacity>
+            </View>
           </>
         )}
 
@@ -3022,4 +3316,92 @@ const styles = StyleSheet.create({
   eventRewardEventTitle: { color: '#F8FAFC', fontSize: 15, fontWeight: '700', marginBottom: 8 },
   eventRewardOrgName: { color: '#CBD5E1', fontSize: 13, fontWeight: '600', marginBottom: 8 },
   eventRewardCurrent: { color: '#4ADE80', fontSize: 16, fontWeight: '800', marginBottom: 10 },
+
+  // ── Marketing ─────────────────────────────────────────────────────────────
+  mktHero: { padding: 20, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: 'rgba(255,255,255,0.018)', marginBottom: 16 },
+  mktHeroEyebrow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
+  mktHeroEyebrowText: { color: '#F97316', fontSize: 11, fontWeight: '800', letterSpacing: 0.8, textTransform: 'uppercase' },
+  mktHeroTitle: { color: '#F8FAFC', fontSize: 22, fontWeight: '800', marginBottom: 8 },
+  mktHeroCopy: { color: 'rgba(226,232,240,0.65)', fontSize: 13, lineHeight: 20, marginBottom: 16 },
+  mktStatGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 16 },
+  mktStatCard: { flex: 1, minWidth: '45%', padding: 14, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: '#030B14' },
+  mktStatCardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  mktStatLabel: { color: 'rgba(226,232,240,0.55)', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, flex: 1 },
+  mktStatIcon: { width: 32, height: 32, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(249,115,22,0.3)', backgroundColor: 'rgba(249,115,22,0.1)', alignItems: 'center', justifyContent: 'center' },
+  mktStatValue: { color: '#F8FAFC', fontSize: 26, fontWeight: '800' },
+  mktCard: { padding: 20, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: 'rgba(255,255,255,0.018)', marginBottom: 16 },
+  mktCardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 14, marginBottom: 16 },
+  mktCardIcon: { width: 40, height: 40, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(249,115,22,0.3)', backgroundColor: 'rgba(249,115,22,0.08)', alignItems: 'center', justifyContent: 'center' },
+  mktCardTitle: { color: '#F8FAFC', fontSize: 16, fontWeight: '800', marginBottom: 4 },
+  mktCardSub: { color: 'rgba(226,232,240,0.55)', fontSize: 12, lineHeight: 18 },
+  mktStepsRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+  mktStep: { flex: 1, padding: 10, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: '#030B14', alignItems: 'center' },
+  mktStepNum: { color: '#F97316', fontSize: 10, fontWeight: '800', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 3 },
+  mktStepName: { color: '#F8FAFC', fontSize: 12, fontWeight: '700' },
+  mktInput: { height: 48, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', backgroundColor: 'rgba(255,255,255,0.04)', paddingHorizontal: 14, color: '#F8FAFC', fontSize: 14, fontWeight: '600', marginBottom: 10 },
+  mktSelect: { height: 48, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', backgroundColor: 'rgba(255,255,255,0.04)', marginBottom: 10, justifyContent: 'center' },
+  mktSelectInner: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, justifyContent: 'space-between' },
+  mktSelectText: { color: '#F8FAFC', fontSize: 14, fontWeight: '600' },
+  mktTextArea: { minHeight: 100, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', backgroundColor: 'rgba(255,255,255,0.04)', paddingHorizontal: 14, paddingTop: 14, color: '#F8FAFC', fontSize: 14, fontWeight: '600', textAlignVertical: 'top' },
+  mktCharCount: { color: 'rgba(226,232,240,0.4)', fontSize: 11, textAlign: 'right', marginTop: 4, marginBottom: 6 },
+  mktUploadArt: { borderWidth: 1.5, borderStyle: 'dashed', borderColor: 'rgba(249,115,22,0.4)', borderRadius: 16, padding: 24, alignItems: 'center', gap: 8, backgroundColor: 'rgba(249,115,22,0.04)', marginBottom: 10 },
+  mktUploadTitle: { color: '#F8FAFC', fontSize: 14, fontWeight: '700', textAlign: 'center' },
+  mktUploadSub: { color: 'rgba(226,232,240,0.45)', fontSize: 11, textAlign: 'center' },
+  mktArtFile: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: 'rgba(255,255,255,0.04)', marginBottom: 8, gap: 10 },
+  mktArtFileName: { color: '#F8FAFC', fontSize: 13, fontWeight: '700' },
+  mktArtFileSub: { color: 'rgba(226,232,240,0.45)', fontSize: 11, marginTop: 2 },
+  mktArtRemove: { width: 28, height: 28, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(252,165,165,0.3)', backgroundColor: 'rgba(252,165,165,0.08)', alignItems: 'center', justifyContent: 'center' },
+  mktArtPreview: { width: '100%', height: 160, borderRadius: 14, marginBottom: 10 },
+  mktFootNote: { color: 'rgba(226,232,240,0.4)', fontSize: 11, textAlign: 'center', marginTop: 8 },
+  mktPreviewHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 16 },
+  mktPreviewMailBadge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', backgroundColor: 'rgba(255,255,255,0.06)' },
+  mktPreviewMailText: { color: '#F8FAFC', fontSize: 12, fontWeight: '700' },
+  mktEmailPreview: { borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: '#0a1628', overflow: 'hidden' },
+  mktPreviewLogoRow: { padding: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)', alignItems: 'center' },
+  mktPreviewLogo: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(249,115,22,0.3)', backgroundColor: 'rgba(249,115,22,0.06)' },
+  mktPreviewLogoText: { color: '#F97316', fontSize: 13, fontWeight: '800', letterSpacing: 0.5 },
+  mktPreviewArt: { width: '100%', height: 140 },
+  mktPreviewArtEmpty: { height: 120, alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: 'rgba(255,255,255,0.03)' },
+  mktPreviewArtText: { color: 'rgba(226,232,240,0.3)', fontSize: 12, textAlign: 'center' },
+  mktPreviewBody: { padding: 16, gap: 8 },
+  mktPreviewBodyTitle: { color: '#F8FAFC', fontSize: 15, fontWeight: '800' },
+  mktPreviewBodyCopy: { color: 'rgba(226,232,240,0.65)', fontSize: 12, lineHeight: 18 },
+  mktPreviewBtn: { marginTop: 8, paddingVertical: 12, borderRadius: 12, backgroundColor: '#F97316', alignItems: 'center' },
+  mktPreviewBtnText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800', letterSpacing: 0.6 },
+  mktWaLangRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
+  mktWaLangLabel: { color: 'rgba(226,232,240,0.65)', fontSize: 12, fontWeight: '700' },
+  mktWaLangBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: '#030B14' },
+  mktWaLangBtnActive: { borderColor: 'rgba(37,211,102,0.5)', backgroundColor: 'rgba(37,211,102,0.1)' },
+  mktWaLangBtnText: { color: 'rgba(226,232,240,0.6)', fontSize: 12, fontWeight: '700' },
+  mktWaLangBtnTextActive: { color: '#25D366' },
+  mktWaHint: { color: 'rgba(226,232,240,0.5)', fontSize: 11, lineHeight: 17, marginBottom: 10 },
+  mktWaPreview: { marginTop: 12, padding: 14, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(37,211,102,0.2)', backgroundColor: 'rgba(37,211,102,0.04)' },
+  mktWaPreviewLabel: { color: '#25D366', fontSize: 10, fontWeight: '800', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 8 },
+  mktWaBubble: { alignSelf: 'flex-start', maxWidth: '85%', padding: 12, borderRadius: 14, borderTopLeftRadius: 4, backgroundColor: '#075e54', marginBottom: 8 },
+  mktWaBubbleText: { color: '#FFFFFF', fontSize: 13, lineHeight: 19 },
+  mktWaPreviewSub: { color: 'rgba(226,232,240,0.35)', fontSize: 10, fontStyle: 'italic' },
+  mktBannerPreviewHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 14 },
+  mktBannerPreviewEyebrow: { color: '#F97316', fontSize: 11, fontWeight: '800', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 4 },
+  mktStatusBadge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, borderWidth: 1 },
+  mktStatusActive: { borderColor: 'rgba(74,222,128,0.35)', backgroundColor: 'rgba(74,222,128,0.1)' },
+  mktStatusDraft: { borderColor: 'rgba(249,115,22,0.35)', backgroundColor: 'rgba(249,115,22,0.08)' },
+  mktStatusText: { fontSize: 12, fontWeight: '700' },
+  mktBannerImg: { width: '100%', height: 130, borderRadius: 14, marginBottom: 10 },
+  mktBannerMobileImg: { width: 120, height: 160, borderRadius: 14, alignSelf: 'center', marginBottom: 10 },
+  mktBannerEmpty: { width: '100%', aspectRatio: 2.5, borderRadius: 14, borderWidth: 1.5, borderStyle: 'dashed', borderColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', marginBottom: 10, backgroundColor: 'rgba(255,255,255,0.02)' },
+  mktBannerEmptyText: { color: 'rgba(226,232,240,0.35)', fontSize: 12 },
+  mktUploadBox: { borderWidth: 1.5, borderStyle: 'dashed', borderColor: 'rgba(255,255,255,0.2)', borderRadius: 16, padding: 24, alignItems: 'center', gap: 8, backgroundColor: 'rgba(255,255,255,0.02)', marginBottom: 10 },
+  mktUploadBoxTitle: { color: '#F8FAFC', fontSize: 14, fontWeight: '700', textAlign: 'center' },
+  mktUploadBoxSub: { color: 'rgba(226,232,240,0.4)', fontSize: 11, textAlign: 'center' },
+  mktFileRow: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: 'rgba(255,255,255,0.04)', gap: 10 },
+  mktFileName: { color: '#F8FAFC', fontSize: 13, fontWeight: '700' },
+  mktFileSub: { color: 'rgba(226,232,240,0.45)', fontSize: 11, marginTop: 2 },
+  mktFileRemove: { width: 28, height: 28, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', backgroundColor: 'rgba(255,255,255,0.06)', alignItems: 'center', justifyContent: 'center' },
+  mktRotationCard: { padding: 14, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(16,185,129,0.2)', backgroundColor: 'rgba(16,185,129,0.05)', marginBottom: 14 },
+  mktRotationTitle: { color: '#34D399', fontSize: 14, fontWeight: '800', marginBottom: 6 },
+  mktRotationCopy: { color: 'rgba(226,232,240,0.6)', fontSize: 12, lineHeight: 18 },
+  mktPublishBtn: { height: 50, borderRadius: 16, backgroundColor: '#F97316', alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+  mktPublishBtnText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800', letterSpacing: 0.5 },
+  mktChangeImgBtn: { height: 44, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', backgroundColor: 'rgba(255,255,255,0.04)', alignItems: 'center', justifyContent: 'center' },
+  mktChangeImgBtnText: { color: 'rgba(226,232,240,0.8)', fontSize: 14, fontWeight: '700' },
 });
