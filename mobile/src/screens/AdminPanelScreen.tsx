@@ -1809,7 +1809,7 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
                 </TouchableOpacity>
               </View>
               <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }} contentContainerStyle={{ padding: 20, gap: 10 }}>
-                <FieldLabel label={t('Nombre (ES):', 'Nombre (ES):')} />
+                <FieldLabel label={t('Nombre (ES):', 'Name (ES):')} />
                 <TextInput value={categoryForm.labelEs} onChangeText={(v) => setCategoryForm((f) => ({ ...f, labelEs: v }))} placeholder={t('ej. Concierto', 'e.g. Concert')} placeholderTextColor="#9CA3AF" style={styles.input} />
                 <FieldLabel label="Name (EN):" />
                 <TextInput value={categoryForm.labelEn} onChangeText={(v) => setCategoryForm((f) => ({ ...f, labelEn: v }))} placeholder="e.g. Concert" placeholderTextColor="#9CA3AF" style={styles.input} />
@@ -1932,7 +1932,7 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
               <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }} contentContainerStyle={{ padding: 20, gap: 10 }}>
                 <FieldLabel label={t('CÓDIGO', 'CODE')} />
                 <TextInput value={editCodeForm.code} onChangeText={(v) => setEditCodeForm((f) => ({ ...f, code: v.toUpperCase().replace(/[^A-Z0-9_-]/g, '') }))} autoCapitalize="characters" style={styles.input} />
-                <FieldLabel label={t('CODE OWNER', 'CODE OWNER')} />
+                <FieldLabel label={t('DUEÑO DEL CÓDIGO', 'CODE OWNER')} />
                 <TextInput
                   value={editCodeOwnerQuery}
                   onChangeText={(v) => { setEditCodeOwnerQuery(v); searchEditCodeOwner(v); }}
@@ -2111,10 +2111,10 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
             {/* ─── Stat cards 2-col grid ─── */}
             <View style={styles.anStatGrid}>
               {[
-                { label: t('Total views', 'Total views'), value: analyticsSummary?.totalViews ?? 0, icon: 'eye-outline' as const },
-                { label: t('Unique visitors', 'Unique visitors'), value: analyticsSummary?.uniqueVisitors ?? 0, icon: 'people-outline' as const },
-                { label: t('Viewed events', 'Viewed events'), value: analyticsSummary?.topEvents.length ?? 0, icon: 'flash-outline' as const },
-                { label: t('Viewed pages', 'Viewed pages'), value: (analyticsSummary?.topPages ?? []).length, icon: 'bar-chart-outline' as const },
+                { label: t('Vistas totales', 'Total views'), value: analyticsSummary?.totalViews ?? 0, icon: 'eye-outline' as const },
+                { label: t('Visitantes únicos', 'Unique visitors'), value: analyticsSummary?.uniqueVisitors ?? 0, icon: 'people-outline' as const },
+                { label: t('Eventos vistos', 'Viewed events'), value: analyticsSummary?.topEvents.length ?? 0, icon: 'flash-outline' as const },
+                { label: t('Páginas vistas', 'Viewed pages'), value: (analyticsSummary?.topPages ?? []).length, icon: 'bar-chart-outline' as const },
               ].map((s) => (
                 <View key={s.label} style={styles.anStatCard}>
                   <View style={styles.anStatTop}>
@@ -2133,12 +2133,12 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
             {/* ─── Top events ─── */}
             {(analyticsSummary?.topEvents ?? []).length > 0 && (
               <View style={styles.anSection}>
-                <Text style={styles.anSectionTitle}>{t('Top events', 'Top events')}</Text>
+                <Text style={styles.anSectionTitle}>{t('Eventos más vistos', 'Top events')}</Text>
                 {(analyticsSummary?.topEvents ?? []).slice(0, 5).map((ev, i) => (
                   <View key={ev.eventSlug} style={styles.anRankRow}>
                     <View style={styles.anRankNum}><Text style={styles.anRankNumText}>{i + 1}</Text></View>
                     <Text style={styles.anRankTitle} numberOfLines={1}>{ev.eventTitle || formatEventSlug(ev.eventSlug)}</Text>
-                    <Text style={styles.anRankMeta}>{ev.views} {t('views', 'views')} · {ev.visitors} {t('visitors', 'visitors')}</Text>
+                    <Text style={styles.anRankMeta}>{ev.views} {t('vistas', 'views')} · {ev.visitors} {t('visitantes', 'visitors')}</Text>
                   </View>
                 ))}
               </View>
@@ -2147,12 +2147,12 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
             {/* ─── Top pages ─── */}
             {(analyticsSummary?.topPages ?? []).length > 0 && (
               <View style={styles.anSection}>
-                <Text style={styles.anSectionTitle}>{t('Top pages', 'Top pages')}</Text>
+                <Text style={styles.anSectionTitle}>{t('Páginas más vistas', 'Top pages')}</Text>
                 {(analyticsSummary?.topPages ?? []).slice(0, 5).map((page, i) => (
                   <View key={page.path} style={styles.anRankRow}>
                     <View style={styles.anRankNum}><Text style={styles.anRankNumText}>{i + 1}</Text></View>
                     <Text style={styles.anRankTitle} numberOfLines={1}>{page.path}</Text>
-                    <Text style={styles.anRankMeta}>{page.views} {t('views', 'views')} · {page.visitors} {t('visitors', 'visitors')}</Text>
+                    <Text style={styles.anRankMeta}>{page.views} {t('vistas', 'views')} · {page.visitors} {t('visitantes', 'visitors')}</Text>
                   </View>
                 ))}
               </View>
@@ -2163,8 +2163,8 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
               <View style={styles.anSection}>
                 <TouchableOpacity onPress={() => setAnalyticsRecentOpen((v) => !v)} style={styles.anRecentHeader}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.anSectionTitle}>{t('Recent activity', 'Recent activity')}</Text>
-                    <Text style={styles.anRecentCount}>{analyticsSummary!.recentViews.length} {t('views', 'views')}</Text>
+                    <Text style={styles.anSectionTitle}>{t('Actividad reciente', 'Recent activity')}</Text>
+                    <Text style={styles.anRecentCount}>{analyticsSummary!.recentViews.length} {t('vistas', 'views')}</Text>
                   </View>
                   <View style={styles.anRecentToggle}>
                     <Ionicons name={analyticsRecentOpen ? 'chevron-up' : 'chevron-down'} size={18} color={colors.orange} />
@@ -2175,8 +2175,8 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
                     <ScrollView horizontal showsHorizontalScrollIndicator nestedScrollEnabled>
                       <View style={styles.anTableInner}>
                         <View style={styles.anTableHeader}>
-                          <Text style={styles.anTableColPath}>PATH</Text>
-                          <Text style={styles.anTableColEvent}>EVENT</Text>
+                          <Text style={styles.anTableColPath}>{t('RUTA', 'PATH')}</Text>
+                          <Text style={styles.anTableColEvent}>{t('EVENTO', 'EVENT')}</Text>
                         </View>
                         {analyticsSummary!.recentViews.map((view) => (
                           <View key={view.id} style={styles.anTableRow}>
@@ -2201,7 +2201,7 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
         {active === 'codes' && (
           <>
             {/* Refresh + stats */}
-            <GradientButton label={codesLoading ? t('Actualizando...', 'Updating...') : t('Refresh', 'Refresh')} onPress={() => { setCodesLoaded(false); setCodesLoading(false); }} height={42} style={{ marginBottom: 14 }} />
+            <GradientButton label={codesLoading ? t('Actualizando...', 'Updating...') : t('Actualizar', 'Refresh')} onPress={() => { setCodesLoaded(false); setCodesLoading(false); }} height={42} style={{ marginBottom: 14 }} />
 
             {!codesLoading && (
               <>
@@ -2211,7 +2211,7 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
                     <Text style={styles.codeStatValue}>{apiCodes.length}</Text>
                   </View>
                   <View style={styles.codeStatCard}>
-                    <View style={styles.codeStatTop}><Text style={styles.codeStatLabel}>{t('ACTIVE', 'ACTIVE')}</Text><Ionicons name="checkmark-circle-outline" size={18} color="#4ADE80" /></View>
+                    <View style={styles.codeStatTop}><Text style={styles.codeStatLabel}>{t('ACTIVO', 'ACTIVE')}</Text><Ionicons name="checkmark-circle-outline" size={18} color="#4ADE80" /></View>
                     <Text style={styles.codeStatValue}>{apiCodes.filter((c) => c.isActive).length}</Text>
                   </View>
                   <View style={styles.codeStatCard}>
@@ -2229,15 +2229,15 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
               <View style={styles.codeCreateHeader}>
                 <View style={styles.codeCreateIcon}><Ionicons name="qr-code-outline" size={20} color={colors.orange} /></View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.codeCreateTitle}>{t('Create code', 'Create code')}</Text>
+                  <Text style={styles.codeCreateTitle}>{t('Crear código', 'Create code')}</Text>
                   <Text style={styles.codeCreateSub}>{t('La recompensa se configura por evento y se paga manualmente.', 'Reward is configured per event and paid manually.')}</Text>
                 </View>
               </View>
 
-              <FieldLabel label={t('CODE', 'CODE')} />
+              <FieldLabel label={t('CÓDIGO', 'CODE')} />
               <TextInput value={specialCodeDraft} onChangeText={(v) => setSpecialCodeDraft(v.toUpperCase().replace(/[^A-Z0-9_-]/g, ''))} placeholder="MARIA" placeholderTextColor="#9CA3AF" autoCapitalize="characters" style={styles.codeInput} />
 
-              <FieldLabel label={t('CODE OWNER', 'CODE OWNER')} />
+              <FieldLabel label={t('DUEÑO DEL CÓDIGO', 'CODE OWNER')} />
               <View style={styles.ownerSearchBox}>
                 <TextInput
                   value={ownerSearchQuery}
@@ -2270,7 +2270,7 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
                 </View>
               ) : null}
 
-              <FieldLabel label={t('EVENT', 'EVENT')} />
+              <FieldLabel label={t('EVENTO', 'EVENT')} />
               <View style={styles.codeEventPicker}>
                 <TouchableOpacity style={styles.codeEventPickerInner} onPress={() => setCodeEventId('')}>
                   <Text style={[styles.codeEventPickerText, !codeEventId && { color: colors.orange }]}>{!codeEventId ? t('Todos los eventos', 'All events') : adminEvents.find((e) => e.id === codeEventId)?.title || t('Todos los eventos', 'All events')}</Text>
@@ -2299,13 +2299,13 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
                 <Text style={styles.codeActiveLabel}>{t('Activo', 'Active')}</Text>
               </TouchableOpacity>
 
-              <GradientButton label={t('+ CREATE CODE', '+ CREATE CODE')} onPress={addSpecialCode} height={48} style={{ marginTop: 8 }} />
+              <GradientButton label={t('+ CREAR CÓDIGO', '+ CREATE CODE')} onPress={addSpecialCode} height={48} style={{ marginTop: 8 }} />
             </View>
 
             {/* Created codes list */}
             <View style={styles.createdCodesHeader}>
               <View>
-                <Text style={styles.createdCodesTitle}>{t('Created codes', 'Created codes')}</Text>
+                <Text style={styles.createdCodesTitle}>{t('Códigos creados', 'Created codes')}</Text>
                 <Text style={styles.createdCodesSub}>{t('Activa o pausa códigos sin eliminarlos.', 'Activate or pause codes without deleting them.')}</Text>
               </View>
             </View>
@@ -2329,25 +2329,25 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
                 <View key={item.id} style={styles.codeCard2}>
                   <Text style={styles.codeCard2Label}>{t('CÓDIGO', 'CODE')}</Text>
                   <Text style={styles.codeCard2Code}>{item.code}</Text>
-                  <Text style={styles.codeCard2Label}>{t('OWNER', 'OWNER')}</Text>
+                  <Text style={styles.codeCard2Label}>{t('DUEÑO', 'OWNER')}</Text>
                   <View style={styles.codeCard2OwnerRow}>
                     <Ionicons name="person-outline" size={13} color="rgba(226,232,240,0.5)" />
                     <Text style={styles.codeCard2OwnerName}>{ownerName}</Text>
                   </View>
                   {item.owner?.email ? <Text style={styles.codeCard2OwnerEmail}>{item.owner.email}</Text> : null}
-                  <Text style={styles.codeCard2Label}>{t('EVENT', 'EVENT')}</Text>
-                  <Text style={styles.codeCard2Event}>{item.event?.title || t('All', 'All')}</Text>
+                  <Text style={styles.codeCard2Label}>{t('EVENTO', 'EVENT')}</Text>
+                  <Text style={styles.codeCard2Event}>{item.event?.title || t('Todos', 'All')}</Text>
                   <View style={styles.codeCard2Actions}>
                     <TouchableOpacity onPress={() => { setEditingCode(item); setEditCodeForm({ code: item.code, ownerUserId: item.ownerUserId, ownerName: ownerName, ownerEmail: item.owner?.email || '', eventId: item.eventId || '', isActive: item.isActive }); setEditCodeOwnerQuery(`${ownerName}${item.owner?.email ? ` (${item.owner.email})` : ''}`); setEditCodeOwnerResults([]); }} style={styles.codeEditBtn}>
                       <Ionicons name="pencil-outline" size={15} color={colors.orange} />
-                      <Text style={styles.codeEditBtnText}>{t('Edit', 'Edit')}</Text>
+                      <Text style={styles.codeEditBtnText}>{t('Editar', 'Edit')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => deleteCodeApi(item.id)} style={styles.codeDeleteBtn}>
-                      <Text style={styles.codeDeleteBtnText}>{t('Delete', 'Delete')}</Text>
+                      <Text style={styles.codeDeleteBtnText}>{t('Eliminar', 'Delete')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => toggleSpecialCode(item.id)} style={[styles.codeStatusBtn, item.isActive ? styles.codeStatusBtnActive : styles.codeStatusBtnInactive]}>
                       <Ionicons name={item.isActive ? 'checkmark-circle-outline' : 'close-circle-outline'} size={14} color={item.isActive ? '#4ADE80' : '#94A3B8'} />
-                      <Text style={[styles.codeStatusBtnText, { color: item.isActive ? '#4ADE80' : '#94A3B8' }]}>{item.isActive ? t('Active', 'Active') : t('Inactive', 'Inactive')}</Text>
+                      <Text style={[styles.codeStatusBtnText, { color: item.isActive ? '#4ADE80' : '#94A3B8' }]}>{item.isActive ? t('Activo', 'Active') : t('Inactivo', 'Inactive')}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -2360,7 +2360,7 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
                 <View style={styles.eventRewardsHeader}>
                   <View style={styles.eventRewardsIcon}><Ionicons name="cash-outline" size={20} color={colors.orange} /></View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.eventRewardsTitle}>{t('Event rewards', 'Event rewards')}</Text>
+                    <Text style={styles.eventRewardsTitle}>{t('Recompensas por evento', 'Event rewards')}</Text>
                     <Text style={styles.eventRewardsSub}>{t('Administra la recompensa base por evento cuando se usa un código de creador.', 'Manage the base reward per event when creator codes are used.')}</Text>
                   </View>
                 </View>
@@ -2370,13 +2370,13 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
                   const rewardVal = eventRewards[ev.id] !== undefined ? eventRewards[ev.id] : current.toFixed(2);
                   return (
                     <View key={ev.id} style={styles.eventRewardCard}>
-                      <Text style={styles.eventRewardFieldLabel}>{t('EVENT', 'EVENT')}</Text>
+                      <Text style={styles.eventRewardFieldLabel}>{t('EVENTO', 'EVENT')}</Text>
                       <Text style={styles.eventRewardEventTitle}>{adminEventTitle(ev)}</Text>
-                      <Text style={styles.eventRewardFieldLabel}>{t('ORGANIZER', 'ORGANIZER')}</Text>
+                      <Text style={styles.eventRewardFieldLabel}>{t('ORGANIZADOR', 'ORGANIZER')}</Text>
                       <Text style={styles.eventRewardOrgName}>{orgName}</Text>
-                      <Text style={styles.eventRewardFieldLabel}>{t('CURRENT', 'CURRENT')}</Text>
+                      <Text style={styles.eventRewardFieldLabel}>{t('ACTUAL', 'CURRENT')}</Text>
                       <Text style={styles.eventRewardCurrent}>${current.toFixed(2)}</Text>
-                      <Text style={styles.eventRewardFieldLabel}>{t('BASE REWARD ($)', 'BASE REWARD ($)')}</Text>
+                      <Text style={styles.eventRewardFieldLabel}>{t('RECOMPENSA BASE ($)', 'BASE REWARD ($)')}</Text>
                       <TextInput
                         value={rewardVal}
                         onChangeText={(v) => setEventRewards((prev) => ({ ...prev, [ev.id]: v }))}
@@ -2386,7 +2386,7 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
                         style={styles.input}
                       />
                       <GradientButton
-                        label={savingEventReward === ev.id ? t('GUARDANDO...', 'SAVING...') : t('SAVE', 'SAVE')}
+                        label={savingEventReward === ev.id ? t('GUARDANDO...', 'SAVING...') : t('GUARDAR', 'SAVE')}
                         onPress={() => saveEventReward(ev.id)}
                         height={44}
                         style={{ marginTop: 10 }}
@@ -2568,7 +2568,7 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
                   <Text style={styles.mktCardTitle}>{t('Preview premium', 'Premium preview')}</Text>
                   <Text style={styles.mktCardSub}>{t('Vista tipo email para aprobar el arte antes de activar pruebas.', 'Email-type view to approve art before activating tests.')}</Text>
                 </View>
-                <View style={styles.mktPreviewMailBadge}><Text style={styles.mktPreviewMailText}>Mail</Text></View>
+                <View style={styles.mktPreviewMailBadge}><Text style={styles.mktPreviewMailText}>{t('Correo', 'Mail')}</Text></View>
               </View>
               <View style={styles.mktEmailPreview}>
                 {/* Logo */}
@@ -2590,7 +2590,7 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
                 <View style={styles.mktPreviewBody}>
                   <Text style={styles.mktPreviewBodyTitle}>{campaignName || t('Titulo opcional de campaña', 'Optional campaign title')}</Text>
                   <Text style={styles.mktPreviewBodyCopy}>{campaignPreheader || t('Texto breve opcional para acompañar la imagen principal del email.', 'Optional brief text to accompany the main email image.')}</Text>
-                  <View style={styles.mktPreviewBtn}><Text style={styles.mktPreviewBtnText}>{campaignLink ? 'VER DETALLES' : 'VER EVENTO'}</Text></View>
+                  <View style={styles.mktPreviewBtn}><Text style={styles.mktPreviewBtnText}>{campaignLink ? t('VER DETALLES', 'VIEW DETAILS') : t('VER EVENTO', 'VIEW EVENT')}</Text></View>
                 </View>
               </View>
             </View>
@@ -2659,7 +2659,7 @@ export function AdminPanelScreen({ section, onSectionChange: _onSectionChange }:
             <View style={styles.mktCard}>
               <View style={styles.mktBannerPreviewHeader}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.mktBannerPreviewEyebrow}>BANNER HOME</Text>
+                  <Text style={styles.mktBannerPreviewEyebrow}>{t('BANNER HOME', 'HOME BANNER')}</Text>
                   <Text style={styles.mktCardSub}>{t('Vista compacta del banner publicado en el carrusel principal.', 'Compact view of the banner published in the main carousel.')}</Text>
                 </View>
                 <View style={[styles.mktStatusBadge, bannerStatus === 'active' ? styles.mktStatusActive : styles.mktStatusDraft]}>
