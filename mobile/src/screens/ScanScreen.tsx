@@ -1,13 +1,11 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useLanguage } from '../i18n/LanguageContext';
 import { AuthUser, apiGet, apiPost } from '../services/api';
 
-type Props = {
-  onBack: () => void;
-  user?: AuthUser | null;
-};
+type Props = { onBack: () => void; user?: AuthUser | null };
 
 type ScanState = 'idle' | 'scanning' | 'validating' | 'approved' | 'denied';
 
@@ -57,22 +55,19 @@ export function ScanScreen({ onBack: _onBack, user }: Props) {
   const [manualCode, setManualCode] = useState('');
   const [scanResult, setScanResult] = useState<ValidateResult | null>(null);
   const [recentScans, setRecentScans] = useState<RecentScan[]>([]);
-
-  // Session counters (local, like web)
   const [sessionStats, setSessionStats] = useState({ total: 0, approved: 0, denied: 0 });
 
   // Event selector + server stats
   const [myEvents, setMyEvents] = useState<MyEvent[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [eventStats, setEventStats] = useState<EventStats | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // QR de-dup: ignore the same code twice in a row
   const lastQrCode = useRef<string>('');
-
   const scanAnim = useRef(new Animated.Value(0)).current;
 
-  // Load organizer's events
+  const selectedEventTitle = myEvents.find((e) => e.id === selectedEventId)?.title ?? null;
+
   useEffect(() => {
     if (!user) return;
     apiGet<{ events: (MyEvent & { organizerId?: string })[] }>('/events?limit=100&includePast=true')
@@ -85,29 +80,20 @@ export function ScanScreen({ onBack: _onBack, user }: Props) {
       .catch(() => {});
   }, [user?.id]);
 
-  // Poll scanner stats for selected event
   useEffect(() => {
     if (pollRef.current) clearInterval(pollRef.current);
     setEventStats(null);
     if (!selectedEventId) return;
-
     const fetchStats = () =>
       apiGet<EventStats>(`/orders/event/${selectedEventId}/scanner-stats`)
-        .then(setEventStats)
-        .catch(() => {});
-
+        .then(setEventStats).catch(() => {});
     fetchStats();
     pollRef.current = setInterval(fetchStats, 15000);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [selectedEventId]);
 
-  // Scan line animation
   useEffect(() => {
-    if (scanState !== 'scanning') {
-      scanAnim.stopAnimation();
-      scanAnim.setValue(0);
-      return;
-    }
+    if (scanState !== 'scanning') { scanAnim.stopAnimation(); scanAnim.setValue(0); return; }
     const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(scanAnim, { toValue: 1, duration: 1900, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
@@ -126,7 +112,6 @@ export function ScanScreen({ onBack: _onBack, user }: Props) {
       approved: prev.approved + (result.valid ? 1 : 0),
       denied: prev.denied + (result.valid ? 0 : 1),
     }));
-
     const u = result.ticket?.user;
     const name = [u?.firstName, u?.lastName].filter(Boolean).join(' ') || u?.email || t('Visitante', 'Guest');
     const tk = result.ticket;
@@ -134,7 +119,6 @@ export function ScanScreen({ onBack: _onBack, user }: Props) {
     const location = tk?.seatLabel || (seatParts.length ? seatParts.join(' · ') : 'General');
     const now = new Date();
     const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
-
     setRecentScans((prev) =>
       [{ id: String(Date.now()), valid: result.valid, name, location, code: tk?.ticketCode || code, time }, ...prev].slice(0, 10)
     );
@@ -145,7 +129,6 @@ export function ScanScreen({ onBack: _onBack, user }: Props) {
     if (!clean) return;
     setScanState('validating');
     setScanResult(null);
-
     try {
       const res = await apiPost<ValidateResult>(`/orders/ticket/${clean}/validate`, {});
       setScanResult(res);
@@ -192,75 +175,44 @@ export function ScanScreen({ onBack: _onBack, user }: Props) {
 
   const isApproved = scanState === 'approved';
   const isDenied = scanState === 'denied';
-  const showManual = !isApproved && !isDenied && scanState !== 'validating';
+  const showIdle = !isApproved && !isDenied && scanState !== 'validating';
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      <View pointerEvents="none" style={styles.bgGridA} />
-      <View pointerEvents="none" style={styles.bgGridB} />
+    <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
-      {/* Header */}
+      {/* ── Top row: EVENT MODE + SOUND ── */}
       <View style={styles.topRow}>
-        <View style={styles.badge}>
-          <Text style={styles.badgeIcon}>▣</Text>
-          <Text style={styles.badgeText}>{t('MODO EVENTO', 'EVENT MODE')}</Text>
+        <View style={styles.eventModeBadge}>
+          <Ionicons name="qr-code-outline" size={14} color="#F97316" />
+          <Text style={styles.eventModeText}>{t('MODO EVENTO', 'EVENT MODE')}</Text>
         </View>
-        <TouchableOpacity onPress={() => setSoundEnabled((v) => !v)} style={[styles.chip, soundEnabled && styles.chipActive]}>
-          <Text style={[styles.chipText, soundEnabled && styles.chipTextActive]}>
+        <TouchableOpacity onPress={() => setSoundEnabled((v) => !v)} style={[styles.soundChip, soundEnabled && styles.soundChipActive]}>
+          <Text style={[styles.soundChipText, soundEnabled && styles.soundChipTextActive]}>
             {soundEnabled ? t('SONIDO', 'SOUND') : t('SILENCIO', 'MUTED')}
           </Text>
         </TouchableOpacity>
       </View>
 
+      {/* ── Title ── */}
       <Text style={styles.title}>{t('Scanner de puerta', 'Door scanner')}</Text>
       <Text style={styles.subtitle}>
-        {t('Validación rápida con cámara, sonido y conteo en vivo.', 'Fast validation with camera, sound and live counts.')}
+        {t('Validación rápida con cámara, vibración, sonido y conteo en vivo.', 'Fast validation with camera, vibration, sound and live counts.')}
       </Text>
 
-      {/* Event selector */}
-      {myEvents.length > 0 && (
-        <View style={styles.selectorCard}>
-          <Text style={styles.selectorLabel}>{t('EVENTO', 'EVENT')}</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.selectorScroll}>
-            <TouchableOpacity
-              style={[styles.selectorItem, !selectedEventId && styles.selectorItemActive]}
-              onPress={() => setSelectedEventId(null)}
-            >
-              <Text style={[styles.selectorItemText, !selectedEventId && styles.selectorItemTextActive]}>
-                {t('— Todos —', '— All —')}
-              </Text>
-            </TouchableOpacity>
-            {myEvents.map((ev) => (
-              <TouchableOpacity
-                key={ev.id}
-                style={[styles.selectorItem, selectedEventId === ev.id && styles.selectorItemActive]}
-                onPress={() => setSelectedEventId(ev.id)}
-              >
-                <Text style={[styles.selectorItemText, selectedEventId === ev.id && styles.selectorItemTextActive]} numberOfLines={1}>
-                  {ev.title}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      )}
-
-      {/* Camera / scan box */}
-      {showManual && (
+      {/* ── Camera / scan box ── */}
+      {showIdle && (
         <View style={styles.scannerCard}>
           {scanState === 'scanning' ? (
             Platform.OS === 'web' ? (
-              // Web: fake scanner UI (no camera API in web RN)
               <View style={styles.cameraFrame}>
                 <View style={styles.cameraNoise} />
                 <View style={styles.scanBox} />
                 <Animated.View style={[styles.scanLine, { transform: [{ translateY: scanTranslateY }] }]} />
                 <TouchableOpacity style={styles.stopButton} onPress={resetScanner}>
-                  <Text style={styles.stopText}>{t('DETENER CÁMARA', 'STOP CAMERA')}</Text>
+                  <Text style={styles.stopText}>{t('DETENER', 'STOP')}</Text>
                 </TouchableOpacity>
               </View>
             ) : (
-              // Native: real QR camera
               <View style={styles.cameraFrame}>
                 <CameraView
                   style={StyleSheet.absoluteFill}
@@ -271,19 +223,19 @@ export function ScanScreen({ onBack: _onBack, user }: Props) {
                 <View pointerEvents="none" style={styles.scanBox} />
                 <Animated.View pointerEvents="none" style={[styles.scanLine, { transform: [{ translateY: scanTranslateY }] }]} />
                 <TouchableOpacity style={styles.stopButton} onPress={resetScanner}>
-                  <Text style={styles.stopText}>{t('DETENER CÁMARA', 'STOP CAMERA')}</Text>
+                  <Text style={styles.stopText}>{t('DETENER', 'STOP')}</Text>
                 </TouchableOpacity>
               </View>
             )
           ) : (
             <View style={styles.startPanel}>
-              <View style={styles.cameraIcon}>
-                <Text style={styles.cameraIconText}>▣</Text>
+              <View style={styles.cameraIconBox}>
+                <Ionicons name="camera-outline" size={32} color="#F97316" />
               </View>
-              <TouchableOpacity style={styles.orangeButton} onPress={startScanner}>
-                <View pointerEvents="none" style={styles.orangeTopLine} />
-                <View pointerEvents="none" style={styles.orangeBottomShade} />
-                <Text style={styles.orangeButtonText}>{t('INICIAR SCANNER', 'START SCANNER')}</Text>
+              <TouchableOpacity style={styles.startBtn} onPress={startScanner}>
+                <View pointerEvents="none" style={styles.startBtnShine} />
+                <Ionicons name="camera-outline" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+                <Text style={styles.startBtnText}>{t('INICIAR SCANNER', 'START SCANNER')}</Text>
               </TouchableOpacity>
               {!permission?.granted && Platform.OS !== 'web' && (
                 <Text style={styles.permNote}>{t('Se necesita permiso de cámara', 'Camera permission required')}</Text>
@@ -293,7 +245,7 @@ export function ScanScreen({ onBack: _onBack, user }: Props) {
         </View>
       )}
 
-      {/* Validating spinner */}
+      {/* ── Validating spinner ── */}
       {scanState === 'validating' && (
         <View style={styles.statusCard}>
           <View style={styles.spinner} />
@@ -301,7 +253,7 @@ export function ScanScreen({ onBack: _onBack, user }: Props) {
         </View>
       )}
 
-      {/* Result card */}
+      {/* ── Result card ── */}
       {(isApproved || isDenied) && (
         <View style={[styles.validationCard, isApproved ? styles.approvedCard : styles.deniedCard]}>
           <View style={[styles.validationIcon, isApproved ? styles.approvedIcon : styles.deniedIcon]}>
@@ -316,41 +268,23 @@ export function ScanScreen({ onBack: _onBack, user }: Props) {
               ? t('Ticket válido. Puedes permitir el acceso.', 'Valid ticket. You can allow entry.')
               : t('Código no encontrado, usado o inválido.', 'Code not found, used or invalid.'))}
           </Text>
-
           <View style={styles.ticketDetails}>
             <Detail label={t('EVENTO', 'EVENT')} value={scanResult?.ticket?.event?.title || t('Evento', 'Event')} featured />
             <View style={styles.detailGrid}>
-              <Detail
-                label={t('ASISTENTE', 'ATTENDEE')}
-                value={[scanResult?.ticket?.user?.firstName, scanResult?.ticket?.user?.lastName].filter(Boolean).join(' ') || scanResult?.ticket?.user?.email || '-'}
-              />
-              <Detail
-                label={t('UBICACIÓN', 'LOCATION')}
-                value={scanResult?.ticket?.seatLabel || [scanResult?.ticket?.sectionName, scanResult?.ticket?.rowLabel, scanResult?.ticket?.seatNumber].filter(Boolean).join(' · ') || 'General'}
-              />
-              <Detail
-                label={t('ESTADO', 'STATUS')}
-                value={scanResult?.message || (isApproved ? t('Válido', 'Valid') : t('Inválido', 'Invalid'))}
-              />
+              <Detail label={t('ASISTENTE', 'ATTENDEE')} value={[scanResult?.ticket?.user?.firstName, scanResult?.ticket?.user?.lastName].filter(Boolean).join(' ') || scanResult?.ticket?.user?.email || '-'} />
+              <Detail label={t('UBICACIÓN', 'LOCATION')} value={scanResult?.ticket?.seatLabel || [scanResult?.ticket?.sectionName, scanResult?.ticket?.rowLabel, scanResult?.ticket?.seatNumber].filter(Boolean).join(' · ') || 'General'} />
+              <Detail label={t('ESTADO', 'STATUS')} value={scanResult?.message || (isApproved ? t('Válido', 'Valid') : t('Inválido', 'Invalid'))} />
               <Detail label={t('CÓDIGO', 'CODE')} value={scanResult?.ticket?.ticketCode || manualCode} orange />
             </View>
           </View>
-
-          {scanResult?.eventStats && (
-            <View style={styles.miniStats}>
-              <MiniStat label={t('EMITIDAS', 'ISSUED')} value={String(scanResult.eventStats.totalIssued ?? scanResult.eventStats.totalPurchased ?? '—')} />
-              <MiniStat label={t('POR ESCANEAR', 'LEFT')} value={String(scanResult.eventStats.ticketsToScan ?? '—')} orange />
-            </View>
-          )}
-
           <TouchableOpacity style={styles.nextButton} onPress={resetScanner}>
             <Text style={styles.nextButtonText}>{t('VALIDAR SIGUIENTE', 'VALIDATE NEXT')}</Text>
           </TouchableOpacity>
         </View>
       )}
 
-      {/* Manual code input */}
-      {showManual && (
+      {/* ── Manual code input ── */}
+      {showIdle && (
         <View style={styles.manualSection}>
           <View style={styles.separator}>
             <View style={styles.separatorLine} />
@@ -358,62 +292,84 @@ export function ScanScreen({ onBack: _onBack, user }: Props) {
             <View style={styles.separatorLine} />
           </View>
           <View style={styles.inputShell}>
-            <Text style={styles.inputIcon}>⌕</Text>
+            <Ionicons name="search-outline" size={18} color="rgba(148,163,184,0.8)" />
             <TextInput
               value={manualCode}
               onChangeText={setManualCode}
               placeholder={t('Código del ticket', 'Ticket code')}
-              placeholderTextColor="rgba(148,163,184,0.70)"
+              placeholderTextColor="rgba(148,163,184,0.60)"
               autoCapitalize="characters"
               style={styles.input}
               onSubmitEditing={() => validateCode(manualCode)}
             />
           </View>
-          <TouchableOpacity style={styles.blueButton} onPress={() => validateCode(manualCode)}>
-            <Text style={styles.blueButtonText}>{t('VALIDAR CÓDIGO', 'VALIDATE CODE')}</Text>
+          <TouchableOpacity style={styles.validateBtn} onPress={() => validateCode(manualCode)}>
+            <Text style={styles.validateBtnText}>{t('VALIDAR CÓDIGO', 'VALIDATE CODE')}</Text>
           </TouchableOpacity>
         </View>
       )}
 
-      {/* Server event stats (from backend poll) */}
-      {eventStats && (
-        <View style={styles.statsPanel}>
-          <View style={styles.statsHeader}>
-            <View>
-              <Text style={styles.statsEyebrow}>{t('ESTADÍSTICAS DEL EVENTO', 'EVENT STATS')}</Text>
-              <Text style={styles.statsTitle}>{t('Conteo del servidor', 'Server count')}</Text>
+      {/* ── Event selector (dropdown) ── */}
+      {myEvents.length > 0 && (
+        <View style={styles.eventSection}>
+          <Text style={styles.eventEyebrow}>{t('EVENTO', 'EVENT')}</Text>
+          <TouchableOpacity
+            style={styles.eventDropdown}
+            onPress={() => setDropdownOpen((v) => !v)}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.eventDropdownText, !selectedEventTitle && styles.eventDropdownPlaceholder]} numberOfLines={1}>
+              {selectedEventTitle || t('— Seleccionar evento —', '— Select event —')}
+            </Text>
+            <Ionicons name={dropdownOpen ? 'chevron-up' : 'chevron-down'} size={16} color="rgba(148,163,184,0.8)" />
+          </TouchableOpacity>
+          {dropdownOpen && (
+            <View style={styles.dropdownList}>
+              <TouchableOpacity
+                style={[styles.dropdownItem, !selectedEventId && styles.dropdownItemActive]}
+                onPress={() => { setSelectedEventId(null); setDropdownOpen(false); }}
+              >
+                <Text style={[styles.dropdownItemText, !selectedEventId && styles.dropdownItemTextActive]}>
+                  {t('— Todos los eventos —', '— All events —')}
+                </Text>
+              </TouchableOpacity>
+              {myEvents.map((ev) => (
+                <TouchableOpacity
+                  key={ev.id}
+                  style={[styles.dropdownItem, selectedEventId === ev.id && styles.dropdownItemActive]}
+                  onPress={() => { setSelectedEventId(ev.id); setDropdownOpen(false); }}
+                >
+                  <Text style={[styles.dropdownItemText, selectedEventId === ev.id && styles.dropdownItemTextActive]} numberOfLines={1}>
+                    {ev.title}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
-          </View>
-          <View style={styles.statGrid}>
-            <Stat label={t('ENTRADAS EMITIDAS', 'ISSUED TICKETS')} value={String(eventStats.totalIssued ?? eventStats.totalPurchased ?? '—')} tone="blue" />
-            <Stat label={t('POR ESCANEAR', 'LEFT TO SCAN')} value={String(eventStats.ticketsToScan ?? '—')} tone="orange" />
-            <Stat label={t('YA INGRESARON', 'ALREADY ENTERED')} value={String(eventStats.ticketsEntered ?? '—')} tone="green" />
-          </View>
-          {eventStats.totalCapacity != null && eventStats.totalCapacity > 0 && (
-            <View style={styles.capacityCard}>
-              <View>
-                <Text style={styles.capacityLabel}>{t('CAPACIDAD DEL LUGAR', 'VENUE CAPACITY')}</Text>
-                <Text style={styles.capacityValue}>{eventStats.totalCapacity}</Text>
-              </View>
-              <Text style={styles.capacityPercent}>
-                {eventStats.ticketsEntered != null
-                  ? `${Math.round((eventStats.ticketsEntered / eventStats.totalCapacity) * 100)}%`
-                  : '—'}
-              </Text>
+          )}
+          {/* Server stats inline when event selected */}
+          {eventStats && selectedEventId && (
+            <View style={styles.serverStats}>
+              <ServerStat label={t('EMITIDOS', 'ISSUED')} value={String(eventStats.totalIssued ?? eventStats.totalPurchased ?? '—')} />
+              <ServerStat label={t('INGRESARON', 'ENTERED')} value={String(eventStats.ticketsEntered ?? '—')} tone="green" />
+              <ServerStat label={t('POR ESCANEAR', 'REMAINING')} value={String(eventStats.ticketsToScan ?? '—')} tone="orange" />
             </View>
           )}
         </View>
       )}
 
-      {/* Session stats */}
-      <View style={styles.statsPanel}>
-        <View style={styles.statsHeader}>
+      {/* ── Live count (session stats) ── */}
+      <View style={styles.liveSection}>
+        <View style={styles.liveSectionHeader}>
           <View>
-            <Text style={styles.statsEyebrow}>{t('CONTEO EN VIVO', 'LIVE COUNT')}</Text>
-            <Text style={styles.statsTitle}>{t('Operación de puerta', 'Door operation')}</Text>
+            <Text style={styles.liveEyebrow}>{t('CONTEO EN VIVO', 'LIVE COUNT')}</Text>
+            <Text style={styles.liveTitle}>{t('Operación de puerta', 'Door operation')}</Text>
           </View>
-          <TouchableOpacity style={styles.resetButton} onPress={() => setSessionStats({ total: 0, approved: 0, denied: 0 })}>
-            <Text style={styles.resetText}>{t('REINICIAR', 'RESET')}</Text>
+          <TouchableOpacity
+            style={styles.resetBtn}
+            onPress={() => setSessionStats({ total: 0, approved: 0, denied: 0 })}
+          >
+            <Ionicons name="refresh-outline" size={13} color="#CBD5E1" />
+            <Text style={styles.resetBtnText}>{t('RESET', 'RESET')}</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.sessionGrid}>
@@ -423,23 +379,24 @@ export function ScanScreen({ onBack: _onBack, user }: Props) {
         </View>
       </View>
 
-      {/* Recent scans */}
-      <View style={styles.recentPanel}>
+      {/* ── Last scanned ── */}
+      <View style={styles.recentSection}>
         <View style={styles.recentHeader}>
           <Text style={styles.recentTitle}>{t('Últimos escaneados', 'Last scanned')}</Text>
-          <Text style={styles.recentClock}>◷</Text>
+          <Ionicons name="time-outline" size={20} color="#F97316" />
         </View>
         {recentScans.length === 0 ? (
           <View style={styles.recentEmpty}>
+            <Ionicons name="ticket-outline" size={36} color="rgba(148,163,184,0.3)" style={{ marginBottom: 10 }} />
             <Text style={styles.recentEmptyText}>{t('Todavía no hay escaneos en esta sesión.', 'No scans in this session yet.')}</Text>
           </View>
         ) : (
           recentScans.map((scan) => (
             <View key={scan.id} style={[styles.recentItem, scan.valid ? styles.recentValid : styles.recentInvalid]}>
               <View style={styles.recentLeft}>
-                <Text style={[styles.recentMark, scan.valid ? styles.recentMarkValid : styles.recentMarkInvalid]}>
-                  {scan.valid ? '✓' : '×'}
-                </Text>
+                <View style={[styles.recentMark, scan.valid ? styles.recentMarkValid : styles.recentMarkInvalid]}>
+                  <Text style={styles.recentMarkText}>{scan.valid ? '✓' : '×'}</Text>
+                </View>
                 <View style={styles.recentCopy}>
                   <Text style={styles.recentName}>{scan.name}</Text>
                   <Text style={styles.recentMeta}>{scan.location} · {scan.code}</Text>
@@ -458,27 +415,7 @@ function Detail({ label, value, featured, orange }: { label: string; value: stri
   return (
     <View style={[styles.detail, featured && styles.detailFeatured]}>
       <Text style={styles.detailLabel}>{label}</Text>
-      <Text style={[styles.detailValue, featured && styles.detailValueFeatured, orange && styles.detailValueOrange]} numberOfLines={1}>
-        {value}
-      </Text>
-    </View>
-  );
-}
-
-function MiniStat({ label, value, orange }: { label: string; value: string; orange?: boolean }) {
-  return (
-    <View style={styles.miniStatItem}>
-      <Text style={styles.miniStatLabel}>{label}</Text>
-      <Text style={[styles.miniStatValue, orange && styles.miniStatValueOrange]}>{value}</Text>
-    </View>
-  );
-}
-
-function Stat({ label, value, tone }: { label: string; value: string; tone: 'blue' | 'orange' | 'green' }) {
-  return (
-    <View style={[styles.statCard, tone === 'orange' && styles.statOrange, tone === 'green' && styles.statGreen]}>
-      <Text style={[styles.statLabel, tone === 'orange' && styles.statLabelOrange, tone === 'green' && styles.statLabelGreen]}>{label}</Text>
-      <Text style={[styles.statValue, tone === 'orange' && styles.statValueOrange, tone === 'green' && styles.statValueGreen]}>{value}</Text>
+      <Text style={[styles.detailValue, featured && styles.detailValueFeatured, orange && styles.detailValueOrange]} numberOfLines={1}>{value}</Text>
     </View>
   );
 }
@@ -492,139 +429,169 @@ function SessionStat({ label, value, tone }: { label: string; value: string; ton
   );
 }
 
+function ServerStat({ label, value, tone }: { label: string; value: string; tone?: 'green' | 'orange' }) {
+  return (
+    <View style={styles.serverStatItem}>
+      <Text style={[styles.serverStatLabel, tone === 'green' && { color: '#34D399' }, tone === 'orange' && { color: '#F97316' }]}>{label}</Text>
+      <Text style={[styles.serverStatValue, tone === 'green' && { color: '#34D399' }, tone === 'orange' && { color: '#F97316' }]}>{value}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: 'transparent' },
   content: { paddingHorizontal: 18, paddingTop: 4, paddingBottom: 132 },
-  bgGridA: { position: 'absolute', left: '28%', top: 0, bottom: 0, width: 1, backgroundColor: 'rgba(125,211,252,0.035)' },
-  bgGridB: { position: 'absolute', left: 0, right: 0, top: 220, height: 1, backgroundColor: 'rgba(125,211,252,0.030)' },
 
-  topRow: { marginTop: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  chip: { height: 36, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: '#030B14' },
-  chipActive: { backgroundColor: '#F97316', borderColor: '#F97316' },
-  chipText: { color: '#FFFFFF', fontWeight: '700', fontSize: 12 },
-  chipTextActive: { color: '#FFFFFF' },
+  // Top row
+  topRow: { marginTop: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10 },
+  eventModeBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 7,
+    height: 38, borderRadius: 14, paddingHorizontal: 14,
+    backgroundColor: 'rgba(3,11,20,0.92)', borderWidth: 1, borderColor: 'rgba(249,115,22,0.3)',
+  },
+  eventModeText: { color: '#F8FAFC', fontSize: 11, fontWeight: '800', letterSpacing: 0.5 },
+  soundChip: {
+    height: 38, borderRadius: 14, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)',
+  },
+  soundChipActive: { backgroundColor: '#F97316', borderColor: '#F97316' },
+  soundChipText: { color: 'rgba(226,232,240,0.7)', fontSize: 12, fontWeight: '800' },
+  soundChipTextActive: { color: '#FFFFFF' },
 
-  badge: { height: 36, alignSelf: 'flex-start', borderRadius: 14, backgroundColor: '#030B14', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  badgeIcon: { color: '#F97316', fontSize: 14, fontWeight: '700' },
-  badgeText: { color: '#F8FAFC', fontSize: 11, fontWeight: '700' },
-
+  // Title
   title: { color: '#F8FAFC', fontSize: 30, lineHeight: 34, fontWeight: '700', marginTop: 14 },
-  subtitle: { color: 'rgba(226,232,240,0.64)', fontSize: 13, lineHeight: 20, fontWeight: '400', marginTop: 8 },
+  subtitle: { color: 'rgba(226,232,240,0.6)', fontSize: 13, lineHeight: 20, marginTop: 6, marginBottom: 2 },
 
-  selectorCard: { marginTop: 14, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: 'rgba(255,255,255,0.018)', padding: 12 },
-  selectorLabel: { color: '#F97316', fontSize: 10, fontWeight: '700', marginBottom: 8 },
-  selectorScroll: { flexDirection: 'row' },
-  selectorItem: { marginRight: 8, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: '#030B14' },
-  selectorItemActive: { backgroundColor: '#F97316', borderColor: '#F97316' },
-  selectorItemText: { color: 'rgba(226,232,240,0.72)', fontSize: 12, fontWeight: '700', maxWidth: 160 },
-  selectorItemTextActive: { color: '#FFFFFF' },
-
-  scannerCard: { marginTop: 22, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: 'rgba(255,255,255,0.018)', overflow: 'hidden' },
-  startPanel: { minHeight: 250, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: 'rgba(255,255,255,0.025)' },
-  cameraIcon: { width: 64, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: '#030B14', borderWidth: 1, borderColor: 'rgba(249,115,22,0.34)', marginBottom: 20 },
-  cameraIconText: { color: '#F97316', fontSize: 28, fontWeight: '700' },
+  // Camera box
+  scannerCard: { marginTop: 18, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', backgroundColor: 'rgba(255,255,255,0.018)', overflow: 'hidden' },
+  startPanel: { minHeight: 240, alignItems: 'center', justifyContent: 'center', padding: 28, gap: 18, backgroundColor: 'rgba(3,11,20,0.6)' },
+  cameraIconBox: {
+    width: 72, height: 72, borderRadius: 22,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(249,115,22,0.10)',
+    borderWidth: 1, borderColor: 'rgba(249,115,22,0.28)',
+  },
+  startBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    minWidth: 220, height: 56, borderRadius: 16, backgroundColor: '#F97316',
+    paddingHorizontal: 28, overflow: 'hidden',
+  },
+  startBtnShine: { position: 'absolute', top: 4, left: 14, right: 14, height: 1, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.28)' },
+  startBtnText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800', letterSpacing: 0.5 },
+  permNote: { color: 'rgba(226,232,240,0.46)', fontSize: 11, textAlign: 'center', marginTop: 4 },
   cameraFrame: { height: 300, backgroundColor: '#020617', overflow: 'hidden' },
-  cameraNoise: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15,23,42,0.35)' },
+  cameraNoise: { position: 'absolute', inset: 0, backgroundColor: 'rgba(15,23,42,0.3)' },
   scanBox: { position: 'absolute', left: 28, right: 28, top: 28, bottom: 44, borderRadius: 20, borderWidth: 2, borderColor: 'rgba(249,115,22,0.82)' },
   scanLine: { position: 'absolute', left: 36, right: 36, top: 0, height: 2, backgroundColor: '#F97316' },
   stopButton: { position: 'absolute', bottom: 14, alignSelf: 'center', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: '#030B14', paddingHorizontal: 18, paddingVertical: 10 },
-  stopText: { color: '#FFFFFF', fontSize: 10, fontWeight: '700' },
-  permNote: { color: 'rgba(226,232,240,0.52)', fontSize: 11, fontWeight: '400', marginTop: 10, textAlign: 'center' },
+  stopText: { color: '#FFFFFF', fontSize: 11, fontWeight: '700' },
 
-  orangeButton: { minHeight: 56, borderRadius: 16, backgroundColor: '#F97316', paddingHorizontal: 28, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', elevation: 5 },
-  orangeTopLine: { position: 'absolute', top: 4, left: 14, right: 14, height: 1, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.24)' },
-  orangeBottomShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '48%', backgroundColor: 'rgba(154,52,18,0.18)' },
-  orangeButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700', zIndex: 2 },
-
+  // Validating
   statusCard: { marginTop: 16, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
   spinner: { width: 44, height: 44, borderRadius: 22, borderWidth: 4, borderColor: '#F97316', borderTopColor: 'transparent' },
-  statusEyebrow: { color: 'rgba(226,232,240,0.58)', fontSize: 11, fontWeight: '700' },
+  statusEyebrow: { color: 'rgba(226,232,240,0.55)', fontSize: 11, fontWeight: '700' },
 
+  // Validation result
   validationCard: { marginTop: 18, borderRadius: 24, borderWidth: 1, padding: 20, alignItems: 'center' },
-  approvedCard: { borderColor: 'rgba(16,185,129,0.38)', backgroundColor: 'rgba(16,185,129,0.10)' },
-  deniedCard: { borderColor: 'rgba(239,68,68,0.38)', backgroundColor: 'rgba(239,68,68,0.10)' },
-  validationIcon: { width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  approvedCard: { borderColor: 'rgba(16,185,129,0.38)', backgroundColor: 'rgba(16,185,129,0.08)' },
+  deniedCard: { borderColor: 'rgba(239,68,68,0.38)', backgroundColor: 'rgba(239,68,68,0.08)' },
+  validationIcon: { width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
   approvedIcon: { backgroundColor: '#10B981' },
   deniedIcon: { backgroundColor: '#EF4444' },
   validationIconText: { color: '#FFFFFF', fontSize: 42, fontWeight: '700', lineHeight: 46 },
-  validationLabel: { color: 'rgba(255,255,255,0.70)', fontSize: 10, fontWeight: '400' },
-  validationTitle: { color: '#FFFFFF', fontSize: 24, fontWeight: '700', marginTop: 8, textAlign: 'center' },
-  validationCopy: { color: 'rgba(226,232,240,0.66)', fontSize: 13, lineHeight: 20, textAlign: 'center', fontWeight: '400', marginTop: 8 },
-  ticketDetails: { alignSelf: 'stretch', marginTop: 18, borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: '#030B14', padding: 14 },
-  detail: { flex: 1, minWidth: 0, paddingVertical: 6 },
-  detailFeatured: { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.10)', marginBottom: 8, paddingBottom: 12 },
-  detailGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  detailLabel: { color: '#94A3B8', fontSize: 9, fontWeight: '400' },
-  detailValue: { color: '#E5E7EB', fontSize: 12, fontWeight: '400', marginTop: 4 },
+  validationLabel: { color: 'rgba(255,255,255,0.65)', fontSize: 10, fontWeight: '700', letterSpacing: 1 },
+  validationTitle: { color: '#FFFFFF', fontSize: 24, fontWeight: '700', marginTop: 6, textAlign: 'center' },
+  validationCopy: { color: 'rgba(226,232,240,0.64)', fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 8 },
+  ticketDetails: { alignSelf: 'stretch', marginTop: 16, borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', backgroundColor: '#030B14', padding: 14 },
+  detail: { flex: 1, minWidth: 0, paddingVertical: 5 },
+  detailFeatured: { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.10)', marginBottom: 8, paddingBottom: 10 },
+  detailGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  detailLabel: { color: '#94A3B8', fontSize: 9, fontWeight: '700', letterSpacing: 0.5 },
+  detailValue: { color: '#E2E8F0', fontSize: 12, fontWeight: '600', marginTop: 3 },
   detailValueFeatured: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
   detailValueOrange: { color: '#F97316', fontWeight: '700' },
+  nextButton: { alignSelf: 'stretch', height: 50, borderRadius: 16, backgroundColor: '#F97316', alignItems: 'center', justifyContent: 'center', marginTop: 14 },
+  nextButtonText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
 
-  miniStats: { flexDirection: 'row', gap: 10, alignSelf: 'stretch', marginTop: 12 },
-  miniStatItem: { flex: 1, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: '#030B14', padding: 12 },
-  miniStatLabel: { color: '#94A3B8', fontSize: 9, fontWeight: '400' },
-  miniStatValue: { color: '#F8FAFC', fontSize: 24, fontWeight: '700', marginTop: 4 },
-  miniStatValueOrange: { color: '#F97316' },
-
-  nextButton: { alignSelf: 'stretch', minHeight: 48, borderRadius: 16, backgroundColor: '#F97316', alignItems: 'center', justifyContent: 'center', marginTop: 16 },
-  nextButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
-
+  // Manual code
   manualSection: { marginTop: 18, gap: 12 },
-  separator: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  separatorLine: { flex: 1, height: 1, backgroundColor: 'rgba(226,232,240,0.12)' },
-  separatorText: { color: 'rgba(226,232,240,0.48)', fontSize: 10, fontWeight: '400' },
-  inputShell: { minHeight: 56, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: '#030B14', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 10 },
-  inputIcon: { color: 'rgba(148,163,184,0.9)', fontSize: 20 },
+  separator: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  separatorLine: { flex: 1, height: 1, backgroundColor: 'rgba(226,232,240,0.10)' },
+  separatorText: { color: 'rgba(226,232,240,0.44)', fontSize: 10, fontWeight: '700', letterSpacing: 0.8 },
+  inputShell: {
+    height: 56, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)',
+    backgroundColor: '#030B14', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 10,
+  },
   input: { flex: 1, color: '#FFFFFF', fontSize: 14, fontWeight: '700', outlineStyle: 'none' as any },
-  blueButton: { minHeight: 56, borderRadius: 16, backgroundColor: '#030B14', borderWidth: 1, borderColor: 'rgba(249,115,22,0.34)', alignItems: 'center', justifyContent: 'center' },
-  blueButtonText: { color: '#F97316', fontSize: 12, fontWeight: '700' },
+  validateBtn: {
+    height: 56, borderRadius: 16, backgroundColor: 'rgba(3,11,20,0.92)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center',
+  },
+  validateBtnText: { color: '#F8FAFC', fontSize: 13, fontWeight: '800', letterSpacing: 0.5 },
 
-  statsPanel: { marginTop: 22, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: 'rgba(255,255,255,0.018)', padding: 16 },
-  statsHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
-  statsEyebrow: { color: '#F97316', fontSize: 10, fontWeight: '700' },
-  statsTitle: { color: '#F8FAFC', fontSize: 22, fontWeight: '700', marginTop: 6 },
-  resetButton: { borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: '#030B14', paddingHorizontal: 12, paddingVertical: 9 },
-  resetText: { color: '#CBD5E1', fontSize: 10, fontWeight: '700' },
-  statGrid: { marginTop: 16, gap: 10 },
-  statCard: { borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: '#030B14', padding: 14 },
-  statOrange: { borderColor: 'rgba(249,115,22,0.28)', backgroundColor: 'rgba(249,115,22,0.10)' },
-  statGreen: { borderColor: 'rgba(16,185,129,0.18)', backgroundColor: '#030B14' },
-  statLabel: { color: '#94A3B8', fontSize: 10, fontWeight: '400' },
-  statLabelOrange: { color: '#FB923C' },
-  statLabelGreen: { color: '#CBD5E1' },
-  statValue: { color: '#F8FAFC', fontSize: 32, fontWeight: '700', marginTop: 6 },
-  statValueOrange: { color: '#F97316' },
-  statValueGreen: { color: '#F8FAFC' },
-  capacityCard: { marginTop: 10, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: '#030B14', padding: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  capacityLabel: { color: 'rgba(226,232,240,0.58)', fontSize: 10, fontWeight: '400' },
-  capacityValue: { color: '#F8FAFC', fontSize: 30, fontWeight: '700', marginTop: 4 },
-  capacityPercent: { color: '#F97316', fontSize: 24, fontWeight: '700' },
+  // Event dropdown
+  eventSection: { marginTop: 22 },
+  eventEyebrow: { color: '#F97316', fontSize: 10, fontWeight: '800', letterSpacing: 0.8, marginBottom: 8 },
+  eventDropdown: {
+    height: 52, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)',
+    backgroundColor: '#030B14', flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 16, justifyContent: 'space-between',
+  },
+  eventDropdownText: { color: '#F8FAFC', fontSize: 14, fontWeight: '700', flex: 1, marginRight: 8 },
+  eventDropdownPlaceholder: { color: 'rgba(148,163,184,0.7)', fontWeight: '400' },
+  dropdownList: { marginTop: 6, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: '#030B14', overflow: 'hidden' },
+  dropdownItem: { height: 46, paddingHorizontal: 16, justifyContent: 'center', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
+  dropdownItemActive: { backgroundColor: 'rgba(249,115,22,0.12)' },
+  dropdownItemText: { color: 'rgba(226,232,240,0.8)', fontSize: 13, fontWeight: '600' },
+  dropdownItemTextActive: { color: '#F97316', fontWeight: '700' },
+  serverStats: {
+    flexDirection: 'row', gap: 8, marginTop: 10,
+  },
+  serverStatItem: {
+    flex: 1, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)',
+    backgroundColor: 'rgba(255,255,255,0.025)', padding: 12,
+  },
+  serverStatLabel: { color: 'rgba(148,163,184,0.8)', fontSize: 9, fontWeight: '700', letterSpacing: 0.5, marginBottom: 4 },
+  serverStatValue: { color: '#F8FAFC', fontSize: 20, fontWeight: '800' },
 
-  sessionGrid: { marginTop: 16, flexDirection: 'row', gap: 10 },
+  // Live count
+  liveSection: { marginTop: 22, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: 'rgba(255,255,255,0.018)', padding: 16 },
+  liveSectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  liveEyebrow: { color: '#F97316', fontSize: 10, fontWeight: '800', letterSpacing: 0.8 },
+  liveTitle: { color: '#F8FAFC', fontSize: 22, fontWeight: '700', marginTop: 4 },
+  resetBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: '#030B14', paddingHorizontal: 12, paddingVertical: 8 },
+  resetBtnText: { color: '#CBD5E1', fontSize: 10, fontWeight: '800' },
+  sessionGrid: { flexDirection: 'row', gap: 10, marginTop: 14 },
   sessionCard: { flex: 1, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: '#030B14', padding: 14 },
-  sessionGreen: { borderColor: 'rgba(16,185,129,0.28)', backgroundColor: 'rgba(16,185,129,0.10)' },
-  sessionRed: { borderColor: 'rgba(239,68,68,0.28)', backgroundColor: 'rgba(239,68,68,0.10)' },
-  sessionLabel: { color: '#94A3B8', fontSize: 9, fontWeight: '400' },
+  sessionGreen: { borderColor: 'rgba(16,185,129,0.32)', backgroundColor: 'rgba(16,185,129,0.10)' },
+  sessionRed: { borderColor: 'rgba(127,29,29,0.6)', backgroundColor: 'rgba(127,29,29,0.28)' },
+  sessionLabel: { color: '#94A3B8', fontSize: 9, fontWeight: '700', letterSpacing: 0.5 },
   sessionLabelGreen: { color: 'rgba(52,211,153,0.9)' },
   sessionLabelRed: { color: 'rgba(252,165,165,0.9)' },
-  sessionValue: { color: '#F8FAFC', fontSize: 26, fontWeight: '700', marginTop: 6 },
+  sessionValue: { color: '#F8FAFC', fontSize: 28, fontWeight: '700', marginTop: 6 },
   sessionValueGreen: { color: '#34D399' },
   sessionValueRed: { color: '#F87171' },
 
-  recentPanel: { marginTop: 22 },
+  // Last scanned
+  recentSection: { marginTop: 22 },
   recentHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   recentTitle: { color: '#F8FAFC', fontSize: 18, fontWeight: '700' },
-  recentClock: { color: '#F97316', fontSize: 22 },
-  recentEmpty: { borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', backgroundColor: 'rgba(255,255,255,0.018)', paddingVertical: 32, alignItems: 'center' },
-  recentEmptyText: { color: 'rgba(226,232,240,0.46)', fontSize: 13, fontWeight: '400' },
+  recentEmpty: {
+    borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)',
+    borderStyle: 'dashed', backgroundColor: 'rgba(255,255,255,0.012)',
+    paddingVertical: 36, alignItems: 'center',
+  },
+  recentEmptyText: { color: 'rgba(226,232,240,0.44)', fontSize: 13 },
   recentItem: { borderRadius: 16, borderWidth: 1, padding: 14, marginBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  recentValid: { borderColor: 'rgba(16,185,129,0.28)', backgroundColor: 'rgba(16,185,129,0.10)' },
-  recentInvalid: { borderColor: 'rgba(239,68,68,0.24)', backgroundColor: 'rgba(239,68,68,0.10)' },
+  recentValid: { borderColor: 'rgba(16,185,129,0.28)', backgroundColor: 'rgba(16,185,129,0.08)' },
+  recentInvalid: { borderColor: 'rgba(239,68,68,0.24)', backgroundColor: 'rgba(239,68,68,0.08)' },
   recentLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  recentMark: { width: 24, height: 24, borderRadius: 12, color: '#FFFFFF', textAlign: 'center', lineHeight: 24, fontWeight: '700' },
+  recentMark: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   recentMarkValid: { backgroundColor: '#10B981' },
   recentMarkInvalid: { backgroundColor: '#EF4444' },
+  recentMarkText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700', lineHeight: 15 },
   recentCopy: { flex: 1, minWidth: 0 },
   recentName: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
-  recentMeta: { color: 'rgba(226,232,240,0.52)', fontSize: 11, fontWeight: '400', marginTop: 3 },
+  recentMeta: { color: 'rgba(226,232,240,0.5)', fontSize: 11, marginTop: 2 },
   recentTime: { color: '#CBD5E1', fontSize: 11, fontWeight: '700' },
 });
