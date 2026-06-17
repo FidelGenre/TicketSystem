@@ -5,7 +5,7 @@ import { ScreenBackground } from './ScreenBackground';
 import { ModeSelector, AppMode } from './ModeSelector';
 
 type AdminSectionId = 'dashboard' | 'events' | 'users' | 'categories' | 'marketing' | 'analytics' | 'codes' | 'payments';
-type OrgSectionId = 'dashboard' | 'events' | 'create' | 'scan' | 'analytics';
+type OrgSectionId = 'dashboard' | 'events' | 'create' | 'rewards';
 
 type Props = {
   visible: boolean;
@@ -55,8 +55,7 @@ const orgSections: { id: OrgSectionId; labelEs: string; labelEn: string; icon: I
   { id: 'dashboard', labelEs: 'Dashboard', labelEn: 'Dashboard', icon: 'grid-outline' },
   { id: 'events', labelEs: 'Mis Eventos', labelEn: 'My Events', icon: 'calendar-outline' },
   { id: 'create', labelEs: 'Crear Evento', labelEn: 'Create Event', icon: 'add-circle-outline' },
-  { id: 'scan', labelEs: 'Escáner', labelEn: 'Scanner', icon: 'scan-outline' },
-  { id: 'analytics', labelEs: 'Analíticas', labelEn: 'Analytics', icon: 'stats-chart-outline' },
+  { id: 'rewards', labelEs: 'Recompensas', labelEn: 'Rewards', icon: 'gift-outline' },
 ];
 
 export function MenuDrawer({
