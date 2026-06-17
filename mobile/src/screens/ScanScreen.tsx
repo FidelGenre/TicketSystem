@@ -234,7 +234,8 @@ export function ScanScreen({ onBack: _onBack, user }: Props) {
               </View>
               <TouchableOpacity style={styles.startBtn} onPress={startScanner}>
                 <View pointerEvents="none" style={styles.startBtnShine} />
-                <Ionicons name="camera-outline" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+                <View pointerEvents="none" style={styles.startBtnShadow} />
+                <Ionicons name="camera-outline" size={18} color="#FFFFFF" style={{ marginRight: 8, zIndex: 2 }} />
                 <Text style={styles.startBtnText}>{t('INICIAR SCANNER', 'START SCANNER')}</Text>
               </TouchableOpacity>
               {!permission?.granted && Platform.OS !== 'web' && (
@@ -452,7 +453,7 @@ const styles = StyleSheet.create({
   eventModeText: { color: '#F8FAFC', fontSize: 11, fontWeight: '800', letterSpacing: 0.5 },
   soundChip: {
     height: 38, borderRadius: 14, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)',
+    backgroundColor: '#030B14', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)',
   },
   soundChipActive: { backgroundColor: '#F97316', borderColor: '#F97316' },
   soundChipText: { color: 'rgba(226,232,240,0.7)', fontSize: 12, fontWeight: '800' },
@@ -474,10 +475,11 @@ const styles = StyleSheet.create({
   startBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     minWidth: 220, height: 56, borderRadius: 16, backgroundColor: '#F97316',
-    paddingHorizontal: 28, overflow: 'hidden',
+    paddingHorizontal: 28, overflow: 'hidden', elevation: 5,
   },
-  startBtnShine: { position: 'absolute', top: 4, left: 14, right: 14, height: 1, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.28)' },
-  startBtnText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800', letterSpacing: 0.5 },
+  startBtnShine: { position: 'absolute', top: 4, left: 14, right: 14, height: 1, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.24)' },
+  startBtnShadow: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '48%', backgroundColor: 'rgba(154,52,18,0.18)' },
+  startBtnText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700', zIndex: 2 },
   permNote: { color: 'rgba(226,232,240,0.46)', fontSize: 11, textAlign: 'center', marginTop: 4 },
   cameraFrame: { height: 300, backgroundColor: '#020617', overflow: 'hidden' },
   cameraNoise: { position: 'absolute', inset: 0, backgroundColor: 'rgba(15,23,42,0.3)' },
@@ -524,10 +526,10 @@ const styles = StyleSheet.create({
   },
   input: { flex: 1, color: '#FFFFFF', fontSize: 14, fontWeight: '700', outlineStyle: 'none' as any },
   validateBtn: {
-    height: 56, borderRadius: 16, backgroundColor: 'rgba(3,11,20,0.92)',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center',
+    minHeight: 56, borderRadius: 16, backgroundColor: '#030B14',
+    borderWidth: 1, borderColor: 'rgba(249,115,22,0.34)', alignItems: 'center', justifyContent: 'center',
   },
-  validateBtnText: { color: '#F8FAFC', fontSize: 13, fontWeight: '800', letterSpacing: 0.5 },
+  validateBtnText: { color: '#F97316', fontSize: 12, fontWeight: '700' },
 
   // Event dropdown
   eventSection: { marginTop: 22 },
@@ -564,7 +566,7 @@ const styles = StyleSheet.create({
   sessionGrid: { flexDirection: 'row', gap: 10, marginTop: 14 },
   sessionCard: { flex: 1, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: '#030B14', padding: 14 },
   sessionGreen: { borderColor: 'rgba(16,185,129,0.32)', backgroundColor: 'rgba(16,185,129,0.10)' },
-  sessionRed: { borderColor: 'rgba(127,29,29,0.6)', backgroundColor: 'rgba(127,29,29,0.28)' },
+  sessionRed: { borderColor: 'rgba(239,68,68,0.28)', backgroundColor: 'rgba(239,68,68,0.10)' },
   sessionLabel: { color: '#94A3B8', fontSize: 9, fontWeight: '700', letterSpacing: 0.5 },
   sessionLabelGreen: { color: 'rgba(52,211,153,0.9)' },
   sessionLabelRed: { color: 'rgba(252,165,165,0.9)' },
