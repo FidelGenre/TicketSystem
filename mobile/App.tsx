@@ -243,7 +243,7 @@ function AppContent() {
         ) : selectedEvent ? (
           <EventDetailScreen event={selectedEvent} onBack={() => setSelectedEvent(null)} onBuy={() => { setPaymentSuccessOpen(false); setOrderSummaryOpen(false); setCheckoutInfoOpen(false); if (isLoggedIn) { setPurchaseOpen(true); } else { setLoginAfterPurchase(true); } }} />
         ) : tab === 'events' ? (
-          <HomeScreen onOpenEvent={setSelectedEvent} />
+          <HomeScreen onOpenEvent={setSelectedEvent} onGoCart={() => goToTab('tickets')} />
         ) : tab === 'tickets' ? (
           isLoggedIn ? <TicketsScreen /> : <LoginScreen onSignIn={setCurrentUser} />
         ) : tab === 'scan' ? (
