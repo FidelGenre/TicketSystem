@@ -38,6 +38,7 @@ type Props = {
   seatMap: ClientVenueSection[];
   selectedSeats: ClientSeat[];
   onToggleSeat: (seat: ClientSeat) => void;
+  onToggleSeats?: (seats: ClientSeat[]) => void;
   defaultViewX?: number;
   defaultViewY?: number;
   defaultViewZoom?: number;
@@ -55,89 +56,72 @@ const MIN_ZOOM = 0.12;
 const MAX_ZOOM = 2.5;
 const ZOOM_STEP = 0.12;
 const FIT_PADDING = 40;
+const CANVAS_W = 2000;
+const CANVAS_H = 1600;
 
 function clamp(v: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, v)); }
-
 function parseCfg(raw?: string | null): Record<string, any> {
   if (!raw) return {};
   try { return JSON.parse(raw); } catch { return {}; }
 }
-
 function isUnavailable(seat: ClientSeat, override: any) {
   const s = String(seat.status || 'available').toLowerCase();
   const expired = s === 'locked' && seat.lockExpiresAt && new Date(seat.lockExpiresAt).getTime() <= Date.now();
-  return !expired && (s === 'sold' || s === 'reserved' || s === 'locked' || !!override?.reserved || !!override?.sold || !!override?.locked);
+  return !expired && (s === 'sold' || s === 'reserved' || s === 'locked' || !!override?.reserved);
 }
-
-function isSelected(seat: ClientSeat, sel: ClientSeat[]) {
-  return sel.some((s) => s.id === seat.id);
-}
-
-function seatBg(seat: ClientSeat, override: any, color: string, selected: boolean) {
+function isSelected(seat: ClientSeat, sel: ClientSeat[]) { return sel.some((s) => s.id === seat.id); }
+function seatBg(seat: ClientSeat, ov: any, color: string, selected: boolean) {
   if (selected) return '#f97316';
   const s = String(seat.status || 'available').toLowerCase();
-  const hold = s === 'locked' && seat.lockExpiresAt && new Date(seat.lockExpiresAt).getTime() > Date.now();
-  if (hold) return '#facc15';
-  if (isUnavailable(seat, override)) return '#cbd5e1';
+  if (s === 'locked' && seat.lockExpiresAt && new Date(seat.lockExpiresAt).getTime() > Date.now()) return '#facc15';
+  if (isUnavailable(seat, ov)) return '#cbd5e1';
   return color || '#5667ff';
 }
-
-function seatBorder(seat: ClientSeat, override: any, selected: boolean) {
+function seatBorder(seat: ClientSeat, ov: any, selected: boolean) {
   if (selected) return '#ffffff';
   const s = String(seat.status || 'available').toLowerCase();
-  const hold = s === 'locked' && seat.lockExpiresAt && new Date(seat.lockExpiresAt).getTime() > Date.now();
-  if (hold) return '#eab308';
-  if (isUnavailable(seat, override)) return '#94a3b8';
+  if (s === 'locked' && seat.lockExpiresAt && new Date(seat.lockExpiresAt).getTime() > Date.now()) return '#eab308';
+  if (isUnavailable(seat, ov)) return '#94a3b8';
   return 'rgba(255,255,255,0.55)';
 }
-
 function getSeatPrice(seat: ClientSeat, section: ClientVenueSection): number {
   const cfg = parseCfg(section.seatsConfig);
   const key = seat.rowLabel && seat.rowLabel !== 'GA' ? `${seat.rowLabel}-${seat.seatNumber}` : `seat-${seat.seatNumber}`;
   const ov = cfg[key];
-  if (ov?.price !== undefined && ov.price !== null) return Number(ov.price);
+  if (ov?.price !== undefined) return Number(ov.price);
   return Number(section.price || 0);
 }
-
-function tableLabel(name?: string | null, es = true) {
-  const word = es ? 'Mesa' : 'Table';
+function tableLabel(name?: string | null) {
   const raw = String(name || '').trim();
-  if (!raw) return word;
-  return /^(mesa|table)\b/i.test(raw) ? raw : `${word} ${raw}`;
+  if (!raw) return 'Mesa';
+  return /^(mesa|table)\b/i.test(raw) ? raw : `Mesa ${raw}`;
 }
-
-function getKind(section: ClientVenueSection) {
-  const raw = `${section.sectionType || section.type || ''}`.toLowerCase();
+function getKind(s: ClientVenueSection) {
+  const raw = `${s.sectionType || s.type || ''}`.toLowerCase();
   if (raw === 'stage') return 'stage';
   if (raw === 'decor') return 'decor';
   if (raw === 'standing') return 'standing';
   if (raw === 'table') return 'table';
-  const name = `${section.name || section.label || ''}`.toLowerCase();
-  if (name.includes('stage') || name.includes('escenario') || name.includes('pantalla')) return 'stage';
+  const name = `${s.name || s.label || ''}`.toLowerCase();
+  if (name.includes('stage') || name.includes('escenario')) return 'stage';
   if (name.includes('standing')) return 'standing';
   if (name.includes('table') || name.includes('mesa')) return 'table';
-  if (/^\d+$/.test(`${section.name || section.label || ''}`.trim())) return 'table';
+  if (/^\d+$/.test(`${s.name || s.label || ''}`.trim())) return 'table';
   return 'seats';
 }
-
-function sectionColor(section: ClientVenueSection) {
-  if (section.color) return section.color;
-  const name = `${section.name || section.label || ''}`.toLowerCase();
-  if (name.includes('bar')) return '#F97316';
-  if (name.includes('general')) return '#E8554F';
+function sectionColor(s: ClientVenueSection) {
+  if (s.color) return s.color;
   return '#5667FF';
 }
 
-// ─── Chair — same logic as web <button> inside table ────────────────────────
-function Chair({ seat, section, override, sel, size, cx, cy, onToggle, onInfo }: {
+// ─── Chair ──────────────────────────────────────────────────────────────────
+function Chair({ seat, section, override, sel, size, cx, cy, onToggle, onToggleMany, onInfo }: {
   seat: ClientSeat; section: ClientVenueSection; override: any;
   sel: ClientSeat[]; size: number; cx: number; cy: number;
-  onToggle: (s: ClientSeat) => void; onInfo: (i: ActiveInfo) => void;
+  onToggle: (s: ClientSeat) => void; onToggleMany?: (seats: ClientSeat[]) => void; onInfo: (i: ActiveInfo) => void;
 }) {
   const selected = isSelected(seat, sel);
   const unavail = isUnavailable(seat, override) && !selected;
-  const bg = seatBg(seat, override, sectionColor(section), selected);
-  const bd = seatBorder(seat, override, selected);
   return (
     <TouchableOpacity
       disabled={unavail}
@@ -147,7 +131,8 @@ function Chair({ seat, section, override, sel, size, cx, cy, onToggle, onInfo }:
         position: 'absolute',
         left: cx - size / 2, top: cy - size / 2,
         width: size, height: size, borderRadius: size / 2,
-        backgroundColor: bg, borderWidth: 0.8, borderColor: bd,
+        backgroundColor: seatBg(seat, override, sectionColor(section), selected),
+        borderWidth: 0.8, borderColor: seatBorder(seat, override, selected),
         transform: [{ scale: selected ? 1.25 : 1 }],
         opacity: unavail ? 0.45 : 1,
         zIndex: 20,
@@ -162,14 +147,16 @@ function Chair({ seat, section, override, sel, size, cx, cy, onToggle, onInfo }:
           price: getSeatPrice(seat, section),
           tone: selected ? 'selected' : isUnavailable(seat, override) ? 'sold' : 'available',
         });
-        if (section.tablePurchaseMode === 'whole') {
-          const allSeats = section.seats || [];
-          const anySel = allSeats.some((s) => isSelected(s, sel));
+        const isTableSection = section.sectionType === 'table' || getKind(section) === 'table';
+        if (isTableSection || section.tablePurchaseMode === 'whole') {
+          const all = section.seats || [];
           const cfg = parseCfg(section.seatsConfig);
-          const toToggle = anySel
-            ? allSeats.filter((s) => isSelected(s, sel))
-            : allSeats.filter((s) => !isUnavailable(s, cfg[`seat-${s.seatNumber}`] || {}));
-          toToggle.forEach(onToggle);
+          const available = all.filter((s) => !isUnavailable(s, cfg[`seat-${s.seatNumber}`] || {}));
+          if (onToggleMany) {
+            onToggleMany(available);
+          } else {
+            onToggle(seat);
+          }
         } else {
           onToggle(seat);
         }
@@ -178,15 +165,15 @@ function Chair({ seat, section, override, sel, size, cx, cy, onToggle, onInfo }:
   );
 }
 
-// ─── Table section rendered at canvas scale ──────────────────────────────────
-function TableSection({ section, sel, onToggle, onInfo, scale }: {
-  section: ClientVenueSection; sel: ClientSeat[]; scale: number;
-  onToggle: (s: ClientSeat) => void; onInfo: (i: ActiveInfo) => void;
+// ─── TableSection ────────────────────────────────────────────────────────────
+function TableSection({ section, sel, onToggle, onToggleMany, onInfo }: {
+  section: ClientVenueSection; sel: ClientSeat[];
+  onToggle: (s: ClientSeat) => void; onToggleMany?: (seats: ClientSeat[]) => void; onInfo: (i: ActiveInfo) => void;
 }) {
   const seats = section.seats || [];
   const cfg = parseCfg(section.seatsConfig);
-  const w = Number(section.mapWidth || 100) * scale;
-  const h = Number(section.mapHeight || 100) * scale;
+  const w = Number(section.mapWidth || 100);
+  const h = Number(section.mapHeight || 100);
   const isRound = (section.tableShape || 'round') === 'round';
   const chairSize = clamp(Math.min(w, h) * 0.18, 8, 18);
   const tableW = w * (isRound ? 0.60 : 0.70);
@@ -196,7 +183,6 @@ function TableSection({ section, sel, onToggle, onInfo, scale }: {
 
   return (
     <View style={{ width: w, height: h }}>
-      {/* Table body */}
       <View style={{
         position: 'absolute',
         left: (w - tableW) / 2, top: (h - tableH) / 2,
@@ -212,36 +198,32 @@ function TableSection({ section, sel, onToggle, onInfo, scale }: {
         </Text>
         {anySel && <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: '#f97316', marginTop: 2 }} />}
       </View>
-
-      {/* Chairs — same positioning math as web */}
       {isRound
         ? seats.map((seat, i) => {
             const ov = cfg[`seat-${seat.seatNumber}`] || {};
             if (ov.disabled) return null;
             const angle = (i * 360) / seats.length;
             const rad = (angle * Math.PI) / 180;
-            const cx = w / 2 + (w * 0.52) * Math.sin(rad) + (ov.xOffset || 0) * scale;
-            const cy = h / 2 - (h * 0.52) * Math.cos(rad) + (ov.yOffset || 0) * scale;
-            return <Chair key={seat.id} seat={seat} section={section} override={ov}
-              sel={sel} size={chairSize} cx={cx} cy={cy} onToggle={onToggle} onInfo={onInfo} />;
+            return <Chair key={seat.id} seat={seat} section={section} override={ov} sel={sel} size={chairSize}
+              cx={w / 2 + w * 0.52 * Math.sin(rad) + (ov.xOffset || 0)}
+              cy={h / 2 - h * 0.52 * Math.cos(rad) + (ov.yOffset || 0)}
+              onToggle={onToggle} onToggleMany={onToggleMany} onInfo={onInfo} />;
           })
         : (() => {
             const count = seats.length;
-            const perimeter = 2 * (1 + 0.55);
-            const step = perimeter / Math.max(1, count);
+            const step = (2 * (1 + 0.55)) / Math.max(1, count);
             return seats.map((seat, i) => {
               const ov = cfg[`seat-${seat.seatNumber}`] || {};
               if (ov.disabled) return null;
               const pos = i * step;
               let xPct = 50, yPct = 50;
-              if (pos < 1)            { xPct = 15 + pos * 70;              yPct = 12; }
-              else if (pos < 1.55)    { xPct = 88;                         yPct = 15 + ((pos - 1) / 0.55) * 70; }
-              else if (pos < 2.55)    { xPct = 85 - (pos - 1.55) * 70;    yPct = 88; }
-              else                    { xPct = 12;                          yPct = 85 - ((pos - 2.55) / 0.55) * 70; }
-              const cx = w * xPct / 100 + (ov.xOffset || 0) * scale;
-              const cy = h * yPct / 100 + (ov.yOffset || 0) * scale;
-              return <Chair key={seat.id} seat={seat} section={section} override={ov}
-                sel={sel} size={chairSize} cx={cx} cy={cy} onToggle={onToggle} onInfo={onInfo} />;
+              if (pos < 1)         { xPct = 15 + pos * 70;           yPct = 12; }
+              else if (pos < 1.55) { xPct = 88;                      yPct = 15 + ((pos - 1) / 0.55) * 70; }
+              else if (pos < 2.55) { xPct = 85 - (pos - 1.55) * 70; yPct = 88; }
+              else                 { xPct = 12;                       yPct = 85 - ((pos - 2.55) / 0.55) * 70; }
+              return <Chair key={seat.id} seat={seat} section={section} override={ov} sel={sel} size={chairSize}
+                cx={w * xPct / 100 + (ov.xOffset || 0)} cy={h * yPct / 100 + (ov.yOffset || 0)}
+                onToggle={onToggle} onToggleMany={onToggleMany} onInfo={onInfo} />;
             });
           })()
       }
@@ -249,18 +231,18 @@ function TableSection({ section, sel, onToggle, onInfo, scale }: {
   );
 }
 
-// ─── Row-seats section rendered at canvas scale ──────────────────────────────
-function RowSection({ section, sel, onToggle, onInfo, scale }: {
-  section: ClientVenueSection; sel: ClientSeat[]; scale: number;
+// ─── RowSection ──────────────────────────────────────────────────────────────
+function RowSection({ section, sel, onToggle, onInfo }: {
+  section: ClientVenueSection; sel: ClientSeat[];
   onToggle: (s: ClientSeat) => void; onInfo: (i: ActiveInfo) => void;
 }) {
   const seats = section.seats || [];
   const cfg = parseCfg(section.seatsConfig);
-  const w = Number(section.mapWidth || 100) * scale;
-  const h = Number(section.mapHeight || 100) * scale;
-  const curve = Number(section.curve || 0) * scale;
+  const w = Number(section.mapWidth || 100);
+  const h = Number(section.mapHeight || 100);
+  const curve = Number(section.curve || 0);
   const rows = Array.from(new Set(seats.map((s) => s.rowLabel || 'A'))).sort();
-  const baseSpacingY = rows.length > 1 ? (h - 32 * scale) / (rows.length - 1) : 0;
+  const baseSpacingY = rows.length > 1 ? (h - 32) / (rows.length - 1) : 0;
 
   return (
     <View style={{ width: w, height: h }}>
@@ -269,43 +251,35 @@ function RowSection({ section, sel, onToggle, onInfo, scale }: {
         const ov = cfg[key] || {};
         if (ov.disabled) return null;
         const rIdx = Math.max(0, rows.indexOf(seat.rowLabel || 'A'));
-        const rowSeats = seats
-          .filter((s) => (s.rowLabel || 'A') === (seat.rowLabel || 'A'))
+        const rowSeats = seats.filter((s) => (s.rowLabel || 'A') === (seat.rowLabel || 'A'))
           .sort((a, b) => Number(a.seatNumber || 0) - Number(b.seatNumber || 0));
         const sIdx = rowSeats.findIndex((s) => s.id === seat.id);
         const count = Math.max(1, rowSeats.length);
         const t = count > 1 ? (sIdx - (count - 1) / 2) / ((count - 1) / 2) : 0;
-        // Same formula as web: size based on section width / seat count
-        const size = clamp(((Number(section.mapWidth || 100) - 24) / count - 2) * scale, 5, 14);
-        const x = count > 1 ? 12 * scale + sIdx * ((w - 24 * scale) / (count - 1)) : w / 2;
-        const y = 16 * scale + rIdx * baseSpacingY + curve * (t * t - 1);
+        const size = clamp((w - 24) / count - 2, 5, 14);
+        const x = count > 1 ? 12 + sIdx * ((w - 24) / (count - 1)) : w / 2;
+        const y = 16 + rIdx * baseSpacingY + curve * (t * t - 1);
         const selected = isSelected(seat, sel);
         const unavail = isUnavailable(seat, ov) && !selected;
         return (
           <TouchableOpacity
-            key={seat.id}
-            disabled={unavail}
-            activeOpacity={0.75}
+            key={seat.id} disabled={unavail} activeOpacity={0.75}
             hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
             style={{
               position: 'absolute',
-              left: x - size / 2 + (ov.xOffset || 0) * scale,
-              top: y - size / 2 + (ov.yOffset || 0) * scale,
+              left: x - size / 2 + (ov.xOffset || 0), top: y - size / 2 + (ov.yOffset || 0),
               width: size, height: size, borderRadius: size / 2,
               backgroundColor: seatBg(seat, ov, sectionColor(section), selected),
-              borderWidth: 0.8,
-              borderColor: seatBorder(seat, ov, selected),
+              borderWidth: 0.8, borderColor: seatBorder(seat, ov, selected),
               transform: [{ scale: selected ? 1.25 : 1 }],
-              opacity: unavail ? 0.45 : 1,
-              zIndex: 20,
+              opacity: unavail ? 0.45 : 1, zIndex: 20,
             }}
             onPress={() => {
               onInfo({
                 title: `${section.name || ''} ${seat.rowLabel || ''}${seat.seatNumber ? `-${seat.seatNumber}` : ''}`.trim(),
                 subtitle: section.name || '',
                 status: selected ? 'Seleccionado' : isUnavailable(seat, ov) ? 'No disponible' : 'Disponible',
-                price: getSeatPrice(seat, section),
-                tone: selected ? 'selected' : isUnavailable(seat, ov) ? 'sold' : 'available',
+                price: getSeatPrice(seat, section), tone: selected ? 'selected' : isUnavailable(seat, ov) ? 'sold' : 'available',
               });
               onToggle(seat);
             }}
@@ -316,137 +290,95 @@ function RowSection({ section, sel, onToggle, onInfo, scale }: {
   );
 }
 
-// ─── Main map ────────────────────────────────────────────────────────────────
-export function ClientVenueMap({ seatMap, selectedSeats, onToggleSeat, defaultViewX, defaultViewY, defaultViewZoom }: Props) {
+// ─── Main ────────────────────────────────────────────────────────────────────
+export function ClientVenueMap({ seatMap, selectedSeats, onToggleSeat, onToggleSeats, defaultViewX, defaultViewY, defaultViewZoom }: Props) {
   const { t } = useLanguage();
   const { width: screenW } = useWindowDimensions();
 
   const sections = useMemo(
-    () => seatMap.filter(
-      (s) => Number.isFinite(Number(s.mapX)) && Number.isFinite(Number(s.mapY))
-        && Number(s.mapWidth || 0) > 0 && Number(s.mapHeight || 0) > 0,
-    ),
+    () => seatMap.filter((s) => Number.isFinite(Number(s.mapX)) && Number.isFinite(Number(s.mapY)) && Number(s.mapWidth || 0) > 0 && Number(s.mapHeight || 0) > 0),
     [seatMap],
   );
 
   const viewportH = Math.min(Math.max(screenW * 1.25, 420), 560);
 
-  // Fit-view: use organizer's saved defaultView if present, otherwise auto-fit like web
   const fitView = useMemo(() => {
     if (!sections.length) return { zoom: 1, pan: { x: 0, y: 0 } };
-
-    // If organizer saved a default view, use it (same as web defaultViewX/Y/Zoom props)
     if (typeof defaultViewZoom === 'number' && typeof defaultViewX === 'number' && typeof defaultViewY === 'number') {
       return { zoom: defaultViewZoom, pan: { x: defaultViewX, y: defaultViewY } };
     }
-
-    // Auto fit-to-content (mirrors web getFitView)
     const minX = Math.min(...sections.map((s) => Number(s.mapX || 0)));
     const minY = Math.min(...sections.map((s) => Number(s.mapY || 0)));
     const maxX = Math.max(...sections.map((s) => Number(s.mapX || 0) + Number(s.mapWidth || 0)));
     const maxY = Math.max(...sections.map((s) => Number(s.mapY || 0) + Number(s.mapHeight || 0)));
-    const contentW = Math.max(1, maxX - minX);
-    const contentH = Math.max(1, maxY - minY);
-    const z = clamp(
-      Math.min((screenW - FIT_PADDING * 2) / contentW, (viewportH - FIT_PADDING * 2) / contentH),
-      MIN_ZOOM, MAX_ZOOM,
-    );
-    return {
-      zoom: z,
-      pan: {
-        x: screenW / 2 - ((minX + maxX) / 2) * z,
-        y: viewportH / 2 - ((minY + maxY) / 2) * z,
-      },
-    };
+    const z = clamp(Math.min((screenW - FIT_PADDING * 2) / Math.max(1, maxX - minX), (viewportH - FIT_PADDING * 2) / Math.max(1, maxY - minY)), MIN_ZOOM, MAX_ZOOM);
+    return { zoom: z, pan: { x: screenW / 2 - ((minX + maxX) / 2) * z, y: viewportH / 2 - ((minY + maxY) / 2) * z } };
   }, [sections, screenW, viewportH, defaultViewX, defaultViewY, defaultViewZoom]);
 
+  // Animated values — canvas moves on the UI thread, no JS re-render per frame
+  const animZoom = useRef(new Animated.Value(fitView.zoom)).current;
+  const animPanX = useRef(new Animated.Value(fitView.pan.x)).current;
+  const animPanY = useRef(new Animated.Value(fitView.pan.y)).current;
+
+  // JS-readable state (used for touch math and section positioning)
+  const viewRef = useRef({ zoom: fitView.zoom, pan: fitView.pan });
   const [zoom, setZoom] = useState(fitView.zoom);
   const [pan, setPan] = useState(fitView.pan);
-  const [activeInfo, setActiveInfo] = useState<ActiveInfo | null>(null);
-  const [activeSection, setActiveSection] = useState<string | null>(null);
 
-  const viewRef = useRef({ zoom: fitView.zoom, pan: fitView.pan });
-  const touchRef = useRef({
-    x: 0, y: 0, panX: 0, panY: 0,
-    isPinch: false, pinchDist: 0, pinchZoom: 1,
-    pinchCx: 0, pinchCy: 0,
-  });
-
-  const resetMap = () => {
-    viewRef.current = { zoom: fitView.zoom, pan: fitView.pan };
-    setZoom(fitView.zoom);
-    setPan(fitView.pan);
-    setActiveInfo(null);
-    setActiveSection(null);
+  const syncAnimated = (z: number, p: { x: number; y: number }) => {
+    animZoom.setValue(z);
+    animPanX.setValue(p.x);
+    animPanY.setValue(p.y);
+    viewRef.current = { zoom: z, pan: p };
+    setZoom(z);
+    setPan(p);
   };
 
   const animatingRef = useRef(false);
 
-  // Animated zoom from viewport center — mimics web CSS transition 0.15s cubic-bezier
-  const zoomBy = (delta: number) => {
+  const animateTo = (newZ: number, newP: { x: number; y: number }, duration = 200) => {
     if (animatingRef.current) return;
+    animatingRef.current = true;
+    viewRef.current = { zoom: newZ, pan: newP };
+    setZoom(newZ);
+    setPan(newP);
+    Animated.parallel([
+      Animated.timing(animZoom, { toValue: newZ, duration, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
+      Animated.timing(animPanX, { toValue: newP.x, duration, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
+      Animated.timing(animPanY, { toValue: newP.y, duration, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
+    ]).start(() => { animatingRef.current = false; });
+  };
+
+  const resetMap = () => {
+    animateTo(fitView.zoom, fitView.pan);
+  };
+
+  const zoomBy = (delta: number) => {
     const oldZ = viewRef.current.zoom;
     const newZ = clamp(oldZ + delta, fitView.zoom, MAX_ZOOM);
     if (newZ === oldZ) return;
-    // Keep the map center fixed — zoom in/out around the current visible center
+    // Keep the visible center fixed during zoom
     const contentCx = (screenW / 2 - viewRef.current.pan.x) / oldZ;
     const contentCy = (viewportH / 2 - viewRef.current.pan.y) / oldZ;
-    const newPanRaw = {
+    const newP = newZ <= fitView.zoom + 0.001 ? fitView.pan : {
       x: screenW / 2 - contentCx * newZ,
       y: viewportH / 2 - contentCy * newZ,
     };
-    const finalPan = newZ <= fitView.zoom + 0.001 ? fitView.pan : newPanRaw;
-
-    // Animate only zoom — recalculate pan each frame to keep contentC fixed
-    const startZ = oldZ;
-    const anim = new Animated.Value(0);
-    animatingRef.current = true;
-    Animated.timing(anim, {
-      toValue: 1,
-      duration: 200,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start(() => {
-      animatingRef.current = false;
-      viewRef.current = { zoom: newZ, pan: finalPan };
-      setZoom(newZ);
-      setPan(finalPan);
-    });
-
-    anim.addListener(({ value }) => {
-      const z = startZ + (newZ - startZ) * value;
-      // Derive pan from zoom to keep content center fixed — no pan interpolation
-      const p = {
-        x: screenW / 2 - contentCx * z,
-        y: viewportH / 2 - contentCy * z,
-      };
-      viewRef.current = { zoom: z, pan: p };
-      setZoom(z);
-      setPan(p);
-    });
+    animateTo(newZ, newP);
   };
 
-  // Touch: same logic as web onTouchStart/onTouchMove
+  // Touch — direct sync (no animation during drag/pinch)
+  const touchRef = useRef({ x: 0, y: 0, panX: 0, panY: 0, isPinch: false, pinchDist: 0, pinchZoom: 1, pinchCx: 0, pinchCy: 0 });
+
   const onTouchStart = (e: any) => {
+    if (animatingRef.current) return;
     const touches = e.nativeEvent.touches;
     if (touches.length >= 2) {
       const t1 = touches[0], t2 = touches[1];
-      const dist = Math.hypot(t1.pageX - t2.pageX, t1.pageY - t2.pageY);
-      touchRef.current = {
-        x: 0, y: 0,
-        panX: viewRef.current.pan.x, panY: viewRef.current.pan.y,
-        isPinch: true, pinchDist: dist, pinchZoom: viewRef.current.zoom,
-        pinchCx: (t1.pageX + t2.pageX) / 2,
-        pinchCy: (t1.pageY + t2.pageY) / 2,
-      };
+      touchRef.current = { x: 0, y: 0, panX: viewRef.current.pan.x, panY: viewRef.current.pan.y, isPinch: true, pinchDist: Math.hypot(t1.pageX - t2.pageX, t1.pageY - t2.pageY), pinchZoom: viewRef.current.zoom, pinchCx: (t1.pageX + t2.pageX) / 2, pinchCy: (t1.pageY + t2.pageY) / 2 };
     } else {
       const t = touches[0];
-      touchRef.current = {
-        x: t.pageX, y: t.pageY,
-        panX: viewRef.current.pan.x, panY: viewRef.current.pan.y,
-        isPinch: false, pinchDist: 0, pinchZoom: viewRef.current.zoom,
-        pinchCx: 0, pinchCy: 0,
-      };
+      touchRef.current = { x: t.pageX, y: t.pageY, panX: viewRef.current.pan.x, panY: viewRef.current.pan.y, isPinch: false, pinchDist: 0, pinchZoom: viewRef.current.zoom, pinchCx: 0, pinchCy: 0 };
     }
   };
 
@@ -456,43 +388,26 @@ export function ClientVenueMap({ seatMap, selectedSeats, onToggleSeat, defaultVi
       const t1 = touches[0], t2 = touches[1];
       const dist = Math.hypot(t1.pageX - t2.pageX, t1.pageY - t2.pageY);
       if (!touchRef.current.pinchDist) return;
-      const factor = dist / touchRef.current.pinchDist;
-      const oldZ = touchRef.current.pinchZoom;
-      const newZ = clamp(oldZ * factor, fitView.zoom, MAX_ZOOM);
-      const ratio = newZ / oldZ;
-      const mx = touchRef.current.pinchCx, my = touchRef.current.pinchCy;
-      const newPan = {
-        x: mx - (mx - touchRef.current.panX) * ratio,
-        y: my - (my - touchRef.current.panY) * ratio,
-      };
-      viewRef.current = { zoom: newZ, pan: newPan };
-      setZoom(newZ);
-      setPan(newPan);
+      const newZ = clamp(touchRef.current.pinchZoom * (dist / touchRef.current.pinchDist), fitView.zoom, MAX_ZOOM);
+      const ratio = newZ / touchRef.current.pinchZoom;
+      const newP = { x: touchRef.current.pinchCx - (touchRef.current.pinchCx - touchRef.current.panX) * ratio, y: touchRef.current.pinchCy - (touchRef.current.pinchCy - touchRef.current.panY) * ratio };
+      syncAnimated(newZ, newP);
     } else if (!touchRef.current.isPinch && touches.length === 1) {
       const t = touches[0];
-      const newPan = {
-        x: touchRef.current.panX + (t.pageX - touchRef.current.x),
-        y: touchRef.current.panY + (t.pageY - touchRef.current.y),
-      };
-      viewRef.current.pan = newPan;
-      setPan(newPan);
+      const newP = { x: touchRef.current.panX + (t.pageX - touchRef.current.x), y: touchRef.current.panY + (t.pageY - touchRef.current.y) };
+      syncAnimated(viewRef.current.zoom, newP);
     }
   };
+
+  const [activeInfo, setActiveInfo] = useState<ActiveInfo | null>(null);
+  const [activeSection, setActiveSection] = useState<string | null>(null);
 
   const focusSection = (section: ClientVenueSection) => {
     if (activeSection === section.id) { setActiveSection(null); resetMap(); return; }
     setActiveSection(section.id!);
-    const sw = screenW, sh = viewportH;
-    const tw = Number(section.mapWidth || 100);
-    const th = Number(section.mapHeight || 100);
-    const targetZ = clamp(Math.min((sw * 0.85) / tw, (sh * 0.75) / th), fitView.zoom, MAX_ZOOM);
-    const newPan = {
-      x: sw / 2 - (Number(section.mapX || 0) + tw / 2) * targetZ,
-      y: sh / 2 - (Number(section.mapY || 0) + th / 2) * targetZ - 40,
-    };
-    viewRef.current = { zoom: targetZ, pan: newPan };
-    setZoom(targetZ);
-    setPan(newPan);
+    const tw = Number(section.mapWidth || 100), th = Number(section.mapHeight || 100);
+    const targetZ = clamp(Math.min((screenW * 0.85) / tw, (viewportH * 0.75) / th), fitView.zoom, MAX_ZOOM);
+    animateTo(targetZ, { x: screenW / 2 - (Number(section.mapX || 0) + tw / 2) * targetZ, y: viewportH / 2 - (Number(section.mapY || 0) + th / 2) * targetZ - 40 });
   };
 
   if (!sections.length) {
@@ -508,9 +423,20 @@ export function ClientVenueMap({ seatMap, selectedSeats, onToggleSeat, defaultVi
   const toneColor = (tone: ActiveInfo['tone']) =>
     tone === 'selected' ? '#f97316' : tone === 'sold' ? '#94a3b8' : tone === 'reserved' ? '#facc15' : '#86efac';
 
+  // Canvas transform: translate(pan) then scale from top-left
+  // In RN, scale origin is center, so compensate: translate by half canvas * (1 - scale)
+  const canvasStyle = {
+    position: 'absolute' as const, top: 0, left: 0,
+    width: CANVAS_W, height: CANVAS_H,
+    transform: [
+      { translateX: Animated.add(animPanX, Animated.multiply(new Animated.Value(CANVAS_W / 2), Animated.add(new Animated.Value(-1), animZoom))) as any },
+      { translateY: Animated.add(animPanY, Animated.multiply(new Animated.Value(CANVAS_H / 2), Animated.add(new Animated.Value(-1), animZoom))) as any },
+      { scale: animZoom as any },
+    ],
+  };
+
   return (
     <View style={st.wrap}>
-      {/* Header + controls */}
       <View style={st.header}>
         <Text style={st.headerTitle}>{t('Selecciona tus asientos', 'Select your seats')}</Text>
         <View style={st.controls}>
@@ -529,7 +455,6 @@ export function ClientVenueMap({ seatMap, selectedSeats, onToggleSeat, defaultVi
       </View>
       <Text style={st.hint}>{'👆 '}{t('Desliza para mover · Pellizca para zoom', 'Drag to pan · Pinch to zoom')}</Text>
 
-      {/* Viewport */}
       <View
         style={[st.viewport, { height: viewportH }]}
         onStartShouldSetResponder={() => true}
@@ -537,7 +462,7 @@ export function ClientVenueMap({ seatMap, selectedSeats, onToggleSeat, defaultVi
         onResponderMove={onTouchMove}
         onResponderRelease={() => {}}
       >
-        {/* Grid — matching web's CSS background-image grid */}
+        {/* Grid */}
         <View style={StyleSheet.absoluteFill} pointerEvents="none">
           {Array.from({ length: Math.ceil(screenW / 20) + 4 }).map((_, i) => {
             const x = ((pan.x % 20) + 20) % 20 + (i - 1) * 20;
@@ -557,30 +482,22 @@ export function ClientVenueMap({ seatMap, selectedSeats, onToggleSeat, defaultVi
           })}
         </View>
 
-        {/* Sections — positioned directly in screen-space: screenX = mapX*zoom + pan.x */}
-        <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+        {/* Animated canvas — sections at their map coords, transform handles pan+zoom */}
+        <Animated.View style={canvasStyle} pointerEvents="box-none">
           {sections.map((section) => {
             const kind = getKind(section);
-            const sw = Number(section.mapWidth || 100) * zoom;
-            const sh = Number(section.mapHeight || 100) * zoom;
-            const sl = Number(section.mapX || 0) * zoom + pan.x;
-            const st2 = Number(section.mapY || 0) * zoom + pan.y;
+            const left = Number(section.mapX || 0);
+            const top = Number(section.mapY || 0);
+            const w = Number(section.mapWidth || 100);
+            const h = Number(section.mapHeight || 100);
             const color = sectionColor(section);
-            const isInteractive = kind !== 'stage' && kind !== 'decor';
             const isFocusable = kind === 'standing';
+            const isInteractive = kind !== 'stage' && kind !== 'decor';
 
             const bg = kind === 'stage' ? '#0F172A'
-              : kind === 'standing'
-                ? selectedSeats.some((s) => s.sectionId === section.id) ? '#f97316' : color
-                : kind === 'decor' ? (color || '#f8fafc')
-                : 'transparent';
-
-            const br = kind === 'stage' ? 18 * zoom
-              : kind === 'standing' ? 8 * zoom
-              : kind === 'table' && (section.tableShape || 'round') === 'round' ? Math.min(sw, sh) / 2
-              : 4 * zoom;
-
-            const labelFontSize = clamp(Math.min(sw, sh) * 0.12, 7, 13);
+              : kind === 'standing' ? (selectedSeats.some((s) => s.sectionId === section.id) ? '#f97316' : color)
+              : kind === 'decor' ? (color || '#f8fafc')
+              : 'transparent';
 
             return (
               <TouchableOpacity
@@ -589,50 +506,35 @@ export function ClientVenueMap({ seatMap, selectedSeats, onToggleSeat, defaultVi
                 disabled={!isInteractive}
                 onPress={isFocusable ? () => focusSection(section) : undefined}
                 style={{
-                  position: 'absolute', left: sl, top: st2, width: sw, height: sh,
+                  position: 'absolute', left, top, width: w, height: h,
                   backgroundColor: bg,
-                  borderRadius: br,
+                  borderRadius: kind === 'stage' ? 18 : kind === 'standing' ? 8 : kind === 'table' && (section.tableShape || 'round') === 'round' ? Math.min(w, h) / 2 : 4,
                   borderWidth: kind === 'stage' ? 2 : kind === 'standing' ? 2 : kind === 'decor' ? 1 : 0,
                   borderColor: kind === 'stage' ? '#3b82f6' : kind === 'standing' ? color : '#cbd5e1',
                   transform: [{ rotate: `${Number(section.rotation || 0)}deg` }],
                   alignItems: 'center', justifyContent: 'center',
-                  overflow: 'visible',
-                  zIndex: kind === 'stage' ? 5 : 10,
-                  shadowColor: kind === 'standing' ? color : kind === 'stage' ? '#3b82f6' : 'transparent',
-                  shadowOpacity: kind === 'stage' || kind === 'standing' ? 0.35 : 0,
-                  shadowRadius: 8, shadowOffset: { width: 0, height: 3 },
+                  overflow: 'visible', zIndex: kind === 'stage' ? 5 : 10,
                 }}
               >
-                {kind === 'stage' && (
-                  <>
-                    <Text style={[st.stageLabel, { fontSize: clamp(sw * 0.07, 7, 13) }]} numberOfLines={1}>{section.name}</Text>
-                    <Text style={[st.stageSub, { fontSize: clamp(sw * 0.04, 5, 9) }]}>{t('ESCENARIO', 'STAGE')}</Text>
-                  </>
-                )}
-                {kind === 'decor' && (
-                  <Text style={[st.decorLabel, { fontSize: labelFontSize }]} numberOfLines={2}>{section.name}</Text>
-                )}
-                {kind === 'standing' && (
-                  <Text style={[st.standingLabel, { fontSize: labelFontSize }]} numberOfLines={1}>{section.name}</Text>
-                )}
+                {kind === 'stage' && <>
+                  <Text style={st.stageLabel} numberOfLines={1}>{section.name}</Text>
+                  <Text style={st.stageSub}>{t('ESCENARIO', 'STAGE')}</Text>
+                </>}
+                {kind === 'decor' && <Text style={st.decorLabel} numberOfLines={2}>{section.name}</Text>}
+                {kind === 'standing' && <Text style={st.standingLabel} numberOfLines={1}>{section.name}</Text>}
                 {kind === 'table' && (
-                  <TableSection section={section} sel={selectedSeats} scale={zoom}
-                    onToggle={onToggleSeat}
-                    onInfo={(info) => { setActiveSection(null); setActiveInfo(info); }}
-                  />
+                  <TableSection section={section} sel={selectedSeats} onToggle={onToggleSeat} onToggleMany={onToggleSeats}
+                    onInfo={(info) => { setActiveSection(null); setActiveInfo(info); }} />
                 )}
                 {kind === 'seats' && (
-                  <RowSection section={section} sel={selectedSeats} scale={zoom}
-                    onToggle={onToggleSeat}
-                    onInfo={(info) => { setActiveSection(null); setActiveInfo(info); }}
-                  />
+                  <RowSection section={section} sel={selectedSeats} onToggle={onToggleSeat}
+                    onInfo={(info) => { setActiveSection(null); setActiveInfo(info); }} />
                 )}
               </TouchableOpacity>
             );
           })}
-        </View>
+        </Animated.View>
 
-        {/* Info tooltip */}
         {activeInfo && (
           <View style={st.infoCard} pointerEvents="none">
             <Text style={st.infoTitle} numberOfLines={1}>{activeInfo.title}</Text>
@@ -646,7 +548,6 @@ export function ClientVenueMap({ seatMap, selectedSeats, onToggleSeat, defaultVi
           </View>
         )}
 
-        {/* Bottom toolbar for standing sections */}
         {activeSection && (() => {
           const sec = sections.find((s) => s.id === activeSection);
           if (!sec || getKind(sec) !== 'standing') return null;
@@ -667,28 +568,19 @@ export function ClientVenueMap({ seatMap, selectedSeats, onToggleSeat, defaultVi
                 <TouchableOpacity style={st.qtyBtn} onPress={() => {
                   if (current.length > 0) onToggleSeat(current[current.length - 1]);
                   if (current.length <= 1) setActiveSection(null);
-                }}>
-                  <Text style={st.qtyBtnText}>－</Text>
-                </TouchableOpacity>
+                }}><Text style={st.qtyBtnText}>－</Text></TouchableOpacity>
                 <Text style={st.qtyVal}>{current.length}</Text>
                 <TouchableOpacity style={[st.qtyBtn, st.qtyBtnOrange]} onPress={() => {
                   if (current.length < Math.min(10, remaining)) {
-                    onToggleSeat({
-                      id: `standing-${sec.id}-${current.length + 1}-${Date.now()}`,
-                      sectionId: sec.id, rowLabel: 'GA',
-                      seatNumber: current.length + 1, status: 'available',
-                    });
+                    onToggleSeat({ id: `standing-${sec.id}-${current.length + 1}-${Date.now()}`, sectionId: sec.id, rowLabel: 'GA', seatNumber: current.length + 1, status: 'available' });
                   }
-                }}>
-                  <Text style={st.qtyBtnText}>＋</Text>
-                </TouchableOpacity>
+                }}><Text style={st.qtyBtnText}>＋</Text></TouchableOpacity>
               </View>
             </View>
           );
         })()}
       </View>
 
-      {/* Legend */}
       <View style={st.legend}>
         {([
           { color: '#ffffff', label: t('Disponible', 'Available'), border: true },
@@ -717,10 +609,10 @@ const st = StyleSheet.create({
   emptyCard: { borderRadius: 20, padding: 28, backgroundColor: 'rgba(255,255,255,0.018)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', alignItems: 'center' },
   emptyTitle: { color: '#F8FAFC', fontSize: 16, fontWeight: '700', textAlign: 'center' },
   emptyCopy: { color: 'rgba(226,232,240,0.55)', fontSize: 13, lineHeight: 18, textAlign: 'center', marginTop: 6 },
-  stageLabel: { color: '#60a5fa', fontWeight: '800', letterSpacing: 3, textTransform: 'uppercase' },
-  stageSub: { color: '#94a3b8', fontWeight: '700', letterSpacing: 2, textTransform: 'uppercase', marginTop: 1 },
-  decorLabel: { color: '#1e293b', fontWeight: '900', textTransform: 'uppercase', textAlign: 'center' },
-  standingLabel: { color: '#ffffff', fontWeight: '800', textTransform: 'uppercase', textAlign: 'center' },
+  stageLabel: { color: '#60a5fa', fontSize: 11, fontWeight: '800', letterSpacing: 3, textTransform: 'uppercase' },
+  stageSub: { color: '#94a3b8', fontSize: 7, fontWeight: '700', letterSpacing: 2, textTransform: 'uppercase', marginTop: 1 },
+  decorLabel: { color: '#1e293b', fontSize: 9, fontWeight: '900', textTransform: 'uppercase', textAlign: 'center' },
+  standingLabel: { color: '#ffffff', fontSize: 9, fontWeight: '800', textTransform: 'uppercase', textAlign: 'center' },
   infoCard: { position: 'absolute', bottom: 52, left: 12, right: 12, backgroundColor: 'rgba(11,34,54,0.96)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(246,198,95,0.20)', padding: 12 },
   infoTitle: { color: '#ffffff', fontSize: 13, fontWeight: '900' },
   infoSub: { color: '#94a3b8', fontSize: 11, fontWeight: '600', marginTop: 1 },

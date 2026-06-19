@@ -10,12 +10,22 @@ import { getEventSeatMap } from '../services/events';
 import { createCheckout } from '../services/orders';
 import { ClientSeat, ClientVenueMap } from '../components/events/ClientVenueMap';
 
+export type CartItem = {
+  label: string;
+  price: number;
+  seatId: string;
+};
+
 type Props = {
   event: MobileEvent;
   user?: AuthUser | null;
   onBack: () => void;
   onPaid: () => void;
   onSelectionCountChange?: (count: number) => void;
+  onCartChange?: (items: CartItem[], subtotal: number, total: number) => void;
+  initialSeats?: ClientSeat[];
+  initialGa?: { id: string; name: string; price: number };
+  initialGaQty?: number;
 };
 
 const MAX_PER_TX = 10;
@@ -32,18 +42,18 @@ function seatPrice(seat: ClientSeat, section: any): number {
   return Number(section?.price || 0);
 }
 
-export function PurchaseScreen({ event, user, onBack, onPaid, onSelectionCountChange }: Props) {
+export function PurchaseScreen({ event, user, onBack, onPaid, onSelectionCountChange, onCartChange, initialSeats, initialGa, initialGaQty }: Props) {
   const { t } = useLanguage();
   const [sections, setSections] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState('');
 
-  // Seated/table mode
-  const [selectedSeats, setSelectedSeats] = useState<ClientSeat[]>([]);
+  // Seated/table mode — pre-populated from EventDetailScreen
+  const [selectedSeats, setSelectedSeats] = useState<ClientSeat[]>(initialSeats || []);
   // General-admission mode
-  const [gaSectionId, setGaSectionId] = useState('');
-  const [gaQty, setGaQty] = useState(1);
+  const [gaSectionId, setGaSectionId] = useState(initialGa?.id || '');
+  const [gaQty, setGaQty] = useState(initialGaQty || 1);
 
   const seatedSections = useMemo(
     () => sections.filter((s) => (s.seats || []).length > 0 && s.sectionType !== 'standing'),
@@ -66,20 +76,29 @@ export function PurchaseScreen({ event, user, onBack, onPaid, onSelectionCountCh
   const mode: 'seats' | 'ga' | 'none' = seatedSections.length > 0 ? 'seats' : gaSections.length > 0 ? 'ga' : 'none';
 
   useEffect(() => {
+    // If pre-selected seats were passed from EventDetailScreen, skip seatmap load and auto-pay
+    if (initialSeats?.length) {
+      setLoading(false);
+      pay(initialSeats);
+      return;
+    }
+    if (initialGa) {
+      setLoading(false);
+      pay([], initialGa, initialGaQty ?? 1);
+      return;
+    }
     let mounted = true;
     getEventSeatMap(event.id)
       .then((items) => {
         if (!mounted) return;
         setSections(items);
         const firstGa = items.find((s: any) => s.sectionType === 'standing');
-        if (firstGa) setGaSectionId(firstGa.id);
+        if (firstGa && !gaSectionId) setGaSectionId(firstGa.id);
       })
       .catch(() => mounted && setSections([]))
       .finally(() => mounted && setLoading(false));
-    return () => {
-      mounted = false;
-    };
-  }, [event.id]);
+    return () => { mounted = false; };
+  }, [event.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleSeat = (seat: ClientSeat) => {
     setSelectedSeats((current) => {
@@ -87,6 +106,22 @@ export function PurchaseScreen({ event, user, onBack, onPaid, onSelectionCountCh
       if (exists) return current.filter((s) => s.id !== seat.id);
       if (current.length >= MAX_PER_TX) return current;
       return [...current, seat];
+    });
+  };
+
+  // Batch toggle for whole-table purchase mode
+  const toggleSeats = (seats: ClientSeat[]) => {
+    setSelectedSeats((current) => {
+      const anySelected = seats.some((s) => current.some((c) => c.id === s.id));
+      if (anySelected) {
+        // deselect all of these seats
+        const removeIds = new Set(seats.map((s) => s.id));
+        return current.filter((c) => !removeIds.has(c.id));
+      }
+      // select all, respecting MAX_PER_TX
+      const toAdd = seats.filter((s) => !current.some((c) => c.id === s.id));
+      const remaining = MAX_PER_TX - current.length;
+      return [...current, ...toAdd.slice(0, remaining)];
     });
   };
 
@@ -103,8 +138,10 @@ export function PurchaseScreen({ event, user, onBack, onPaid, onSelectionCountCh
     mode === 'seats'
       ? selectedSeats.reduce((sum, seat) => sum + seatPrice(seat, sectionById[seat.sectionId || '']), 0)
       : (gaSelected?.price ?? 0) * gaQty;
-  const service = subtotal > 0 ? subtotal * 0.08 + 1.5 : 0;
-  const total = subtotal + service;
+  const serviceFee = subtotal > 0 ? Math.round(subtotal * 0.08 * 100) / 100 : 0;
+  const processingFee = subtotal > 0 ? Math.round((subtotal + serviceFee) * 0.035 * 100) / 100 : 0;
+  const service = serviceFee; // kept for legacy compat
+  const total = subtotal + serviceFee + processingFee;
 
   const canPay = mode === 'seats' ? selectedSeats.length > 0 : mode === 'ga' ? !!gaSelected : false;
 
@@ -114,14 +151,38 @@ export function PurchaseScreen({ event, user, onBack, onPaid, onSelectionCountCh
     return () => onSelectionCountChange?.(0);
   }, [gaQty, gaSelected, mode, onSelectionCountChange, selectedSeats.length]);
 
-  const pay = async () => {
+  useEffect(() => {
+    if (!onCartChange) return;
+    if (mode === 'seats') {
+      const items: CartItem[] = selectedSeats.map((seat) => {
+        const sec = sectionById[seat.sectionId || ''];
+        const label = sec?.sectionType === 'table'
+          ? `Mesa ${sec?.name} · Silla ${seat.seatNumber}`
+          : `${sec?.name || ''} ${seat.rowLabel ? ` ${seat.rowLabel}` : ''}${seat.seatNumber ? `-${seat.seatNumber}` : ''}`.trim();
+        return { label, price: seatPrice(seat, sec), seatId: seat.id };
+      });
+      onCartChange(items, subtotal, total);
+    } else if (mode === 'ga' && gaSelected) {
+      const items: CartItem[] = [{ label: gaSelected.name, price: gaSelected.price * gaQty, seatId: `ga-${gaSelected.id}` }];
+      onCartChange(items, subtotal, total);
+    } else {
+      onCartChange([], 0, 0);
+    }
+  }, [gaQty, gaSelected, mode, onCartChange, selectedSeats, sectionById, subtotal, total]);
+
+  const pay = async (overrideSeats?: ClientSeat[], overrideGa?: { id: string; price: number }, overrideGaQty?: number) => {
     setError('');
     setPaying(true);
     try {
-      const payload =
-        mode === 'seats'
-          ? { eventId: event.id, seatIds: selectedSeats.map((s) => s.id) }
-          : { eventId: event.id, sectionId: gaSelected!.id, quantity: gaQty };
+      const seats = overrideSeats ?? selectedSeats;
+      const ga = overrideGa ?? (gaSelected ? { id: gaSelected.id, price: gaSelected.price } : undefined);
+      const qty = overrideGaQty ?? gaQty;
+      const payload = seats.length > 0
+        ? { eventId: event.id, seatIds: seats.map((s) => s.id) }
+        : ga
+        ? { eventId: event.id, sectionId: ga.id, quantity: qty }
+        : null;
+      if (!payload) { setError(t('Selecciona asientos primero.', 'Select seats first.')); return; }
       const { url } = await createCheckout({
         ...payload,
         buyerEmail: user?.email,
@@ -171,12 +232,25 @@ export function PurchaseScreen({ event, user, onBack, onPaid, onSelectionCountCh
         </View>
       ) : mode === 'seats' ? (
         <>
-          <ClientVenueMap seatMap={sections} selectedSeats={selectedSeats} onToggleSeat={toggleSeat} defaultViewX={(event as any).defaultViewX} defaultViewY={(event as any).defaultViewY} defaultViewZoom={(event as any).defaultViewZoom} />
+          {!initialSeats?.length && (
+            <ClientVenueMap
+              seatMap={sections}
+              selectedSeats={selectedSeats}
+              onToggleSeat={toggleSeat}
+              onToggleSeats={toggleSeats}
+              defaultViewX={(event as any).defaultViewX}
+              defaultViewY={(event as any).defaultViewY}
+              defaultViewZoom={(event as any).defaultViewZoom}
+            />
+          )}
 
+          {/* Selected seats list */}
           <View style={styles.summary}>
             <View style={styles.summaryHeader}>
               <Text style={styles.summaryTitle}>{t('Asientos seleccionados', 'Selected seats')}</Text>
-              <View style={styles.countBadge}><Text style={styles.countBadgeText}>{selectedSeats.length}</Text></View>
+              {selectedSeats.length > 0 && (
+                <View style={styles.countBadge}><Text style={styles.countBadgeText}>{selectedSeats.length}</Text></View>
+              )}
             </View>
             {selectedSeats.length === 0 ? (
               <View style={styles.emptySeats}>
@@ -187,7 +261,7 @@ export function PurchaseScreen({ event, user, onBack, onPaid, onSelectionCountCh
               selectedSeats.map((seat, index) => {
                 const sec = sectionById[seat.sectionId || ''];
                 const label = sec?.sectionType === 'table'
-                  ? `${t('Mesa', 'Table')} ${sec?.name} · ${t('Silla', 'Seat')} ${seat.seatNumber}`
+                  ? `${t('Mesa', 'Table')} ${sec?.name} · ${t('Silla', 'Chair')} ${seat.seatNumber}`
                   : `${sec?.name || ''} ${seat.rowLabel ? ` ${seat.rowLabel}` : ''}${seat.seatNumber ? `-${seat.seatNumber}` : ''}`.trim();
                 return (
                   <View key={`${seat.id || 'seat'}-${index}`} style={styles.row}>
@@ -247,12 +321,16 @@ export function PurchaseScreen({ event, user, onBack, onPaid, onSelectionCountCh
             </View>
             <View style={styles.row}>
               <Text style={styles.rowLabel}>{t('Cargo por servicio', 'Service fee')}</Text>
-              <Text style={styles.rowValue}>${service.toFixed(2)}</Text>
+              <Text style={styles.rowValue}>${serviceFee.toFixed(2)}</Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.rowLabel}>{t('Cargo de procesamiento', 'Processing fee')}</Text>
+              <Text style={styles.rowValue}>${processingFee.toFixed(2)}</Text>
             </View>
             <View style={styles.divider} />
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>{t('Total', 'Total')}</Text>
-              <Text style={styles.totalValue}>${total.toFixed(2)}</Text>
+              <Text style={styles.totalValue}>${total.toFixed(2)} USD</Text>
             </View>
           </View>
 
@@ -264,7 +342,7 @@ export function PurchaseScreen({ event, user, onBack, onPaid, onSelectionCountCh
           )}
 
           {/* Pay button */}
-          <TouchableOpacity style={[styles.payButton, (!canPay || paying) && styles.payButtonDisabled]} onPress={pay} disabled={!canPay || paying} activeOpacity={0.88}>
+          <TouchableOpacity style={[styles.payButton, (!canPay || paying) && styles.payButtonDisabled]} onPress={() => pay()} disabled={!canPay || paying} activeOpacity={0.88}>
             <View pointerEvents="none" style={styles.payButtonShine} />
             {paying ? (
               <ActivityIndicator color="#FFFFFF" size="small" />

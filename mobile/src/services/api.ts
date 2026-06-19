@@ -75,14 +75,20 @@ export function getImageUrl(url: string | null | undefined): string {
   return `${base}${cleanUrl}`;
 }
 
-export async function apiGet<T>(path: string): Promise<T> {
+export async function apiGet<T>(path: string, params?: Record<string, any>): Promise<T> {
   if (!API_URL) throw new Error('Missing EXPO_PUBLIC_API_URL');
 
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  let url = `${API_URL}${cleanPath}`;
+  if (params) {
+    const qs = Object.entries(params)
+      .filter(([, v]) => v !== undefined && v !== null)
+      .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
+      .join('&');
+    if (qs) url += `?${qs}`;
+  }
   await ensureAuthTokens();
-  const response = await fetch(`${API_URL}${cleanPath}`, {
-    headers: authHeaders(),
-  });
+  const response = await fetch(url, { headers: authHeaders() });
 
   if (!response.ok) {
     throw new Error(`API request failed: ${response.status}`);

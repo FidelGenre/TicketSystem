@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
-import { Animated, Linking, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { useEffect, useCallback, useRef, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Animated, Linking, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { AppHeader } from './src/components/AppHeader';
@@ -14,7 +15,7 @@ import { LoginScreen } from './src/screens/LoginScreen';
 import { OrganizerPanelScreen, Section as OrgSection } from './src/screens/OrganizerPanelScreen';
 import { AdminPanelScreen, Section as AdminSection } from './src/screens/AdminPanelScreen';
 import { ScanScreen } from './src/screens/ScanScreen';
-import { PurchaseScreen } from './src/screens/PurchaseScreen';
+import { PurchaseScreen, CartItem } from './src/screens/PurchaseScreen';
 import { CheckoutInfoScreen } from './src/screens/CheckoutInfoScreen';
 import { OrderSummaryScreen } from './src/screens/OrderSummaryScreen';
 import { PaymentSuccessScreen } from './src/screens/PaymentSuccessScreen';
@@ -60,16 +61,60 @@ function AppContent() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
   const [purchaseOpen, setPurchaseOpen] = useState(false);
+  const [preSelectedSeats, setPreSelectedSeats] = useState<any[]>([]);
+  const [preSelectedGa, setPreSelectedGa] = useState<{ id: string; name: string; price: number } | undefined>(undefined);
+  const [preSelectedGaQty, setPreSelectedGaQty] = useState(1);
   const [checkoutInfoOpen, setCheckoutInfoOpen] = useState(false);
   const [orderSummaryOpen, setOrderSummaryOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [cartSelectionCount, setCartSelectionCount] = useState(0);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [cartSubtotal, setCartSubtotal] = useState(0);
+  const [cartTotal, setCartTotal] = useState(0);
+  const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
+  const [cartLoading, setCartLoading] = useState(false);
   const [loginAfterPurchase, setLoginAfterPurchase] = useState(false);
   const [viewMode, setViewMode] = useState<'client' | 'organizer' | 'admin'>('client');
   const [organizerSection, setOrganizerSection] = useState<OrgSection>('dashboard');
   const [adminSection, setAdminSection] = useState<AdminSection>('dashboard');
   const [legalDoc, setLegalDoc] = useState<LegalKey>('terms');
   const goToLegal = (key: LegalKey) => { setLegalDoc(key); goToTab('legal'); };
+
+  // Read cart from AsyncStorage — mirrors web localStorage(`selectedSeats_${eventId}`)
+  const loadCartFromStorage = useCallback(async (eventId?: string) => {
+    let eid = eventId || selectedEvent?.id;
+    if (!eid) {
+      // Fall back to last active cart event stored by EventDetailScreen
+      try { eid = (await AsyncStorage.getItem('lp_active_cart_event')) || undefined; } catch {}
+    }
+    if (!eid) { setCartItems([]); setCartSubtotal(0); setCartTotal(0); setCartSelectionCount(0); return; }
+    setCartLoading(true);
+    try {
+      const raw = await AsyncStorage.getItem(`selectedSeats_${eid}`);
+      if (!raw) { setCartItems([]); setCartSubtotal(0); setCartTotal(0); setCartSelectionCount(0); return; }
+      const parsed: any[] = JSON.parse(raw);
+      const valid = parsed.filter((s) => !s.addedAt || (Date.now() - s.addedAt < 10 * 60 * 1000));
+      if (valid.length === 0) { AsyncStorage.removeItem(`selectedSeats_${eid}`); setCartItems([]); setCartSubtotal(0); setCartTotal(0); setCartSelectionCount(0); return; }
+      const items: CartItem[] = valid.map((s: any) => ({
+        seatId: s.id,
+        label: s.sectionType === 'table'
+          ? `Mesa ${s.sectionName || ''} · Silla ${s.seatNumber}`
+          : `${s.sectionName || ''} ${s.rowLabel || ''}${s.seatNumber ? `-${s.seatNumber}` : ''}`.trim(),
+        price: Number(s.price || 0),
+      }));
+      const sub = items.reduce((a, b) => a + b.price, 0);
+      const svc = sub > 0 ? Math.round(sub * 0.08 * 100) / 100 : 0;
+      const proc = sub > 0 ? Math.round((sub + svc) * 0.035 * 100) / 100 : 0;
+      setCartItems(items);
+      setCartSubtotal(sub);
+      setCartTotal(sub + svc + proc);
+      setCartSelectionCount(valid.length);
+    } catch {
+      setCartItems([]); setCartSubtotal(0); setCartTotal(0);
+    } finally {
+      setCartLoading(false);
+    }
+  }, [selectedEvent?.id]);
 
   const setMode = (mode: 'client' | 'organizer' | 'admin') => {
     setViewMode(mode);
@@ -104,6 +149,19 @@ function AppContent() {
     });
   }, []);
 
+  // Load cart on mount from last active event, and reload whenever selected event changes
+  useEffect(() => {
+    loadCartFromStorage(selectedEvent?.id);
+  }, [selectedEvent?.id]);
+
+  // Refresh cart when drawer opens (works even after leaving event detail screen)
+  useEffect(() => {
+    if (!cartDrawerOpen) return;
+    loadCartFromStorage();
+    const interval = setInterval(() => loadCartFromStorage(), 5000);
+    return () => clearInterval(interval);
+  }, [cartDrawerOpen]);
+
   useEffect(() => {
     if (!currentUser) return;
     registerDeviceForPushNotifications().catch(() => {});
@@ -117,11 +175,43 @@ function AppContent() {
     setTab('events');
   };
 
+  const goToCheckoutFromCart = async () => {
+    setCartDrawerOpen(false);
+    try {
+      const eid = selectedEvent?.id || (await AsyncStorage.getItem('lp_active_cart_event')) || '';
+      if (!eid) return;
+      const raw = await AsyncStorage.getItem(`selectedSeats_${eid}`);
+      if (!raw) return;
+      const parsed: any[] = JSON.parse(raw);
+      const valid = parsed.filter((s) => !s.addedAt || (Date.now() - s.addedAt < 10 * 60 * 1000));
+      if (valid.length === 0) return;
+      setPreSelectedSeats(valid);
+      setPreSelectedGa(undefined);
+      setPreSelectedGaQty(1);
+      // Restore selectedEvent if we navigated away from it
+      if (!selectedEvent || selectedEvent.id !== eid) {
+        const eventTitle = valid[0]?.eventTitle || '';
+        const eventSlug = valid[0]?.eventSlug || '';
+        const venueName = valid[0]?.venueName || '';
+        const eventDate = valid[0]?.eventDate || '';
+        setSelectedEvent({ id: eid, title: eventTitle, slug: eventSlug, venue: venueName, date: eventDate } as any);
+      }
+      if (isLoggedIn) { setCheckoutInfoOpen(true); } else { setLoginAfterPurchase(true); }
+    } catch {}
+  };
+
   const clearFlow = () => {
     setSelectedEvent(null);
     setCartSelectionCount(0);
+    setCartItems([]);
+    setCartSubtotal(0);
+    setCartTotal(0);
+    setCartDrawerOpen(false);
     setScanOpen(false);
     setPurchaseOpen(false);
+    setPreSelectedSeats([]);
+    setPreSelectedGa(undefined);
+    setPreSelectedGaQty(1);
     setCheckoutInfoOpen(false);
     setOrderSummaryOpen(false);
     setPaymentSuccessOpen(false);
@@ -275,7 +365,7 @@ function AppContent() {
         <View pointerEvents="none" style={styles.appGridVertical} />
         <View pointerEvents="none" style={styles.appGridHorizontal} />
 
-        <AppHeader onOpenMenu={() => setMenuOpen(true)} onOpenScan={() => setScanOpen(true)} onGoHome={goHome} onOpenLogin={() => goToTab('profile')} showLoginButton={!isLoggedIn} onGoCart={() => { if (selectedEvent && cartSelectionCount > 0) { if (isLoggedIn) { setPurchaseOpen(true); } else { setLoginAfterPurchase(true); } } else { goToTab('tickets'); } }} showCartButton={isLoggedIn || cartSelectionCount > 0} cartCount={cartSelectionCount} />
+        <AppHeader onOpenMenu={() => setMenuOpen(true)} onOpenScan={() => setScanOpen(true)} onGoHome={goHome} onOpenLogin={() => goToTab('profile')} showLoginButton={!isLoggedIn} onGoCart={() => { if (cartSelectionCount > 0) { setCartDrawerOpen(true); } else { goToTab('tickets'); } }} showCartButton={isLoggedIn || cartSelectionCount > 0} cartCount={cartSelectionCount} />
 
         {scanOpen ? (
           <ScanScreen onBack={() => setScanOpen(false)} user={currentUser} />
@@ -284,13 +374,11 @@ function AppContent() {
         ) : selectedEvent && orderSummaryOpen ? (
           <OrderSummaryScreen event={selectedEvent} user={currentUser} onBack={() => { setOrderSummaryOpen(false); setCheckoutInfoOpen(true); }} onPay={() => { setOrderSummaryOpen(false); setPaymentSuccessOpen(true); }} />
         ) : selectedEvent && checkoutInfoOpen ? (
-          <CheckoutInfoScreen event={selectedEvent} user={currentUser} onBack={() => setCheckoutInfoOpen(false)} onContinue={() => { setCheckoutInfoOpen(false); setOrderSummaryOpen(true); }} />
+          <CheckoutInfoScreen event={selectedEvent} user={currentUser} onBack={() => setCheckoutInfoOpen(false)} onPaid={() => { clearFlow(); setTab('tickets'); }} seats={preSelectedSeats} gaSection={preSelectedGa} gaQty={preSelectedGaQty} />
         ) : selectedEvent && loginAfterPurchase ? (
-          <LoginScreen onSignIn={(user) => { setCurrentUser(user); setLoginAfterPurchase(false); setPurchaseOpen(true); }} />
-        ) : selectedEvent && purchaseOpen ? (
-          <PurchaseScreen event={selectedEvent} user={currentUser} onBack={() => setPurchaseOpen(false)} onPaid={() => { clearFlow(); setTab('tickets'); }} onSelectionCountChange={setCartSelectionCount} />
+          <LoginScreen onSignIn={(user) => { setCurrentUser(user); setLoginAfterPurchase(false); setCheckoutInfoOpen(true); }} />
         ) : selectedEvent ? (
-          <EventDetailScreen event={selectedEvent} onBack={() => { setCartSelectionCount(0); setSelectedEvent(null); }} onBuy={() => { setPaymentSuccessOpen(false); setOrderSummaryOpen(false); setCheckoutInfoOpen(false); if (isLoggedIn) { setPurchaseOpen(true); } else { setLoginAfterPurchase(true); } }} />
+          <EventDetailScreen event={selectedEvent} onBack={() => { setCartSelectionCount(0); setSelectedEvent(null); }} onSelectionCountChange={setCartSelectionCount} onBuy={(seats, ga, gaQty) => { setPreSelectedSeats(seats); setPreSelectedGa(ga); setPreSelectedGaQty(gaQty ?? 1); if (isLoggedIn) { setCheckoutInfoOpen(true); } else { setLoginAfterPurchase(true); } }} />
         ) : tab === 'events' ? (
           <HomeScreen onOpenEvent={setSelectedEvent} />
         ) : tab === 'tickets' ? (
@@ -404,6 +492,50 @@ function AppContent() {
               </>
             )}
         </View>
+
+        {/* Cart drawer */}
+        <Modal visible={cartDrawerOpen} transparent animationType="slide" onRequestClose={() => setCartDrawerOpen(false)}>
+          <TouchableOpacity style={cartSt.backdrop} activeOpacity={1} onPress={() => setCartDrawerOpen(false)} />
+          <View style={cartSt.sheet}>
+            <View style={cartSt.handle} />
+            <View style={cartSt.sheetHeader}>
+              <Text style={cartSt.sheetTitle}>{t('Tu carrito', 'Your cart')}</Text>
+              <TouchableOpacity onPress={() => setCartDrawerOpen(false)} style={cartSt.closeBtn}>
+                <Ionicons name="close" size={20} color="rgba(226,232,240,0.7)" />
+              </TouchableOpacity>
+            </View>
+            {cartItems.length === 0 ? (
+              <View style={cartSt.empty}>
+                <Ionicons name="cart-outline" size={32} color="rgba(249,115,22,0.4)" />
+                <Text style={cartSt.emptyText}>{t('No hay asientos seleccionados', 'No seats selected')}</Text>
+              </View>
+            ) : (
+              <>
+                <ScrollView style={cartSt.list} showsVerticalScrollIndicator={false}>
+                  {cartItems.map((item, i) => (
+                    <View key={`${item.seatId}-${i}`} style={cartSt.row}>
+                      <View style={cartSt.dot} />
+                      <Text style={cartSt.rowLabel} numberOfLines={1}>{item.label}</Text>
+                      <Text style={cartSt.rowPrice}>${item.price.toFixed(2)}</Text>
+                    </View>
+                  ))}
+                </ScrollView>
+                <View style={cartSt.divider} />
+                <View style={cartSt.totalRow}>
+                  <View>
+                    <Text style={cartSt.subtotalText}>{t('Subtotal', 'Subtotal')} <Text style={cartSt.subtotalVal}>${cartSubtotal.toFixed(2)}</Text></Text>
+                    <Text style={cartSt.feeText}>{t('Cargo de servicio incluido', 'Service fee included')}</Text>
+                  </View>
+                  <Text style={cartSt.totalVal}>${cartTotal.toFixed(2)}</Text>
+                </View>
+                <TouchableOpacity style={cartSt.checkoutBtn} onPress={goToCheckoutFromCart} activeOpacity={0.88}>
+                  <View pointerEvents="none" style={cartSt.checkoutBtnShine} />
+                  <Text style={cartSt.checkoutBtnText}>{t('COMPLETAR COMPRA →', 'COMPLETE PURCHASE →')}</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </Modal>
 
         <MenuDrawer
           visible={menuOpen}
@@ -654,4 +786,29 @@ const styles = StyleSheet.create({
     transform: [{ translateY: 0 }],
   },
   navActiveText: { color: colors.orange },
+});
+
+const cartSt = StyleSheet.create({
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' },
+  sheet: { backgroundColor: '#0d1f33', borderTopLeftRadius: 28, borderTopRightRadius: 28, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', paddingBottom: 32, maxHeight: '75%' },
+  handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.18)', alignSelf: 'center', marginTop: 10, marginBottom: 4 },
+  sheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14 },
+  sheetTitle: { color: '#F8FAFC', fontSize: 17, fontWeight: '900' },
+  closeBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' },
+  empty: { alignItems: 'center', paddingVertical: 36, gap: 12 },
+  emptyText: { color: 'rgba(203,213,225,0.55)', fontSize: 14, fontWeight: '600' },
+  list: { paddingHorizontal: 20, maxHeight: 260 },
+  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 10, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#f97316', flexShrink: 0 },
+  rowLabel: { color: 'rgba(226,232,240,0.85)', fontSize: 13, fontWeight: '600', flex: 1 },
+  rowPrice: { color: '#F8FAFC', fontSize: 14, fontWeight: '800' },
+  divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.08)', marginHorizontal: 20, marginVertical: 12 },
+  totalRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20 },
+  subtotalText: { color: 'rgba(226,232,240,0.65)', fontSize: 12, fontWeight: '600' },
+  subtotalVal: { color: 'rgba(226,232,240,0.85)', fontWeight: '700' },
+  feeText: { color: 'rgba(148,163,184,0.55)', fontSize: 11, marginTop: 2 },
+  totalVal: { color: '#F97316', fontSize: 26, fontWeight: '900' },
+  checkoutBtn: { marginHorizontal: 20, marginTop: 14, height: 52, borderRadius: 12, backgroundColor: '#F97316', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', shadowColor: '#F97316', shadowOpacity: 0.30, shadowRadius: 12, shadowOffset: { width: 0, height: 5 } },
+  checkoutBtnShine: { position: 'absolute', top: 4, left: 16, right: 16, height: 1.5, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.26)' },
+  checkoutBtnText: { color: '#FFFFFF', fontSize: 14, fontWeight: '900', letterSpacing: 0.4 },
 });
