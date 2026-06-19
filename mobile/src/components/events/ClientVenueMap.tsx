@@ -397,23 +397,28 @@ export function ClientVenueMap({ seatMap, selectedSeats, onToggleSeat, defaultVi
     };
     const finalPan = newZ <= fitView.zoom + 0.001 ? fitView.pan : newPanRaw;
 
-    // Animate zoom and pan together in small steps — same feel as web transition
+    // Animate only zoom — recalculate pan each frame to keep contentC fixed
     const startZ = oldZ;
-    const startPan = { ...viewRef.current.pan };
     const anim = new Animated.Value(0);
     animatingRef.current = true;
     Animated.timing(anim, {
       toValue: 1,
-      duration: 180,
+      duration: 200,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
-    }).start(() => { animatingRef.current = false; });
+    }).start(() => {
+      animatingRef.current = false;
+      viewRef.current = { zoom: newZ, pan: finalPan };
+      setZoom(newZ);
+      setPan(finalPan);
+    });
 
     anim.addListener(({ value }) => {
       const z = startZ + (newZ - startZ) * value;
+      // Derive pan from zoom to keep content center fixed — no pan interpolation
       const p = {
-        x: startPan.x + (finalPan.x - startPan.x) * value,
-        y: startPan.y + (finalPan.y - startPan.y) * value,
+        x: screenW / 2 - contentCx * z,
+        y: viewportH / 2 - contentCy * z,
       };
       viewRef.current = { zoom: z, pan: p };
       setZoom(z);
