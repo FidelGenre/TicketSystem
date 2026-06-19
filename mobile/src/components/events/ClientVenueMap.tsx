@@ -185,7 +185,7 @@ function TableSection({ section, sel, onToggle, onInfo, scale }: {
   const w = Number(section.mapWidth || 100) * scale;
   const h = Number(section.mapHeight || 100) * scale;
   const isRound = (section.tableShape || 'round') === 'round';
-  const chairSize = clamp(Math.min(w, h) * 0.22, 8, 22);
+  const chairSize = clamp(Math.min(w, h) * 0.18, 6, 16);
   const tableW = w * (isRound ? 0.60 : 0.70);
   const tableH = h * (isRound ? 0.60 : 0.45);
   const allUnavail = seats.length > 0 && seats.every((s) => isUnavailable(s, cfg[`seat-${s.seatNumber}`] || {}));
@@ -273,7 +273,7 @@ function RowSection({ section, sel, onToggle, onInfo, scale }: {
         const count = Math.max(1, rowSeats.length);
         const t = count > 1 ? (sIdx - (count - 1) / 2) / ((count - 1) / 2) : 0;
         // Same formula as web: size based on section width / seat count
-        const size = clamp(((Number(section.mapWidth || 100) - 24) / count - 2) * scale, 8, 18);
+        const size = clamp(((Number(section.mapWidth || 100) - 24) / count - 2) * scale, 5, 14);
         const x = count > 1 ? 12 * scale + sIdx * ((w - 24 * scale) / (count - 1)) : w / 2;
         const y = 16 * scale + rIdx * baseSpacingY + curve * (t * t - 1);
         const selected = isSelected(seat, sel);
