@@ -388,12 +388,12 @@ export function ClientVenueMap({ seatMap, selectedSeats, onToggleSeat, defaultVi
     const oldZ = viewRef.current.zoom;
     const newZ = clamp(oldZ + delta, fitView.zoom, MAX_ZOOM);
     if (newZ === oldZ) return;
-    const mx = screenW / 2;
-    const my = viewportH / 2;
-    const ratio = newZ / oldZ;
+    // Keep the map center fixed — zoom in/out around the current visible center
+    const contentCx = (screenW / 2 - viewRef.current.pan.x) / oldZ;
+    const contentCy = (viewportH / 2 - viewRef.current.pan.y) / oldZ;
     const newPanRaw = {
-      x: mx - (mx - viewRef.current.pan.x) * ratio,
-      y: my - (my - viewRef.current.pan.y) * ratio,
+      x: screenW / 2 - contentCx * newZ,
+      y: viewportH / 2 - contentCy * newZ,
     };
     const finalPan = newZ <= fitView.zoom + 0.001 ? fitView.pan : newPanRaw;
 
