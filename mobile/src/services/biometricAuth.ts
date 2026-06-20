@@ -1,5 +1,5 @@
 import * as LocalAuthentication from 'expo-local-authentication';
-import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 import { apiPost, AuthUser, AuthResponse, setAuthTokens } from './api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -7,15 +7,39 @@ const BIOMETRIC_TOKEN_KEY = 'lp_biometric_refresh_token';
 const TOKENS_KEY = 'lp_auth_tokens';
 const USER_KEY = 'lp_auth_user';
 
+// expo-secure-store is not supported on web — use AsyncStorage as fallback
+async function secureGet(key: string): Promise<string | null> {
+  if (Platform.OS === 'web') return AsyncStorage.getItem(key);
+  const { default: SecureStore } = await import('expo-secure-store');
+  return SecureStore.getItemAsync(key);
+}
+
+async function secureSet(key: string, value: string): Promise<void> {
+  if (Platform.OS === 'web') { await AsyncStorage.setItem(key, value); return; }
+  const { default: SecureStore } = await import('expo-secure-store');
+  try {
+    await SecureStore.setItemAsync(key, value, {
+      keychainAccessible: (SecureStore as any).WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+    });
+  } catch {
+    await SecureStore.setItemAsync(key, value);
+  }
+}
+
+async function secureDelete(key: string): Promise<void> {
+  if (Platform.OS === 'web') { await AsyncStorage.removeItem(key); return; }
+  const { default: SecureStore } = await import('expo-secure-store');
+  await SecureStore.deleteItemAsync(key);
+}
+
 export async function getBiometricAvailability() {
   try {
     const [hasHardware, enrolled, types, saved] = await Promise.all([
       LocalAuthentication.hasHardwareAsync(),
       LocalAuthentication.isEnrolledAsync(),
       LocalAuthentication.supportedAuthenticationTypesAsync(),
-      SecureStore.getItemAsync(BIOMETRIC_TOKEN_KEY),
+      secureGet(BIOMETRIC_TOKEN_KEY),
     ]);
-
     return {
       hasHardware,
       enrolled,
@@ -23,47 +47,21 @@ export async function getBiometricAvailability() {
       supportsFaceId: types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION),
     };
   } catch {
-    return {
-      hasHardware: false,
-      enrolled: false,
-      hasSavedLogin: false,
-      supportsFaceId: false,
-    };
+    return { hasHardware: false, enrolled: false, hasSavedLogin: false, supportsFaceId: false };
   }
 }
 
-/**
- * Saves the refresh token (NOT the password) into SecureStore for later
- * biometric login. Called right after a successful email/password login.
- */
 export async function saveBiometricLogin(refreshToken: string) {
-  try {
-    // keychainAccessible is iOS/Android only — web falls back to localStorage
-    await SecureStore.setItemAsync(BIOMETRIC_TOKEN_KEY, refreshToken, {
-      keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
-    } as any);
-  } catch {
-    // Fallback for web where the option is unsupported
-    await SecureStore.setItemAsync(BIOMETRIC_TOKEN_KEY, refreshToken);
-  }
+  await secureSet(BIOMETRIC_TOKEN_KEY, refreshToken);
 }
 
 export async function signInWithBiometrics(copy: {
-  prompt: string;
-  cancel: string;
-  fallback: string;
-  noSavedLogin: string;
-  unavailable: string;
-  failed: string;
+  prompt: string; cancel: string; fallback: string;
+  noSavedLogin: string; unavailable: string; failed: string;
 }): Promise<AuthUser> {
   const availability = await getBiometricAvailability();
-  if (!availability.hasHardware || !availability.enrolled) {
-    throw new Error(copy.unavailable);
-  }
-
-  if (!availability.hasSavedLogin) {
-    throw new Error(copy.noSavedLogin);
-  }
+  if (!availability.hasHardware || !availability.enrolled) throw new Error(copy.unavailable);
+  if (!availability.hasSavedLogin) throw new Error(copy.noSavedLogin);
 
   const auth = await LocalAuthentication.authenticateAsync({
     promptMessage: copy.prompt,
@@ -71,41 +69,25 @@ export async function signInWithBiometrics(copy: {
     fallbackLabel: copy.fallback,
     disableDeviceFallback: false,
   });
+  if (!auth.success) throw new Error(copy.failed);
 
-  if (!auth.success) {
-    throw new Error(copy.failed);
-  }
+  const storedRefreshToken = await secureGet(BIOMETRIC_TOKEN_KEY);
+  if (!storedRefreshToken) throw new Error(copy.noSavedLogin);
 
-  const storedRefreshToken = await SecureStore.getItemAsync(BIOMETRIC_TOKEN_KEY);
-  if (!storedRefreshToken) {
-    throw new Error(copy.noSavedLogin);
-  }
-
-  // Exchange the refreshToken for new tokens — never exposes the user password
   const data = await apiPost<AuthResponse>('/auth/refresh', { refreshToken: storedRefreshToken });
   setAuthTokens(data.accessToken, data.refreshToken);
 
-  // Persist new tokens
   try {
     await AsyncStorage.multiSet([
       [TOKENS_KEY, JSON.stringify({ accessToken: data.accessToken, refreshToken: data.refreshToken })],
       [USER_KEY, JSON.stringify(data.user)],
     ]);
-    // Keep SecureStore up to date with the latest refresh token
-    try {
-      await SecureStore.setItemAsync(BIOMETRIC_TOKEN_KEY, data.refreshToken, {
-        keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
-      } as any);
-    } catch {
-      await SecureStore.setItemAsync(BIOMETRIC_TOKEN_KEY, data.refreshToken);
-    }
-  } catch {
-    /* storage unavailable */
-  }
+    await secureSet(BIOMETRIC_TOKEN_KEY, data.refreshToken);
+  } catch { /* storage unavailable */ }
 
   return data.user;
 }
 
 export async function clearBiometricLogin() {
-  await SecureStore.deleteItemAsync(BIOMETRIC_TOKEN_KEY);
+  await secureDelete(BIOMETRIC_TOKEN_KEY);
 }

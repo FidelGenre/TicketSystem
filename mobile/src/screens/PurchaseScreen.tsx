@@ -168,7 +168,8 @@ export function PurchaseScreen({ event, user, onBack, onPaid, onSelectionCountCh
     } else {
       onCartChange([], 0, 0);
     }
-  }, [gaQty, gaSelected, mode, onCartChange, selectedSeats, sectionById, subtotal, total]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gaQty, gaSelected, mode, selectedSeats, sectionById, subtotal, total]);
 
   const pay = async (overrideSeats?: ClientSeat[], overrideGa?: { id: string; price: number }, overrideGaQty?: number) => {
     setError('');
