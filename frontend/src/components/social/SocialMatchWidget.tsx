@@ -49,10 +49,10 @@ export default function SocialMatchWidget() {
   // mobile the message button must sit above it so it doesn't cover the menu.
   const hasPanelNav = ['/admin', '/organizer'].some((p) => pathname.includes(p));
   const positionClass = !cartHidden
-    ? 'bottom-20 px-5 sm:bottom-28 sm:px-6' // public pages: stack above the cart
+    ? 'bottom-20 px-4 sm:bottom-28 sm:px-6' // public pages: stack above the cart
     : hasPanelNav
-      ? 'bottom-20 px-5 sm:bottom-4 sm:p-6' // panels: above the mobile menu button, bottom on desktop
-      : 'bottom-4 px-5 sm:p-6'; // dashboard/login/register: cart's spot
+      ? 'bottom-20 px-4 sm:bottom-4 sm:p-6' // panels: above the mobile menu button, bottom on desktop
+      : 'bottom-4 px-4 sm:p-6'; // dashboard/login/register: cart's spot
   const { isAuthenticated } = useAuthStore();
   const { isOpen, setOpen, setUnreadCount } = useSocialMatchWidgetStore();
   const [connections, setConnections] = useState<SocialMatchConnection[]>([]);
@@ -222,7 +222,7 @@ export default function SocialMatchWidget() {
     <div ref={socialShellRef} className={`fixed right-0 z-[300] flex flex-col items-end gap-3 pointer-events-none print:hidden ${positionClass}`}>
       {/* Popup panel */}
       {isOpen && (
-        <div className="lp-floating-dark w-80 rounded-3xl shadow-elevated border overflow-hidden flex flex-col pointer-events-auto animate-fade-in-up">
+        <div className="lp-floating-dark w-[min(320px,calc(100vw-2rem))] rounded-3xl shadow-elevated border overflow-hidden flex flex-col pointer-events-auto animate-fade-in-up">
           {/* Header */}
           <div className="flex items-center gap-2 px-4 py-3.5 bg-[#0A375A] shrink-0">
             {activeChatConn && (

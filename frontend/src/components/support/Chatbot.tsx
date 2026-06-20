@@ -106,7 +106,7 @@ export default function Chatbot() {
   };
 
   return (
-    <div ref={chatShellRef} className="fixed bottom-4 left-0 px-5 sm:p-6 pointer-events-none z-50 print:hidden">
+    <div ref={chatShellRef} className="fixed bottom-4 left-0 px-4 sm:px-6 pointer-events-none z-50 print:hidden">
       {/* Floating Button */}
       <button
         onClick={() => {
@@ -127,7 +127,7 @@ export default function Chatbot() {
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="absolute bottom-24 left-6 w-[90vw] sm:w-[380px] h-[500px] max-h-[calc(100dvh-11rem)] bg-[#0b2236] rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.45)] border border-[rgba(246,198,95,0.14)] flex flex-col overflow-hidden pointer-events-auto animate-in slide-in-from-bottom-10 duration-300">
+        <div className="absolute bottom-24 left-0 w-[min(380px,calc(100vw-2rem))] h-[500px] max-h-[calc(100dvh-11rem)] bg-[#0b2236] rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.45)] border border-[rgba(246,198,95,0.14)] flex flex-col overflow-hidden pointer-events-auto animate-in slide-in-from-bottom-10 duration-300">
           
           {/* Header */}
           <div className="bg-orange-500 p-5 text-white flex items-center gap-3">

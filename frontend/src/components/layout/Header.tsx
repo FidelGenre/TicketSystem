@@ -341,9 +341,9 @@ export default function Header() {
           </div>
 
           {/* Mobile UI */}
-          <div className="lg:hidden flex items-center gap-2 ml-auto shrink-0">
+          <div className="lg:hidden flex items-center gap-1.5 ml-auto shrink-0 min-w-0">
             {/* Language Switcher Mobile */}
-            <div className="flex border border-white/20 rounded-md overflow-hidden h-8 w-[60px] shrink-0">
+            <div className="flex border border-white/20 rounded-md overflow-hidden h-8 w-[56px] shrink-0">
               <button
                 onClick={() => setLang('es')}
                 className={`flex-1 text-[10px] font-bold transition-colors ${lang === 'es' ? 'bg-primary-500 text-white' : 'bg-white/10 text-white/70'}`}
@@ -464,11 +464,11 @@ export default function Header() {
         This component stays visible across standard pages but hides in management panels.
     */}
     {!pathname.includes('/admin') && !pathname.includes('/organizer') && !pathname.includes('/dashboard') && !pathname.includes('/login') && !pathname.includes('/register') && (
-      <div ref={cartShellRef} className="fixed bottom-4 right-0 px-5 sm:p-6 z-[100] flex flex-col items-end gap-3 print:hidden pointer-events-none">
+      <div ref={cartShellRef} className="fixed bottom-4 right-0 px-4 sm:px-6 z-[100] flex flex-col items-end gap-3 print:hidden pointer-events-none">
         
         {/* Cart Dropdown Content */}
         {cartDropdown && (
-          <div className="lp-floating-dark w-80 rounded-2xl shadow-elevated border p-5 animate-fade-in-up mb-2 max-h-[420px] flex flex-col overflow-hidden pointer-events-auto">
+          <div className="lp-floating-dark w-[min(320px,calc(100vw-2rem))] rounded-2xl shadow-elevated border p-5 animate-fade-in-up mb-2 max-h-[420px] flex flex-col overflow-hidden pointer-events-auto">
             {/* Cart Header */}
             <div className="flex justify-between items-center mb-3 shrink-0">
               <div className="flex items-center gap-2">
