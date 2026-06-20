@@ -1,4 +1,4 @@
-import { memo, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
@@ -329,6 +329,21 @@ export const ClientVenueMap = memo(function ClientVenueMap({ seatMap, selectedSe
   // viewRef is the single source of truth for pan/zoom math — no React state
   // so drag/pinch never trigger re-renders and the canvas never jumps
   const viewRef = useRef({ zoom: fitView.zoom, pan: fitView.pan });
+  const fitViewRef = useRef(fitView);
+
+  // When fitView changes (sections loaded async), snap animated values to it
+  // only if the user hasn't already panned/zoomed away from the default
+  useEffect(() => {
+    const prev = fitViewRef.current;
+    fitViewRef.current = fitView;
+    const atDefault =
+      Math.abs(viewRef.current.zoom - prev.zoom) < 0.001 &&
+      Math.abs(viewRef.current.pan.x - prev.pan.x) < 1 &&
+      Math.abs(viewRef.current.pan.y - prev.pan.y) < 1;
+    if (atDefault) {
+      syncAnimated(fitView.zoom, fitView.pan);
+    }
+  }, [fitView]);
 
   const syncAnimated = (z: number, p: { x: number; y: number }) => {
     animZoom.setValue(z);
