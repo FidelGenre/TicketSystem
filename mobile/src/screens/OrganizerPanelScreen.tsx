@@ -271,7 +271,13 @@ export function OrganizerPanelScreen({ section, onSectionChange, adminEvent, onA
     if (!selectedEventId) { setFullEventData(adminEvent || null); return; }
     let mounted = true;
     apiGet<any>(`/events/${selectedEventId}`)
-      .then((data) => { if (mounted && data?.id) setFullEventData(data); })
+      .then((data) => {
+        if (!mounted || !data?.id) return;
+        setFullEventData(data);
+        if (data.title) setEventTitle(data.title);
+        if (data.venueName) setEventVenue(data.venueName);
+        if (data.status && ['draft', 'published', 'cancelled'].includes(data.status)) setEventStatus(data.status);
+      })
       .catch(() => {});
     return () => { mounted = false; };
   }, [selectedEventId]);

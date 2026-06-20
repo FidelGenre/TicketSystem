@@ -1,5 +1,6 @@
 import { useMemo, useEffect, useRef, useState } from 'react';
-import { Alert, Image, PanResponder, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Modal, PanResponder, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { apiDelete, apiPatch, apiPost, apiUploadImage, getImageUrl } from '../../services/api';
@@ -307,6 +308,9 @@ export function OrganizerDetailsMobile({ eventTitle, setEventTitle, eventVenue, 
   const [address, setAddress] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [eventTime, setEventTime] = useState('');
+  const [pickerDate, setPickerDate] = useState<Date>(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const [timezone, setTimezone] = useState('America/Chicago');
   const [maxTickets, setMaxTickets] = useState('10');
   const [focalY, setFocalY] = useState(50); // 0 = top, 50 = center, 100 = bottom
@@ -330,6 +334,7 @@ export function OrganizerDetailsMobile({ eventTitle, setEventTitle, eventVenue, 
       if (!Number.isNaN(d.getTime())) {
         setEventDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
         setEventTime(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`);
+        setPickerDate(d);
       }
     }
   }, [event]);
@@ -391,9 +396,99 @@ export function OrganizerDetailsMobile({ eventTitle, setEventTitle, eventVenue, 
         <Field label={t('Categoria', 'Category')} value={category} onChangeText={setCategory} />
 
         <View style={styles.twoCol}>
-          <Field label={t('Fecha', 'Date')} value={eventDate} onChangeText={setEventDate} compact placeholder="YYYY-MM-DD" keyboardType="numbers-and-punctuation" />
-          <Field label={t('Hora', 'Time')} value={eventTime} onChangeText={setEventTime} compact placeholder="HH:MM" keyboardType="numbers-and-punctuation" />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.fieldLabel}>{t('Fecha', 'Date')}</Text>
+            <TouchableOpacity style={styles.datePickerBtn} onPress={() => setShowDatePicker(true)}>
+              <Ionicons name="calendar-outline" size={16} color="#f97316" style={{ marginRight: 6 }} />
+              <Text style={styles.datePickerText}>{eventDate || 'YYYY-MM-DD'}</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.fieldLabel}>{t('Hora', 'Time')}</Text>
+            <TouchableOpacity style={styles.datePickerBtn} onPress={() => setShowTimePicker(true)}>
+              <Ionicons name="time-outline" size={16} color="#f97316" style={{ marginRight: 6 }} />
+              <Text style={styles.datePickerText}>{eventTime || 'HH:MM'}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
+
+        {showDatePicker && (
+          Platform.OS === 'ios' ? (
+            <Modal transparent animationType="fade" onRequestClose={() => setShowDatePicker(false)}>
+              <View style={styles.pickerOverlay}>
+                <View style={styles.pickerModal}>
+                  <DateTimePicker
+                    value={pickerDate}
+                    mode="date"
+                    display="spinner"
+                    onChange={(_, d) => {
+                      if (d) {
+                        setPickerDate(d);
+                        setEventDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+                      }
+                    }}
+                    style={{ width: '100%' }}
+                  />
+                  <TouchableOpacity style={styles.pickerDone} onPress={() => setShowDatePicker(false)}>
+                    <Text style={styles.pickerDoneText}>{t('Listo', 'Done')}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Modal>
+          ) : (
+            <DateTimePicker
+              value={pickerDate}
+              mode="date"
+              display="default"
+              onChange={(_, d) => {
+                setShowDatePicker(false);
+                if (d) {
+                  setPickerDate(d);
+                  setEventDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+                }
+              }}
+            />
+          )
+        )}
+
+        {showTimePicker && (
+          Platform.OS === 'ios' ? (
+            <Modal transparent animationType="fade" onRequestClose={() => setShowTimePicker(false)}>
+              <View style={styles.pickerOverlay}>
+                <View style={styles.pickerModal}>
+                  <DateTimePicker
+                    value={pickerDate}
+                    mode="time"
+                    display="spinner"
+                    onChange={(_, d) => {
+                      if (d) {
+                        setPickerDate(d);
+                        setEventTime(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`);
+                      }
+                    }}
+                    style={{ width: '100%' }}
+                  />
+                  <TouchableOpacity style={styles.pickerDone} onPress={() => setShowTimePicker(false)}>
+                    <Text style={styles.pickerDoneText}>{t('Listo', 'Done')}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Modal>
+          ) : (
+            <DateTimePicker
+              value={pickerDate}
+              mode="time"
+              display="default"
+              onChange={(_, d) => {
+                setShowTimePicker(false);
+                if (d) {
+                  setPickerDate(d);
+                  setEventTime(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`);
+                }
+              }}
+            />
+          )
+        )}
 
         <Field label={t('Zona horaria', 'Timezone')} value={timezone} onChangeText={setTimezone} placeholder="America/Chicago" autoCapitalize="none" />
         <Field label={t('Lugar', 'Venue')} value={eventVenue} onChangeText={setEventVenue} />
@@ -683,6 +778,12 @@ const styles = StyleSheet.create({
   field: { marginBottom: 14 },
   fieldCompact: { flex: 1 },
   fieldLabel: { color: colors.textFaint, fontSize: 12, letterSpacing: 0, fontWeight: '400', marginBottom: 8 },
+  datePickerBtn: { flexDirection: 'row', alignItems: 'center', minHeight: 48, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: '#030B14', paddingHorizontal: 14, marginBottom: 14 },
+  datePickerText: { color: colors.textPrimary, fontSize: 15, fontWeight: '600', flex: 1 },
+  pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+  pickerModal: { backgroundColor: '#0b1e35', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: 32 },
+  pickerDone: { alignItems: 'center', paddingVertical: 16 },
+  pickerDoneText: { color: '#f97316', fontSize: 16, fontWeight: '700' },
   input: { minHeight: 56, borderRadius: 17, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: '#030B14', paddingHorizontal: 16, color: colors.textPrimary, fontSize: 16, fontWeight: '700' },
   textArea: { minHeight: 96, paddingTop: 14, textAlignVertical: 'top' },
   twoCol: { flexDirection: 'row', gap: 12 },

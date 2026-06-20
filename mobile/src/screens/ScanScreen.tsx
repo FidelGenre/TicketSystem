@@ -8,6 +8,13 @@ import { AuthUser, apiGet, apiPost, getImageUrl } from '../services/api';
 
 type Props = { onBack: () => void; user?: AuthUser | null };
 
+function fmtDate(iso?: string | null) {
+  if (!iso) return '';
+  try {
+    return new Intl.DateTimeFormat('es-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+  } catch { return iso; }
+}
+
 type ScanState = 'idle' | 'scanning' | 'validating' | 'approved' | 'denied';
 
 type TicketResult = {
@@ -17,7 +24,7 @@ type TicketResult = {
   rowLabel?: string | null;
   seatNumber?: number | null;
   seatLabel?: string | null;
-  event?: { title?: string; venueName?: string } | null;
+  event?: { title?: string; venueName?: string; eventDate?: string | null } | null;
   user?: { firstName?: string; lastName?: string; email?: string } | null;
 };
 
@@ -396,6 +403,9 @@ export function ScanScreen({ onBack: _onBack, user }: Props) {
           </Text>
           <View style={styles.ticketDetails}>
             <Detail label={t('EVENTO', 'EVENT')} value={scanResult?.ticket?.event?.title || t('Evento', 'Event')} featured />
+            {!!scanResult?.ticket?.event?.eventDate && (
+              <Detail label={t('FECHA', 'DATE')} value={fmtDate(scanResult.ticket.event.eventDate)} />
+            )}
             <View style={styles.detailGrid}>
               <Detail label={t('ASISTENTE', 'ATTENDEE')} value={[scanResult?.ticket?.user?.firstName, scanResult?.ticket?.user?.lastName].filter(Boolean).join(' ') || scanResult?.ticket?.user?.email || '-'} />
               <Detail label={t('UBICACIÓN', 'LOCATION')} value={scanResult?.ticket?.seatLabel || [scanResult?.ticket?.sectionName, scanResult?.ticket?.rowLabel, scanResult?.ticket?.seatNumber].filter(Boolean).join(' · ') || 'General'} />
