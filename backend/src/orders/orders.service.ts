@@ -118,6 +118,33 @@ export class OrdersService {
     return { unitPrice, quantity: safeQuantity, baseTotal, lpFee, processingFee, total };
   }
 
+  private getPublicAppUrl() {
+    const rawAppUrl = this.configService.get<string>('APP_URL');
+    return rawAppUrl && !rawAppUrl.includes('localhost')
+      ? (rawAppUrl.startsWith('http') ? rawAppUrl : `https://${rawAppUrl}`)
+      : 'https://ticketsystem-jzgf.onrender.com';
+  }
+
+  private getPublicApiBaseUrl() {
+    const rawApiUrl = this.configService.get<string>('API_URL');
+    const fallbackApiUrl = 'https://ticketsystembackend.up.railway.app';
+    const baseUrl = rawApiUrl && !rawApiUrl.includes('localhost')
+      ? (rawApiUrl.startsWith('http') ? rawApiUrl : `https://${rawApiUrl}`)
+      : fallbackApiUrl;
+    return baseUrl.replace(/\/$/, '').replace(/\/api$/, '');
+  }
+
+  private getStripeCheckoutEventImages(event: Event) {
+    const image = event.bannerImageUrl || event.imageUrl;
+    if (!image || image.startsWith('data:')) {
+      return image ? [`${this.getPublicApiBaseUrl()}/api/events/${event.slug}/og-image?kind=banner`] : [];
+    }
+    if (image.startsWith('http://') || image.startsWith('https://')) return [image];
+    if (image.startsWith('/api/')) return [`${this.getPublicApiBaseUrl()}${image}`];
+    if (image.startsWith('/')) return [`${this.getPublicApiBaseUrl()}${image}`];
+    return [`${this.getPublicApiBaseUrl()}/${image}`];
+  }
+
   async previewDoorSale(user: any, eventId: string, amount: number, quantity = 1, sectionId?: string) {
     const event = await this.ensureCanSellAtDoor(user, eventId);
     const section = sectionId ? await this.sectionRepo.findOne({ where: { id: sectionId, eventId } }) : null;
@@ -182,23 +209,46 @@ export class OrdersService {
       seatsData: JSON.stringify(seatsInfo),
     }));
 
-    const rawAppUrl = this.configService.get('APP_URL');
-    const appUrl = rawAppUrl && !rawAppUrl.includes('localhost')
-      ? (rawAppUrl.startsWith('http') ? rawAppUrl : `https://${rawAppUrl}`)
-      : 'https://ticketsystem-jzgf.onrender.com';
+    const appUrl = this.getPublicAppUrl();
     const currency = (event.currency || 'USD').toLowerCase();
     const saleName = section?.name || 'Entrada en puerta';
+    const eventImages = this.getStripeCheckoutEventImages(event);
+    const productDescription = [
+      `${invoice.quantity} entrada(s) · Venta en puerta`,
+      event.venueName,
+      event.eventDate ? new Date(event.eventDate).toLocaleString('es-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      }) : null,
+    ].filter(Boolean).join(' · ');
 
     const session = await this.stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       ...(checkoutBuyerEmail ? { customer_email: checkoutBuyerEmail } : {}),
+      locale: 'es',
+      submit_type: 'pay',
+      branding_settings: {
+        display_name: 'LPTicket',
+        background_color: '#050B12',
+        button_color: '#FF6B00',
+        border_style: 'rounded',
+        font_family: 'inter',
+      },
+      custom_text: {
+        submit: {
+          message: 'Pago seguro procesado por Stripe. LPTicket emitirá la entrada al confirmarse el pago.',
+        },
+      },
       line_items: [
         {
           price_data: {
             currency,
             product_data: {
-              name: `LPTicket - ${event.title}`,
-              description: `${invoice.quantity} x ${saleName} · Venta en puerta`,
+              name: `${saleName} - ${event.title}`,
+              description: productDescription,
+              ...(eventImages.length ? { images: eventImages } : {}),
             },
             unit_amount: Math.round(invoice.baseTotal * 100),
           },
@@ -217,6 +267,9 @@ export class OrdersService {
       expires_at: Math.floor(Date.now() / 1000) + (45 * 60),
       success_url: `${appUrl.replace(/\/$/, '')}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl.replace(/\/$/, '')}/checkout/cancel`,
+      payment_intent_data: {
+        description: `LPTicket · ${saleName} · ${event.title}`,
+      },
       metadata: {
         orderId: order.id,
         userId: user.id,
