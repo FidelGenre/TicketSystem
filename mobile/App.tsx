@@ -388,7 +388,7 @@ function AppContent() {
         <View pointerEvents="none" style={styles.appGridVertical} />
         <View pointerEvents="none" style={styles.appGridHorizontal} />
 
-        <AppHeader onOpenMenu={() => setMenuOpen(true)} onOpenScan={() => setScanOpen(true)} onGoHome={goHome} onOpenLogin={() => goToTab('profile')} showLoginButton={!isLoggedIn} onGoCart={() => { if (cartSelectionCount > 0) { setCartDrawerOpen(true); } else { goToTab('tickets'); } }} showCartButton={isLoggedIn || cartSelectionCount > 0} cartCount={cartSelectionCount} />
+        <AppHeader onOpenMenu={() => setMenuOpen(true)} onOpenScan={() => setScanOpen(true)} onGoHome={goHome} onOpenLogin={() => goToTab('profile')} showLoginButton={!isLoggedIn} onGoCart={() => { if (cartSelectionCount > 0) { setCartDrawerOpen(true); } else { goToTab('tickets'); } }} showCartButton={isLoggedIn} cartCount={cartSelectionCount} />
 
         {scanOpen ? (
           <ScanScreen onBack={() => setScanOpen(false)} user={currentUser} />
@@ -401,7 +401,7 @@ function AppContent() {
         ) : selectedEvent && loginAfterPurchase ? (
           <LoginScreen onSignIn={(user) => { setCurrentUser(user); setLoginAfterPurchase(false); setCheckoutInfoOpen(true); }} />
         ) : selectedEvent ? (
-          <EventDetailScreen event={selectedEvent} onBack={() => { setCartSelectionCount(0); setSelectedEvent(null); }} onSelectionCountChange={setCartSelectionCount} onBuy={(seats, ga, gaQty) => { setPreSelectedSeats(seats); setPreSelectedGa(ga); setPreSelectedGaQty(gaQty ?? 1); if (isLoggedIn) { setCheckoutInfoOpen(true); } else { setLoginAfterPurchase(true); } }} />
+          <EventDetailScreen event={selectedEvent} onBack={() => { setCartSelectionCount(0); setSelectedEvent(null); }} onSelectionCountChange={setCartSelectionCount} isLoggedIn={isLoggedIn} onRequestLogin={() => goToTab('profile')} onBuy={(seats, ga, gaQty) => { setPreSelectedSeats(seats); setPreSelectedGa(ga); setPreSelectedGaQty(gaQty ?? 1); if (isLoggedIn) { setCheckoutInfoOpen(true); } else { setLoginAfterPurchase(true); } }} />
         ) : tab === 'events' ? (
           <HomeScreen onOpenEvent={setSelectedEvent} />
         ) : tab === 'tickets' ? (

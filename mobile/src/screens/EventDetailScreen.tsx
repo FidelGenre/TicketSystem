@@ -17,6 +17,8 @@ type Props = {
   onBack: () => void;
   onBuy: (selectedSeats: ClientSeat[], gaSection?: { id: string; name: string; price: number }, gaQty?: number) => void;
   onSelectionCountChange?: (count: number) => void;
+  isLoggedIn?: boolean;
+  onRequestLogin?: () => void;
 };
 
 type ApiEventDetail = {
@@ -96,7 +98,7 @@ function seatPrice(seat: ClientSeat, section: ClientVenueSection): number {
 
 const MAX_PER_TX = 10;
 
-export function EventDetailScreen({ event, onBack, onBuy, onSelectionCountChange }: Props) {
+export function EventDetailScreen({ event, onBack, onBuy, onSelectionCountChange, isLoggedIn, onRequestLogin }: Props) {
   const { t, lang } = useLanguage();
   const [detail, setDetail] = useState(event);
   const [sections, setSections] = useState<ClientVenueSection[]>([]);
@@ -227,15 +229,17 @@ export function EventDetailScreen({ event, onBack, onBuy, onSelectionCountChange
   useEffect(() => { onSelectionCountChange?.(selectionCount); }, [selectionCount, onSelectionCountChange]);
 
   const toggleSeat = useCallback((seat: ClientSeat) => {
+    if (!isLoggedIn) { onRequestLogin?.(); return; }
     setSelectedSeats((cur) => {
       const exists = cur.some((s) => s.id === seat.id);
       if (exists) return cur.filter((s) => s.id !== seat.id);
       if (cur.length >= MAX_PER_TX) return cur;
       return [...cur, seat];
     });
-  }, []);
+  }, [isLoggedIn, onRequestLogin]);
 
   const toggleSeats = useCallback((seats: ClientSeat[]) => {
+    if (!isLoggedIn) { onRequestLogin?.(); return; }
     setSelectedSeats((cur) => {
       const anySelected = seats.some((s) => cur.some((c) => c.id === s.id));
       if (anySelected) {
@@ -245,7 +249,7 @@ export function EventDetailScreen({ event, onBack, onBuy, onSelectionCountChange
       const toAdd = seats.filter((s) => !cur.some((c) => c.id === s.id));
       return [...cur, ...toAdd.slice(0, MAX_PER_TX - cur.length)];
     });
-  }, []);
+  }, [isLoggedIn, onRequestLogin]);
 
   const imageSource = useMemo(() => {
     const img = detail.imageUrl || detail.bannerImageUrl;
