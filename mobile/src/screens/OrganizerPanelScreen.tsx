@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { Alert, Animated, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { colors } from '../theme/colors';
 import { VenueMapEditor } from '../components/organizer/VenueMapEditor';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -266,10 +266,12 @@ export function OrganizerPanelScreen({ section, onSectionChange, adminEvent, onA
   // Full event detail (all fields: description, eventTimezone, venueAddress, etc.)
   // The list endpoints only return summary fields, so we fetch the full object
   // once per selected event to feed the Details editor.
-  const [fullEventData, setFullEventData] = useState<any | null>(adminEvent || null);
+  const [fullEventData, setFullEventData] = useState<any | null>(null);
+  const [fullEventLoading, setFullEventLoading] = useState(false);
   useEffect(() => {
-    if (!selectedEventId) { setFullEventData(adminEvent || null); return; }
+    if (!selectedEventId) { setFullEventData(null); return; }
     let mounted = true;
+    setFullEventLoading(true);
     apiGet<any>(`/events/${selectedEventId}`)
       .then((data) => {
         if (!mounted || !data?.id) return;
@@ -278,7 +280,8 @@ export function OrganizerPanelScreen({ section, onSectionChange, adminEvent, onA
         if (data.venueName) setEventVenue(data.venueName);
         if (data.status && ['draft', 'published', 'cancelled'].includes(data.status)) setEventStatus(data.status);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => { if (mounted) setFullEventLoading(false); });
     return () => { mounted = false; };
   }, [selectedEventId]);
 
@@ -613,17 +616,19 @@ export function OrganizerPanelScreen({ section, onSectionChange, adminEvent, onA
         )}
 
         {active === 'details' && (
-          <OrganizerDetailsMobile
-            eventTitle={eventTitle}
-            setEventTitle={setEventTitle}
-            eventVenue={eventVenue}
-            setEventVenue={setEventVenue}
-            eventStatus={eventStatus}
-            setEventStatus={setEventStatus}
-            goTo={setActive}
-            selectedEventId={selectedEventId}
-            event={fullEventData}
-          />
+          fullEventLoading
+            ? <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 80 }}><ActivityIndicator color={colors.orange} size="large" /></View>
+            : <OrganizerDetailsMobile
+                eventTitle={eventTitle}
+                setEventTitle={setEventTitle}
+                eventVenue={eventVenue}
+                setEventVenue={setEventVenue}
+                eventStatus={eventStatus}
+                setEventStatus={setEventStatus}
+                goTo={setActive}
+                selectedEventId={selectedEventId}
+                event={fullEventData}
+              />
         )}
 
         {active === 'analytics' && (
