@@ -320,6 +320,12 @@ export function ClientVenueMap({ seatMap, selectedSeats, onToggleSeat, onToggleS
   const animPanX = useRef(new Animated.Value(fitView.pan.x)).current;
   const animPanY = useRef(new Animated.Value(fitView.pan.y)).current;
 
+  // Stable constant nodes — must NOT be recreated on every render or the
+  // animated transform graph breaks and causes the canvas to jump on each re-render
+  const halfCanvasW = useRef(new Animated.Value(CANVAS_W / 2)).current;
+  const halfCanvasH = useRef(new Animated.Value(CANVAS_H / 2)).current;
+  const negOne = useRef(new Animated.Value(-1)).current;
+
   // JS-readable state (used for touch math and section positioning)
   const viewRef = useRef({ zoom: fitView.zoom, pan: fitView.pan });
   const [zoom, setZoom] = useState(fitView.zoom);
@@ -423,14 +429,18 @@ export function ClientVenueMap({ seatMap, selectedSeats, onToggleSeat, onToggleS
   const toneColor = (tone: ActiveInfo['tone']) =>
     tone === 'selected' ? '#f97316' : tone === 'sold' ? '#94a3b8' : tone === 'reserved' ? '#facc15' : '#86efac';
 
-  // Canvas transform: translate(pan) then scale from top-left
-  // In RN, scale origin is center, so compensate: translate by half canvas * (1 - scale)
+  // Canvas transform: translate(pan) then scale from top-left.
+  // RN scales from center, so compensate: panX + (CANVAS_W/2) * (zoom - 1)
+  // All nodes are stable refs — never recreated — so the animated graph is built once.
+  const canvasTranslateX = useRef(Animated.add(animPanX, Animated.multiply(halfCanvasW, Animated.add(negOne, animZoom)))).current;
+  const canvasTranslateY = useRef(Animated.add(animPanY, Animated.multiply(halfCanvasH, Animated.add(negOne, animZoom)))).current;
+
   const canvasStyle = {
     position: 'absolute' as const, top: 0, left: 0,
     width: CANVAS_W, height: CANVAS_H,
     transform: [
-      { translateX: Animated.add(animPanX, Animated.multiply(new Animated.Value(CANVAS_W / 2), Animated.add(new Animated.Value(-1), animZoom))) as any },
-      { translateY: Animated.add(animPanY, Animated.multiply(new Animated.Value(CANVAS_H / 2), Animated.add(new Animated.Value(-1), animZoom))) as any },
+      { translateX: canvasTranslateX as any },
+      { translateY: canvasTranslateY as any },
       { scale: animZoom as any },
     ],
   };
