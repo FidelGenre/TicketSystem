@@ -263,27 +263,44 @@ export function OrganizerPanelScreen({ section, onSectionChange, adminEvent, onA
       .catch(() => {});
   }, [selectedEventId]);
 
-  // Full event detail (all fields: description, eventTimezone, venueAddress, etc.)
-  // The list endpoints only return summary fields, so we fetch the full object
-  // once per selected event to feed the Details editor.
+  // Full event detail — use the raw data already fetched by getOrganizerEvents
+  // (which returns every entity field). The backend has no GET /events/:id route
+  // that accepts a UUID; the public route matches slugs, not UUIDs.
+  // For admin-injected events (adminEvent prop) we may not have rawEventsById,
+  // so fall back to a PATCH-safe fetch via the slug if available.
   const [fullEventData, setFullEventData] = useState<any | null>(null);
   const [fullEventLoading, setFullEventLoading] = useState(false);
   useEffect(() => {
     if (!selectedEventId) { setFullEventData(null); return; }
+
+    // Use cached raw data from the organizer list (has all entity fields).
+    const cached = rawEventsById[selectedEventId] ?? adminEvent ?? null;
+    if (cached?.id) {
+      setFullEventData(cached);
+      if (cached.title) setEventTitle(cached.title);
+      if (cached.venueName) setEventVenue(cached.venueName);
+      if (cached.status && ['draft', 'published', 'cancelled'].includes(cached.status)) setEventStatus(cached.status as any);
+      return;
+    }
+
+    // Fallback: try fetching by slug (only works if adminEvent has slug field).
+    const slug = adminEvent?.slug;
+    if (!slug) { setFullEventData(null); return; }
+
     let mounted = true;
     setFullEventLoading(true);
-    apiGet<any>(`/events/${selectedEventId}`)
+    apiGet<any>(`/events/${slug}`)
       .then((data) => {
         if (!mounted || !data?.id) return;
         setFullEventData(data);
         if (data.title) setEventTitle(data.title);
         if (data.venueName) setEventVenue(data.venueName);
-        if (data.status && ['draft', 'published', 'cancelled'].includes(data.status)) setEventStatus(data.status);
+        if (data.status && ['draft', 'published', 'cancelled'].includes(data.status)) setEventStatus(data.status as any);
       })
       .catch(() => {})
       .finally(() => { if (mounted) setFullEventLoading(false); });
     return () => { mounted = false; };
-  }, [selectedEventId]);
+  }, [selectedEventId, rawEventsById, adminEvent]);
 
   // Load sales + sections (seatmap) for the selected event — feeds Analytics,
   // Overview and Blocks (mirror of the web editor's loadEvent).
@@ -619,6 +636,7 @@ export function OrganizerPanelScreen({ section, onSectionChange, adminEvent, onA
           fullEventLoading
             ? <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 80 }}><ActivityIndicator color={colors.orange} size="large" /></View>
             : <OrganizerDetailsMobile
+                key={fullEventData?.id ?? 'details'}
                 eventTitle={eventTitle}
                 setEventTitle={setEventTitle}
                 eventVenue={eventVenue}

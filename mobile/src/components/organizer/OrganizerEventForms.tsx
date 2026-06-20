@@ -319,18 +319,33 @@ export function OrganizerDetailsMobile({ eventTitle, setEventTitle, eventVenue, 
   // Populate from the real event (mirrors the web editor's loadEvent).
   useEffect(() => {
     if (!event) return;
-    setDescription(event.description || '');
+    setDescription(event.pendingDescription || event.description || '');
     setCategory(event.pendingCategory || event.category || '');
-    setAddress(event.venueAddress || '');
+    setAddress(event.pendingVenueAddress || event.venueAddress || '');
     setMaxTickets(String(event.maxTicketsPerTransaction || 10));
-    const bp = event.bannerPosition;
-    if (typeof bp === 'number') setFocalY(Math.max(0, Math.min(100, bp)));
-    else if (bp === 'top') setFocalY(0);
-    else if (bp === 'bottom') setFocalY(100);
-    else setFocalY(50);
-    setTimezone(event.eventTimezone || 'America/Chicago');
+    const bp: unknown = event.bannerPositionY ?? event.bannerPosition;
+    if (typeof bp === 'number') {
+      setFocalY(Math.max(0, Math.min(100, bp)));
+    } else if (typeof bp === 'string') {
+      // Stored as CSS background-position e.g. '50% 50%' or 'top center'
+      if (bp.startsWith('top')) setFocalY(0);
+      else if (bp.startsWith('bottom')) setFocalY(100);
+      else {
+        const pct = parseFloat(bp); // picks first number from '50% 50%'
+        setFocalY(Number.isNaN(pct) ? 50 : Math.max(0, Math.min(100, pct)));
+      }
+    } else {
+      setFocalY(50);
+    }
+    setTimezone(event.eventTimezone || event.timezone || 'America/Chicago');
     if (event.eventDate) {
-      const d = new Date(event.eventDate);
+      // eventDate may arrive as ISO string with or without timezone offset.
+      // Normalise to local-time by stripping trailing Z/offset so the Date
+      // constructor treats it as local (avoids midnight UTC → wrong date in
+      // timezones behind UTC).
+      const raw = String(event.eventDate);
+      const localStr = raw.replace(/Z$/, '').replace(/[+-]\d{2}:\d{2}$/, '');
+      const d = new Date(localStr);
       if (!Number.isNaN(d.getTime())) {
         setEventDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
         setEventTime(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`);
