@@ -2,7 +2,7 @@
 
 import toast from 'react-hot-toast';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '@/lib/api';
 import {
   HiOutlinePlus, HiOutlinePencil, HiOutlineTrash,
@@ -64,6 +64,7 @@ export default function AdminCategoriesPage() {
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const editRowRef = useRef<HTMLTableCellElement | null>(null);
 
   const emptyForm = { slug: '', labelEs: '', labelEn: '', icon: '🎫', color: '#6366f1', sortOrder: 0, imageData: '' as string };
   const [form, setForm] = useState(emptyForm);
@@ -133,6 +134,7 @@ export default function AdminCategoriesPage() {
     setEditingId(cat.id);
     setForm({ slug: cat.slug, labelEs: cat.labelEs, labelEn: cat.labelEn, icon: cat.icon, color: cat.color, sortOrder: cat.sortOrder, imageData: cat.imageData || '' });
     setShowForm(false);
+    setTimeout(() => editRowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
   };
 
   const handleSaveEdit = async (id: string) => {
@@ -328,7 +330,7 @@ export default function AdminCategoriesPage() {
               {categories.map((cat) => (
                 <tr key={cat.id} className="hover:bg-gray-50 transition-colors">
                   {editingId === cat.id ? (
-                    <td colSpan={5} className="px-5 py-6 bg-[rgba(10,55,90,0.06)]/30">
+                    <td ref={editRowRef} colSpan={5} className="px-5 py-6 bg-[rgba(10,55,90,0.06)]/30">
                       {error && <div className="p-2 mb-4 bg-red-50 border border-red-200 rounded text-red-600 text-xs">{error}</div>}
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                         <div className="space-y-1">
