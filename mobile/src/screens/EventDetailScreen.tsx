@@ -107,6 +107,7 @@ export function EventDetailScreen({ event, onBack, onBuy, onSelectionCountChange
   const [mapLoading, setMapLoading] = useState(false);
   const [scrollEnabled, setScrollEnabled] = useState(true);
   const scrollRef = useRef<any>(null);
+  const scrollUnlockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Seat selection state (lives here, mirroring web behavior)
   const [selectedSeats, setSelectedSeats] = useState<ClientSeat[]>([]);
@@ -275,6 +276,26 @@ export function EventDetailScreen({ event, onBack, onBuy, onSelectionCountChange
     'Enjoy a secure experience with fast checkout, digital tickets and QR access.',
   );
 
+  const setMapScrollLock = useCallback((locked: boolean) => {
+    if (scrollUnlockTimerRef.current) {
+      clearTimeout(scrollUnlockTimerRef.current);
+      scrollUnlockTimerRef.current = null;
+    }
+    if (locked) {
+      scrollRef.current?.setNativeProps?.({ scrollEnabled: false });
+      setScrollEnabled(false);
+      return;
+    }
+    scrollUnlockTimerRef.current = setTimeout(() => {
+      scrollRef.current?.setNativeProps?.({ scrollEnabled: true });
+      setScrollEnabled(true);
+    }, 120);
+  }, []);
+
+  useEffect(() => () => {
+    if (scrollUnlockTimerRef.current) clearTimeout(scrollUnlockTimerRef.current);
+  }, []);
+
   return (
     <ScrollView ref={scrollRef} style={st.screen} contentContainerStyle={st.content} showsVerticalScrollIndicator={false} scrollEnabled={scrollEnabled}>
       {/* Back + share row */}
@@ -330,7 +351,7 @@ export function EventDetailScreen({ event, onBack, onBuy, onSelectionCountChange
             defaultViewX={(detail as any).defaultViewX}
             defaultViewY={(detail as any).defaultViewY}
             defaultViewZoom={(detail as any).defaultViewZoom}
-            onScrollLock={(locked) => setScrollEnabled(!locked)}
+            onScrollLock={setMapScrollLock}
           />
         </View>
       ) : mode === 'ga' ? (

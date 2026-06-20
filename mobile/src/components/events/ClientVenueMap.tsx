@@ -60,6 +60,7 @@ const FIT_PADDING = 40;
 const MAP_EDGE_PADDING = 48;
 const CANVAS_W = 2000;
 const CANVAS_H = 1600;
+const GENERAL_TOOLBAR_TOUCH_HEIGHT = 72;
 
 function clamp(v: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, v)); }
 function parseCfg(raw?: string | null): Record<string, any> {
@@ -322,6 +323,8 @@ export const ClientVenueMap = memo(function ClientVenueMap({ seatMap, selectedSe
   const { t } = useLanguage();
   const { width: screenW } = useWindowDimensions();
   const [viewportW, setViewportW] = useState(screenW);
+  const viewportRef = useRef<View>(null);
+  const viewportPageYRef = useRef(0);
 
   const sections = useMemo(
     () => seatMap.filter((s) => Number.isFinite(Number(s.mapX)) && Number.isFinite(Number(s.mapY)) && Number(s.mapWidth || 0) > 0 && Number(s.mapHeight || 0) > 0),
@@ -440,7 +443,16 @@ export const ClientVenueMap = memo(function ClientVenueMap({ seatMap, selectedSe
   const touchRef = useRef({ x: 0, y: 0, panX: 0, panY: 0, isPinch: false, pinchDist: 0, pinchZoom: 1, pinchCx: 0, pinchCy: 0, moved: false });
   const responderStartRef = useRef({ x: 0, y: 0 });
 
+  const isInsideGeneralToolbar = (e: any) => {
+    if (!activeSection) return false;
+    const touch = e?.nativeEvent?.touches?.[0] || e?.nativeEvent?.changedTouches?.[0];
+    const pageY = touch?.pageY ?? e?.nativeEvent?.pageY;
+    if (typeof pageY !== 'number') return false;
+    return pageY >= viewportPageYRef.current + viewportH - GENERAL_TOOLBAR_TOUCH_HEIGHT;
+  };
+
   const rememberResponderStart = (e: any) => {
+    if (isInsideGeneralToolbar(e)) return false;
     const touches = e.nativeEvent.touches || [];
     const t = touches[0];
     responderStartRef.current = { x: t?.pageX || 0, y: t?.pageY || 0 };
@@ -449,6 +461,7 @@ export const ClientVenueMap = memo(function ClientVenueMap({ seatMap, selectedSe
   };
 
   const shouldCaptureMove = (e: any) => {
+    if (isInsideGeneralToolbar(e)) return false;
     const touches = e.nativeEvent.touches || [];
     if (touches.length >= 2) return true;
     const t = touches[0];
@@ -458,12 +471,11 @@ export const ClientVenueMap = memo(function ClientVenueMap({ seatMap, selectedSe
     return dx > 1 || dy > 1;
   };
 
-  const onTouchStart = (e: any) => {
-    if (animatingRef.current) return;
-    onScrollLock?.(true);
-    const touches = e.nativeEvent.touches;
+  const beginPinch = (touches: any[]) => {
     if (touches.length >= 2) {
       const t1 = touches[0], t2 = touches[1];
+      const cx = ((t1.locationX ?? t1.pageX) + (t2.locationX ?? t2.pageX)) / 2;
+      const cy = ((t1.locationY ?? t1.pageY) + (t2.locationY ?? t2.pageY)) / 2;
       touchRef.current = {
         x: 0,
         y: 0,
@@ -472,18 +484,47 @@ export const ClientVenueMap = memo(function ClientVenueMap({ seatMap, selectedSe
         isPinch: true,
         pinchDist: Math.hypot(t1.pageX - t2.pageX, t1.pageY - t2.pageY),
         pinchZoom: viewRef.current.zoom,
-        pinchCx: ((t1.locationX ?? t1.pageX) + (t2.locationX ?? t2.pageX)) / 2,
-        pinchCy: ((t1.locationY ?? t1.pageY) + (t2.locationY ?? t2.pageY)) / 2,
+        pinchCx: cx,
+        pinchCy: cy,
         moved: false,
       };
-    } else {
+    }
+  };
+
+  const beginPan = (touches: any[]) => {
+    const t = touches[0];
+    if (!t) return;
+    touchRef.current = { x: t.locationX ?? t.pageX, y: t.locationY ?? t.pageY, panX: viewRef.current.pan.x, panY: viewRef.current.pan.y, isPinch: false, pinchDist: 0, pinchZoom: viewRef.current.zoom, pinchCx: 0, pinchCy: 0, moved: false };
+  };
+
+  const onTouchStart = (e: any) => {
+    if (isInsideGeneralToolbar(e)) return;
+    if (animatingRef.current) return;
+    onScrollLock?.(true);
+    const touches = e.nativeEvent.touches || [];
+    if (touches.length >= 2) {
+      beginPinch(touches);
+    } else if (!touchRef.current.isPinch) {
       const t = touches[0];
-      touchRef.current = { x: t.locationX ?? t.pageX, y: t.locationY ?? t.pageY, panX: viewRef.current.pan.x, panY: viewRef.current.pan.y, isPinch: false, pinchDist: 0, pinchZoom: viewRef.current.zoom, pinchCx: 0, pinchCy: 0, moved: false };
+      if (t) beginPan(touches);
     }
   };
 
   const releaseScrollLock = () => { onScrollLock?.(false); };
+  const onRawTouchEnd = (e: any) => {
+    const touches = e?.nativeEvent?.touches || [];
+    if (touches.length === 1) {
+      beginPan(touches);
+      touchRef.current.moved = true;
+      return;
+    }
+    if (touches.length === 0) releaseScrollLock();
+  };
   const onTouchEnd = (e?: any) => {
+    if (isInsideGeneralToolbar(e)) {
+      releaseScrollLock();
+      return;
+    }
     if (!touchRef.current.moved && e?.nativeEvent) {
       handleMapTap(e.nativeEvent.locationX, e.nativeEvent.locationY);
     }
@@ -491,16 +532,28 @@ export const ClientVenueMap = memo(function ClientVenueMap({ seatMap, selectedSe
   };
 
   const onTouchMove = (e: any) => {
-    const touches = e.nativeEvent.touches;
+    const touches = e.nativeEvent.touches || [];
+    if (!touchRef.current.isPinch && touches.length >= 2) {
+      beginPinch(touches);
+      touchRef.current.moved = true;
+      return;
+    }
     if (touchRef.current.isPinch && touches.length >= 2) {
       const t1 = touches[0], t2 = touches[1];
       const dist = Math.hypot(t1.pageX - t2.pageX, t1.pageY - t2.pageY);
       if (!touchRef.current.pinchDist) return;
-      if (Math.abs(dist - touchRef.current.pinchDist) > 1) touchRef.current.moved = true;
-      const newZ = clamp(touchRef.current.pinchZoom * (dist / touchRef.current.pinchDist), fitView.zoom, MAX_ZOOM);
+      const cx = ((t1.locationX ?? t1.pageX) + (t2.locationX ?? t2.pageX)) / 2;
+      const cy = ((t1.locationY ?? t1.pageY) + (t2.locationY ?? t2.pageY)) / 2;
+      if (Math.abs(dist - touchRef.current.pinchDist) > 0.5 || Math.hypot(cx - touchRef.current.pinchCx, cy - touchRef.current.pinchCy) > 0.5) touchRef.current.moved = true;
+      const rawRatio = dist / touchRef.current.pinchDist;
+      const easedRatio = Math.pow(rawRatio, 1.18);
+      const newZ = clamp(touchRef.current.pinchZoom * easedRatio, fitView.zoom, MAX_ZOOM);
       const ratio = newZ / touchRef.current.pinchZoom;
-      const newP = { x: touchRef.current.pinchCx - (touchRef.current.pinchCx - touchRef.current.panX) * ratio, y: touchRef.current.pinchCy - (touchRef.current.pinchCy - touchRef.current.panY) * ratio };
+      const newP = { x: cx - (touchRef.current.pinchCx - touchRef.current.panX) * ratio, y: cy - (touchRef.current.pinchCy - touchRef.current.panY) * ratio };
       syncAnimated(newZ, newP);
+    } else if (touchRef.current.isPinch && touches.length === 1) {
+      beginPan(touches);
+      touchRef.current.moved = true;
     } else if (!touchRef.current.isPinch && touches.length === 1) {
       const t = touches[0];
       const dx = (t.locationX ?? t.pageX) - touchRef.current.x;
@@ -648,18 +701,28 @@ export const ClientVenueMap = memo(function ClientVenueMap({ seatMap, selectedSe
       <Text style={st.hint}>{'👆 '}{t('Desliza para mover · Pellizca para zoom', 'Drag to pan · Pinch to zoom')}</Text>
 
       <View
+        ref={viewportRef}
         style={[st.viewport, { height: viewportH }]}
         onLayout={(e) => {
           const nextW = e.nativeEvent.layout.width;
           if (nextW > 0 && Math.abs(nextW - viewportW) > 1) setViewportW(nextW);
+          requestAnimationFrame(() => {
+            viewportRef.current?.measureInWindow?.((_x, y) => {
+              viewportPageYRef.current = y || 0;
+            });
+          });
         }}
+      >
+        <View
+          style={StyleSheet.absoluteFill}
         onStartShouldSetResponderCapture={rememberResponderStart}
         onMoveShouldSetResponderCapture={shouldCaptureMove}
-        onTouchStart={rememberResponderStart}
-        onTouchEnd={releaseScrollLock}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onRawTouchEnd}
         onTouchCancel={releaseScrollLock}
-        onStartShouldSetResponder={() => true}
-        onMoveShouldSetResponder={() => true}
+        onStartShouldSetResponder={(e) => !isInsideGeneralToolbar(e)}
+        onMoveShouldSetResponder={(e) => !isInsideGeneralToolbar(e)}
+        onResponderTerminationRequest={() => false}
         onResponderGrant={onTouchStart}
         onResponderMove={onTouchMove}
         onResponderRelease={onTouchEnd}
@@ -744,7 +807,7 @@ export const ClientVenueMap = memo(function ClientVenueMap({ seatMap, selectedSe
             );
           })}
         </Animated.View>
-
+        </View>
 
         {activeSection && (() => {
           const sec = sections.find((s) => s.id === activeSection);
@@ -753,22 +816,27 @@ export const ClientVenueMap = memo(function ClientVenueMap({ seatMap, selectedSe
           const sold = (sec.seats || []).filter((s) => s.status === 'sold' || (s.status === 'locked' && !s.lockExpiresAt)).length;
           const remaining = cap > 0 ? Math.max(0, cap - sold) : 10;
           const current = selectedSeats.filter((s) => s.sectionId === sec.id);
+          const closeGeneralSelection = () => {
+            current.forEach((seat) => onToggleSeat(seat));
+            setActiveSection(null);
+            resetMap();
+          };
           return (
             <View style={st.toolbar}>
-              <TouchableOpacity style={st.toolbarBack} onPress={() => { setActiveSection(null); resetMap(); }}>
-                <Ionicons name="arrow-back" size={18} color="#fff" />
+              <TouchableOpacity style={st.toolbarClose} onPress={closeGeneralSelection}>
+                <Ionicons name="close" size={18} color="#fff" />
               </TouchableOpacity>
               <View style={{ flex: 1 }}>
                 <Text style={st.toolbarName}>{sec.name}</Text>
                 <Text style={st.toolbarSub}>{remaining} {t('disponibles', 'available')}</Text>
               </View>
               <View style={st.qtyRow}>
-                <TouchableOpacity style={st.qtyBtn} onPress={() => {
+                <TouchableOpacity style={st.qtyBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => {
                   if (current.length > 0) onToggleSeat(current[current.length - 1]);
                   if (current.length <= 1) setActiveSection(null);
                 }}><Text style={st.qtyBtnText}>－</Text></TouchableOpacity>
                 <Text style={st.qtyVal}>{current.length}</Text>
-                <TouchableOpacity style={[st.qtyBtn, st.qtyBtnOrange]} onPress={() => {
+                <TouchableOpacity style={[st.qtyBtn, st.qtyBtnOrange]} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => {
                   if (current.length < Math.min(10, remaining)) {
                     onToggleSeat({ id: `standing-${sec.id}-${current.length + 1}-${Date.now()}`, sectionId: sec.id, rowLabel: 'GA', seatNumber: current.length + 1, status: 'available' });
                   }
@@ -831,8 +899,9 @@ const st = StyleSheet.create({
   infoTitle: { color: '#ffffff', fontSize: 12, fontWeight: '900' },
   infoSub: { color: '#94a3b8', fontSize: 10, fontWeight: '600', marginTop: 1 },
   infoPrice: { color: '#F97316', fontSize: 14, fontWeight: '900', flexShrink: 0 },
-  toolbar: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#1e2228', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, gap: 12 },
+  toolbar: { position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 80, elevation: 8, backgroundColor: '#1e2228', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, gap: 12 },
   toolbarBack: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.10)', alignItems: 'center', justifyContent: 'center' },
+  toolbarClose: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(248,113,113,0.18)', borderWidth: 1, borderColor: 'rgba(248,113,113,0.35)', alignItems: 'center', justifyContent: 'center' },
   toolbarName: { color: '#ffffff', fontSize: 14, fontWeight: '800' },
   toolbarSub: { color: '#94a3b8', fontSize: 11 },
   qtyRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 16, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)' },
