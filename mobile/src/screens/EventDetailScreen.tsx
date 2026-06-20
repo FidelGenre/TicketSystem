@@ -379,21 +379,35 @@ export function EventDetailScreen({ event, onBack, onBuy, onSelectionCountChange
           </View>
         )}
 
-        {/* Selected seats list */}
+        {/* Selected seats list — tap to deselect */}
         {mode === 'seats' && selectedSeats.length > 0 && (
           <View style={st.seatsList}>
-            <Text style={st.seatsLabel}>{t('Asientos seleccionados:', 'Selected seats:')}</Text>
+            <Text style={st.seatsLabel}>{t('Asientos seleccionados:', 'Selected seats:')} {t('(toca para quitar)', '(tap to remove)')}</Text>
             {selectedSeats.map((seat, i) => {
               const sec = sectionById[seat.sectionId || ''];
-              const label = sec?.sectionType === 'table'
+              const isTable = sec?.sectionType === 'table';
+              const label = isTable
                 ? `${t('TABLE', 'TABLE')} ${sec?.name} - ${t('CHAIR', 'CHAIR')} ${seat.seatNumber}`
                 : `${sec?.name || ''} ${seat.rowLabel ? seat.rowLabel : ''}${seat.seatNumber ? `-${seat.seatNumber}` : ''}`.trim();
               return (
-                <View key={`${seat.id}-${i}`} style={st.seatRow}>
-                  <View style={st.seatDot} />
+                <TouchableOpacity
+                  key={`${seat.id}-${i}`}
+                  style={st.seatRow}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    if (isTable) {
+                      // Deselect all chairs of this table atomically
+                      const tableSeats = selectedSeats.filter((s) => s.sectionId === seat.sectionId);
+                      toggleSeats(tableSeats);
+                    } else {
+                      toggleSeat(seat);
+                    }
+                  }}
+                >
+                  <Ionicons name="close-circle" size={14} color="rgba(249,115,22,0.7)" style={{ flexShrink: 0 }} />
                   <Text style={st.seatRowLabel} numberOfLines={1}>{label.toUpperCase()}</Text>
                   <Text style={st.seatRowPrice}>${seatPrice(seat, sec).toFixed(2)}</Text>
-                </View>
+                </TouchableOpacity>
               );
             })}
           </View>

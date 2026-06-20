@@ -407,6 +407,13 @@ export function ClientVenueMap({ seatMap, selectedSeats, onToggleSeat, onToggleS
 
   const [activeInfo, setActiveInfo] = useState<ActiveInfo | null>(null);
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const infoDismissRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showInfo = (info: ActiveInfo) => {
+    if (infoDismissRef.current) clearTimeout(infoDismissRef.current);
+    setActiveInfo(info);
+    infoDismissRef.current = setTimeout(() => setActiveInfo(null), 2500);
+  };
 
   const focusSection = (section: ClientVenueSection) => {
     if (activeSection === section.id) { setActiveSection(null); resetMap(); return; }
@@ -534,29 +541,17 @@ export function ClientVenueMap({ seatMap, selectedSeats, onToggleSeat, onToggleS
                 {kind === 'standing' && <Text style={st.standingLabel} numberOfLines={1}>{section.name}</Text>}
                 {kind === 'table' && (
                   <TableSection section={section} sel={selectedSeats} onToggle={onToggleSeat} onToggleMany={onToggleSeats}
-                    onInfo={(info) => { setActiveSection(null); setActiveInfo(info); }} />
+                    onInfo={(info) => { setActiveSection(null); showInfo(info); }} />
                 )}
                 {kind === 'seats' && (
                   <RowSection section={section} sel={selectedSeats} onToggle={onToggleSeat}
-                    onInfo={(info) => { setActiveSection(null); setActiveInfo(info); }} />
+                    onInfo={(info) => { setActiveSection(null); showInfo(info); }} />
                 )}
               </TouchableOpacity>
             );
           })}
         </Animated.View>
 
-        {activeInfo && (
-          <View style={st.infoCard} pointerEvents="none">
-            <Text style={st.infoTitle} numberOfLines={1}>{activeInfo.title}</Text>
-            {!!activeInfo.subtitle && <Text style={st.infoSub} numberOfLines={1}>{activeInfo.subtitle}</Text>}
-            <View style={st.infoBottom}>
-              <View style={[st.infoStatus, { backgroundColor: `${toneColor(activeInfo.tone)}22` }]}>
-                <Text style={[st.infoStatusText, { color: toneColor(activeInfo.tone) }]}>{activeInfo.status}</Text>
-              </View>
-              <Text style={st.infoPrice}>${activeInfo.price.toFixed(2)}</Text>
-            </View>
-          </View>
-        )}
 
         {activeSection && (() => {
           const sec = sections.find((s) => s.id === activeSection);
@@ -591,6 +586,20 @@ export function ClientVenueMap({ seatMap, selectedSeats, onToggleSeat, onToggleS
         })()}
       </View>
 
+      {/* Info toast — outside viewport so it never covers the map */}
+      {activeInfo && (
+        <View style={st.infoCard}>
+          <View style={[st.infoTone, { backgroundColor: `${toneColor(activeInfo.tone)}22` }]}>
+            <Text style={[st.infoToneText, { color: toneColor(activeInfo.tone) }]}>{activeInfo.status}</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={st.infoTitle} numberOfLines={1}>{activeInfo.title}</Text>
+            {!!activeInfo.subtitle && <Text style={st.infoSub} numberOfLines={1}>{activeInfo.subtitle}</Text>}
+          </View>
+          <Text style={st.infoPrice}>${activeInfo.price.toFixed(2)}</Text>
+        </View>
+      )}
+
       <View style={st.legend}>
         {([
           { color: '#ffffff', label: t('Disponible', 'Available'), border: true },
@@ -623,13 +632,12 @@ const st = StyleSheet.create({
   stageSub: { color: '#94a3b8', fontSize: 7, fontWeight: '700', letterSpacing: 2, textTransform: 'uppercase', marginTop: 1 },
   decorLabel: { color: '#1e293b', fontSize: 9, fontWeight: '900', textTransform: 'uppercase', textAlign: 'center' },
   standingLabel: { color: '#ffffff', fontSize: 9, fontWeight: '800', textTransform: 'uppercase', textAlign: 'center' },
-  infoCard: { position: 'absolute', bottom: 52, left: 12, right: 12, backgroundColor: 'rgba(11,34,54,0.96)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(246,198,95,0.20)', padding: 12 },
-  infoTitle: { color: '#ffffff', fontSize: 13, fontWeight: '900' },
-  infoSub: { color: '#94a3b8', fontSize: 11, fontWeight: '600', marginTop: 1 },
-  infoBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
-  infoStatus: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
-  infoStatusText: { fontSize: 10, fontWeight: '800' },
-  infoPrice: { color: '#F97316', fontSize: 15, fontWeight: '900' },
+  infoCard: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 12, marginTop: 8, backgroundColor: 'rgba(11,34,54,0.96)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(246,198,95,0.20)', paddingHorizontal: 12, paddingVertical: 10 },
+  infoTone: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3, flexShrink: 0 },
+  infoToneText: { fontSize: 10, fontWeight: '800' },
+  infoTitle: { color: '#ffffff', fontSize: 12, fontWeight: '900' },
+  infoSub: { color: '#94a3b8', fontSize: 10, fontWeight: '600', marginTop: 1 },
+  infoPrice: { color: '#F97316', fontSize: 14, fontWeight: '900', flexShrink: 0 },
   toolbar: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#1e2228', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, gap: 12 },
   toolbarBack: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.10)', alignItems: 'center', justifyContent: 'center' },
   toolbarName: { color: '#ffffff', fontSize: 14, fontWeight: '800' },
