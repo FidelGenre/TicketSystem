@@ -95,8 +95,8 @@ export class WalletService {
       if (!imageBuffer) return fallback;
 
       return {
-        strip: await sharp(imageBuffer).resize(375, 98, { fit: 'cover', position: 'center' }).png().toBuffer(),
-        strip2x: await sharp(imageBuffer).resize(750, 196, { fit: 'cover', position: 'center' }).png().toBuffer(),
+        strip: await sharp(imageBuffer).resize(375, 123, { fit: 'cover', position: 'center' }).png().toBuffer(),
+        strip2x: await sharp(imageBuffer).resize(750, 246, { fit: 'cover', position: 'center' }).png().toBuffer(),
       };
     } catch (err) {
       console.warn('[WalletService] Could not build event Apple Wallet banner. Using fallback.', err);
@@ -174,7 +174,7 @@ export class WalletService {
           serialNumber: ticket.ticketCode,
           description: ticket.event?.title || 'LPTicket',
           foregroundColor: 'rgb(255,255,255)',
-          backgroundColor: 'rgb(5,33,82)',
+          backgroundColor: 'rgb(3,24,64)',
           labelColor: 'rgb(255,138,38)',
           barcode: barcodePayload,
           barcodes: [barcodePayload],
