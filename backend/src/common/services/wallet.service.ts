@@ -194,12 +194,6 @@ export class WalletService {
       pass.addBuffer('strip.png', walletStrip.strip);
       pass.addBuffer('strip@2x.png', walletStrip.strip2x);
 
-      pass.primaryFields.push({
-        key: 'event',
-        label: 'EVENT',
-        value: eventTitle,
-      });
-
       pass.secondaryFields.push(
         {
           key: 'date',
@@ -220,9 +214,9 @@ export class WalletService {
 
       pass.auxiliaryFields.push(
         {
-          key: 'section',
-          label: 'ZONE',
-          value: ticket.sectionName || 'General',
+          key: 'event',
+          label: 'EVENT',
+          value: eventTitle,
         },
         {
           key: 'venue',
