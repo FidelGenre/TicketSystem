@@ -95,8 +95,8 @@ export class WalletService {
 
       const sharp = require('sharp');
       return {
-        strip: await sharp(imageBuffer).resize(375, 98, { fit: 'cover', position: 'center' }).png().toBuffer(),
-        strip2x: await sharp(imageBuffer).resize(750, 196, { fit: 'cover', position: 'center' }).png().toBuffer(),
+        strip: await sharp(imageBuffer).resize(375, 98, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } }).png().toBuffer(),
+        strip2x: await sharp(imageBuffer).resize(750, 196, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } }).png().toBuffer(),
       };
     } catch (err) {
       console.warn('[WalletService] Could not build event Apple Wallet banner. Using fallback.', err);
@@ -194,12 +194,6 @@ export class WalletService {
       pass.addBuffer('strip.png', walletStrip.strip);
       pass.addBuffer('strip@2x.png', walletStrip.strip2x);
 
-      pass.primaryFields.push({
-        key: 'buyer',
-        label: 'BUYER',
-        value: buyerName,
-      });
-
       pass.secondaryFields.push(
         {
           key: 'date',
@@ -271,6 +265,11 @@ export class WalletService {
           key: 'ticketCode',
           label: 'Ticket Code',
           value: ticket.ticketCode,
+        },
+        {
+          key: 'buyer',
+          label: 'Ticket Holder',
+          value: buyerName,
         },
         {
           key: 'eventDateTime',
