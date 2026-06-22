@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Post, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Post, Query, Request, Res, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -10,8 +10,17 @@ export class MarketingController {
   constructor(private readonly marketingService: MarketingService) {}
 
   @Get('banner/home')
-  async getActiveHomeBanner() {
-    return this.marketingService.getActiveHomeBanner();
+  async getActiveHomeBanner(@Query('includeData') includeData?: string) {
+    return this.marketingService.getActiveHomeBanner(includeData === 'true');
+  }
+
+  @Get('banner/home/image')
+  async getHomeBannerImage(@Query('variant') variant: 'desktop' | 'mobile' | undefined, @Res() res: any) {
+    const image = await this.marketingService.getHomeBannerImage(variant === 'mobile' ? 'mobile' : 'desktop');
+    res.header('Content-Type', image.mimeType);
+    res.header('Cache-Control', 'public, max-age=86400, s-maxage=86400');
+    res.header('Content-Length', image.buffer.length);
+    return res.send(image.buffer);
   }
 
   @Post('push-token')

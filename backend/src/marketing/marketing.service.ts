@@ -311,7 +311,13 @@ export class MarketingService {
     }
   }
 
-  async getActiveHomeBanner() {
+  private parseImageData(imageData: string | null | undefined) {
+    const match = /^data:([^;]+);base64,(.+)$/s.exec(String(imageData || '').trim());
+    if (!match) return null;
+    return { mimeType: match[1], buffer: Buffer.from(match[2], 'base64') };
+  }
+
+  async getActiveHomeBanner(includeData = false) {
     const desktop = await this.bannerRepo.findOne({
       where: { placement: 'home', isActive: true },
       order: { updatedAt: 'DESC' },
@@ -324,11 +330,38 @@ export class MarketingService {
       order: { updatedAt: 'DESC' },
     });
 
+    const imageUrl = `/api/marketing/banner/home/image?variant=desktop&v=${encodeURIComponent(String(desktop.updatedAt?.getTime?.() || desktop.id))}`;
+    const mobileImageUrl = mobile
+      ? `/api/marketing/banner/home/image?variant=mobile&v=${encodeURIComponent(String(mobile.updatedAt?.getTime?.() || mobile.id))}`
+      : null;
+
+    if (includeData) {
+      return {
+        ...desktop,
+        imageUrl,
+        mobileImageData: mobile?.imageData || null,
+        mobileImageUrl,
+        mobileFileName: mobile?.fileName || null,
+      };
+    }
+
+    const { imageData: _imageData, ...publicDesktop } = desktop;
     return {
-      ...desktop,
-      mobileImageData: mobile?.imageData || null,
+      ...publicDesktop,
+      imageUrl,
+      mobileImageUrl,
       mobileFileName: mobile?.fileName || null,
     };
+  }
+
+  async getHomeBannerImage(variant: 'desktop' | 'mobile' = 'desktop') {
+    const banner = await this.bannerRepo.findOne({
+      where: { placement: variant === 'mobile' ? 'home-mobile' : 'home', isActive: true },
+      order: { updatedAt: 'DESC' },
+    });
+    const image = this.parseImageData(banner?.imageData);
+    if (!banner || !image) throw new BadRequestException('Banner no disponible');
+    return image;
   }
 
   async saveHomeBanner(data: { imageData: string; fileName?: string; mobileImageData?: string | null; mobileFileName?: string | null }) {

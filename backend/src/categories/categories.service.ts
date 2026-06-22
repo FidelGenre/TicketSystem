@@ -83,9 +83,32 @@ export class CategoriesService implements OnModuleInit {
    * findAll
    * Retrieves all categories, optionally including inactive ones for admin views.
    */
-  findAll(includeInactive = false) {
+  async findAll(includeInactive = false) {
     const where = includeInactive ? {} : { isActive: true };
-    return this.categoryRepo.find({ where, order: { sortOrder: 'ASC', labelEs: 'ASC' } });
+    const categories = await this.categoryRepo.find({ where, order: { sortOrder: 'ASC', labelEs: 'ASC' } });
+    if (includeInactive) return categories;
+    return categories.map((cat) => this.toPublicCategory(cat));
+  }
+
+  private toPublicCategory(cat: EventCategoryEntity) {
+    const { imageData, ...rest } = cat;
+    return {
+      ...rest,
+      imageUrl: imageData ? `/api/categories/${encodeURIComponent(cat.slug)}/image` : null,
+    };
+  }
+
+  private parseImageData(imageData: string | null | undefined) {
+    const match = /^data:([^;]+);base64,(.+)$/s.exec(String(imageData || '').trim());
+    if (!match) return null;
+    return { mimeType: match[1], buffer: Buffer.from(match[2], 'base64') };
+  }
+
+  async getImageBySlug(slug: string) {
+    const cat = await this.categoryRepo.findOne({ where: { slug } });
+    const image = this.parseImageData(cat?.imageData);
+    if (!cat || !image) throw new NotFoundException('Imagen de categoría no encontrada');
+    return image;
   }
 
   async findOne(id: string) {

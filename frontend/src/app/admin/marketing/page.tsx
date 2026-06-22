@@ -219,7 +219,7 @@ export default function AdminMarketingPage() {
     if (savedMobileFileName) setMobileBannerFileName(savedMobileFileName);
     if (savedStatus === 'active' || savedStatus === 'draft') setBannerStatus(savedStatus);
 
-    api.get('/marketing/banner/home')
+    api.get('/marketing/banner/home?includeData=true')
       .then(({ data }) => {
         if (!data?.imageData) return;
 

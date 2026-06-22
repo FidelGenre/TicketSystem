@@ -24,6 +24,18 @@ export class AdminService {
       ...event,
       imageUrl: this.routeBase64EventImage(event.slug, event.imageUrl, 'image'),
       bannerImageUrl: this.routeBase64EventImage(event.slug, event.bannerImageUrl, 'banner'),
+      organizer: event.organizer ? this.toSafeOrganizer(event.organizer) as any : undefined,
+    };
+  }
+
+  private toSafeOrganizer(user: User) {
+    return {
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      username: user.username,
+      email: user.email,
+      role: user.role,
     };
   }
 

@@ -14,8 +14,10 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 type MarketingHomeBanner = {
   id: string;
-  imageData: string;
+  imageData?: string;
+  imageUrl?: string;
   mobileImageData?: string | null;
+  mobileImageUrl?: string | null;
   fileName?: string;
   mobileFileName?: string | null;
   bannerPosition?: string;
@@ -26,6 +28,8 @@ type HomeBannerItem = Event | MarketingHomeBanner;
 
 const isMarketingBanner = (banner: HomeBannerItem): banner is MarketingHomeBanner =>
   'isMarketingBanner' in banner && banner.isMarketingBanner === true;
+
+const resolveHomeImage = (value?: string | null) => getImageUrl(value) || value || '/demo/concert.png';
 
 
 const categoryVisuals = [
@@ -134,7 +138,7 @@ export default function HomeContent({ initialEvents, initialBanner }: HomeConten
                 <AnimatePresence initial={false}>
                   <motion.img
                     key={`${bannerEvent.id}-mobile`}
-                    src={isMarketingBanner(bannerEvent) ? (bannerEvent.mobileImageData || bannerEvent.imageData) : (getImageUrl(bannerEvent.imageUrl) || '/demo/concert.png')}
+                    src={isMarketingBanner(bannerEvent) ? resolveHomeImage(bannerEvent.mobileImageUrl || bannerEvent.mobileImageData || bannerEvent.imageUrl || bannerEvent.imageData) : (getImageUrl(bannerEvent.imageUrl) || '/demo/concert.png')}
                     alt={isMarketingBanner(bannerEvent) ? (bannerEvent.fileName || 'Banner publicitario LPTicket') : bannerEvent.title}
                     initial={{ opacity: 0, scale: 1.02 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -148,7 +152,7 @@ export default function HomeContent({ initialEvents, initialBanner }: HomeConten
                   />
                   <motion.img
                     key={`${bannerEvent.id}-desktop`}
-                    src={isMarketingBanner(bannerEvent) ? bannerEvent.imageData : (getImageUrl(bannerEvent.bannerImageUrl || bannerEvent.imageUrl) || '/demo/concert.png')}
+                    src={isMarketingBanner(bannerEvent) ? resolveHomeImage(bannerEvent.imageUrl || bannerEvent.imageData) : (getImageUrl(bannerEvent.bannerImageUrl || bannerEvent.imageUrl) || '/demo/concert.png')}
                     alt={isMarketingBanner(bannerEvent) ? (bannerEvent.fileName || 'Banner publicitario LPTicket') : bannerEvent.title}
                     initial={{ opacity: 0, scale: 1.02 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -256,8 +260,8 @@ export default function HomeContent({ initialEvents, initialBanner }: HomeConten
 
               <div className="home-category-rail flex-1 overflow-x-auto no-scrollbar scroll-smooth">
                 {(() => {
-                  const allCat = categories.find((c) => c.slug === 'todos' || c.slug === 'todas') as (typeof categories[number] & { imageData?: string }) | undefined;
-                  const allImage = allCat?.imageData || '/demo/concert.png';
+                  const allCat = categories.find((c) => c.slug === 'todos' || c.slug === 'todas') as (typeof categories[number] & { imageData?: string; imageUrl?: string }) | undefined;
+                  const allImage = getImageUrl(allCat?.imageUrl || allCat?.imageData) || '/demo/concert.png';
                   return (
                     <button onClick={() => setActiveCategory('')} className={`home-category-card ${activeCategory === '' ? 'active' : ''}`} aria-pressed={activeCategory === ''}>
                       <span className="home-category-image" style={{ backgroundImage: `url(${allImage})` }} />
@@ -275,7 +279,7 @@ export default function HomeContent({ initialEvents, initialBanner }: HomeConten
                 {categories.filter((cat) => cat.slug !== 'todos' && cat.slug !== 'todas').map((cat) => {
                   const label = lang === 'en' ? cat.labelEn : cat.labelEs;
                   const visual = getCategoryVisual(cat.slug, label, lang);
-                  const image = (cat as typeof cat & { imageData?: string }).imageData || visual.image;
+                  const image = getImageUrl((cat as typeof cat & { imageData?: string; imageUrl?: string }).imageUrl || (cat as typeof cat & { imageData?: string }).imageData) || visual.image;
 
                   return (
                     <button key={cat.id} onClick={() => setActiveCategory(activeCategory === cat.slug ? '' : cat.slug)} className={`home-category-card ${activeCategory === cat.slug ? 'active' : ''}`} aria-pressed={activeCategory === cat.slug}>

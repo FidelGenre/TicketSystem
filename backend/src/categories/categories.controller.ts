@@ -1,6 +1,6 @@
 import {
   Controller, Get, Post, Patch, Delete,
-  Body, Param, UseGuards, Query,
+  Body, Param, UseGuards, Query, Res,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { CategoriesService } from './categories.service';
@@ -43,6 +43,15 @@ export class CategoriesController {
   @Get()
   findAll(@Query('all') all?: string) {
     return this.categoriesService.findAll(all === 'true');
+  }
+
+  @Get(':slug/image')
+  async getImage(@Param('slug') slug: string, @Res() res: any) {
+    const image = await this.categoriesService.getImageBySlug(slug);
+    res.header('Content-Type', image.mimeType);
+    res.header('Cache-Control', 'public, max-age=86400, s-maxage=86400');
+    res.header('Content-Length', image.buffer.length);
+    return res.send(image.buffer);
   }
 
   /** Admin only: create new category */

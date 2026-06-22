@@ -812,7 +812,7 @@ export function AdminPanelScreen({ section, onSectionChange }: AdminProps = {}) 
   useEffect(() => {
     if (active !== 'marketing' || homeBanner !== null) return;
     Promise.allSettled([
-      apiGet<any>('/marketing/banner/home'),
+      apiGet<any>('/marketing/banner/home?includeData=true'),
       apiGet<any[]>('/marketing/admin/recipients'),
       apiGet<any>('/admin/users?page=1&limit=200'),
       apiGet<any>('/events'),

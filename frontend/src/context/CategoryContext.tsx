@@ -14,6 +14,7 @@ export interface Category {
   sortOrder: number;
   isActive: boolean;
   imageData?: string | null;
+  imageUrl?: string | null;
 }
 
 interface CategoryContextType {
@@ -30,7 +31,7 @@ const CategoryContext = createContext<CategoryContextType>({
   refreshCategories: async () => {},
 });
 
-const CATEGORY_CACHE_KEY = 'lp_categories_v1';
+const CATEGORY_CACHE_KEY = 'lp_categories_v2';
 
 export function CategoryProvider({ children }: { children: ReactNode }) {
   const [categories, setCategories] = useState<Category[]>([]);

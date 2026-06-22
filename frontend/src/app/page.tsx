@@ -5,8 +5,10 @@ export const revalidate = 60; // ISR: revalidar cada 60 segundos
 
 type MarketingHomeBanner = {
   id: string;
-  imageData: string;
+  imageData?: string;
+  imageUrl?: string;
   mobileImageData?: string | null;
+  mobileImageUrl?: string | null;
   fileName?: string;
   mobileFileName?: string | null;
   bannerPosition?: string;
@@ -25,11 +27,14 @@ async function loadHomeData() {
     const events: Event[] = eventsRes.ok ? (await eventsRes.json()).events || [] : [];
     const bannerData = bannerRes.ok ? await bannerRes.json() : null;
 
-    const banner: MarketingHomeBanner | null = bannerData?.imageData
+    const bannerImage = bannerData?.imageUrl || bannerData?.imageData;
+    const banner: MarketingHomeBanner | null = bannerImage
       ? {
           id: bannerData.id || 'marketing-home-banner',
-          imageData: bannerData.imageData,
+          imageData: bannerImage,
+          imageUrl: bannerData.imageUrl || null,
           mobileImageData: bannerData.mobileImageData || null,
+          mobileImageUrl: bannerData.mobileImageUrl || null,
           fileName: bannerData.fileName || 'Banner publicitario LPTicket',
           mobileFileName: bannerData.mobileFileName || null,
           bannerPosition: 'center',
