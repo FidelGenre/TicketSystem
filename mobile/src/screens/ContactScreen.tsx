@@ -59,7 +59,7 @@ export function ContactScreen({ user, onBack }: Props) {
       </View>
 
       {/* Info cards */}
-      <InfoCard icon="call-outline" title={t('Contacto en línea', 'Online Contact')} lines={['+1 (832) 379-0809']} />
+      <InfoCard icon="call-outline" title={t('Contacto en línea', 'Online Contact')} lines={['+1 (281) 625-6383']} />
       <InfoCard icon="location-outline" title={t('Nuestra dirección', 'Our Address')} lines={['1325 Main St Suite 203', 'Katy, TX 77494 United States']} />
       <InfoCard icon="mail-outline" title="E-mail" lines={['Info@lpticket.com']} />
 

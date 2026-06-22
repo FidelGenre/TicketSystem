@@ -80,7 +80,7 @@ export default function Footer() {
               </div>
               <div className="flex flex-col gap-0.5">
                 <span className="text-[9px] font-black uppercase tracking-widest text-white/30">{lang === 'es' ? 'Teléfono' : 'Phone'}</span>
-                <p className="text-[12px] font-bold text-white/70">832.379.0809</p>
+                <p className="text-[12px] font-bold text-white/70">281.625.6383</p>
               </div>
               <div className="flex flex-col gap-0.5">
                 <span className="text-[9px] font-black uppercase tracking-widest text-white/30">{lang === 'es' ? 'Correo' : 'Email'}</span>

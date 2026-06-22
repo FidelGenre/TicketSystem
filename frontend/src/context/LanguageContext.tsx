@@ -126,7 +126,7 @@ const translations = {
     contactAddressText2: 'Katy, TX 77494 United States',
     contactEmailTitle: 'E-mail',
     contactEmail: 'Info@lpticket.com',
-    contactPhone: '+1 (832) 379-0809',
+    contactPhone: '+1 (281) 625-6383',
     contactFollowUs: '¡Síguenos en nuestras redes sociales!',
 
     // Organizer Panel
@@ -388,7 +388,7 @@ const translations = {
     contactAddressText2: 'Katy, TX, 77494, United States.',
     contactEmailTitle: 'E-mail',
     contactEmail: 'Info@lpticket.com',
-    contactPhone: '+1 (832) 379-0809',
+    contactPhone: '+1 (281) 625-6383',
     contactFollowUs: 'Follow us on our social networks!',
 
     // Organizer Panel

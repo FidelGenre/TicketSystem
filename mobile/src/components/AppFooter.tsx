@@ -44,7 +44,7 @@ export function AppFooter() {
           <Text style={styles.footerSmall}>{t('DIRECCIÓN', 'ADDRESS')}</Text>
           <Text style={styles.footerLink}>1325 Main St Suite 203, Katy, TX 77494</Text>
           <Text style={styles.footerSmall}>{t('TELÉFONO', 'PHONE')}</Text>
-          <Text style={styles.footerLink}>832.379.0809</Text>
+          <Text style={styles.footerLink}>281.625.6383</Text>
           <Text style={styles.footerSmall}>Email</Text>
           <Text style={styles.footerLink}>info@lpticket.com</Text>
         </View>
