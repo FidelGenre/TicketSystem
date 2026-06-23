@@ -93,6 +93,7 @@ export default function AdminMarketingPage() {
   const [pushMessage, setPushMessage] = useState('');
   const [pushAudience, setPushAudience] = useState<'all' | 'user'>('all');
   const [pushUserId, setPushUserId] = useState('');
+  const [pushUserPickerOpen, setPushUserPickerOpen] = useState(false);
   const [pushDestination, setPushDestination] = useState<'none' | 'event' | 'external'>('none');
   const [pushEventId, setPushEventId] = useState('');
   const [pushLink, setPushLink] = useState('');
@@ -185,6 +186,7 @@ export default function AdminMarketingPage() {
   };
 
   const pushUserQuery = pickerSearch.push.trim().toLowerCase();
+  const selectedPushUser = recipientsList.find((u) => u.id === pushUserId);
   const filteredPushUsers = recipientsList.filter((u) => {
     if (!pushUserQuery) return true;
     const haystack = `${u.name || ''} ${u.email || ''} ${u.phone || ''}`.toLowerCase();
@@ -728,41 +730,73 @@ export default function AdminMarketingPage() {
 
           {pushAudience === 'user' && (
             <div className="mt-2 rounded-2xl border border-[rgba(246,198,95,0.18)] bg-[#0b2236] p-3">
-              <input
-                value={pickerSearch.push}
-                onChange={(e) => setPickerSearch((p) => ({ ...p, push: e.target.value }))}
-                placeholder="Buscar por nombre, email o teléfono…"
-                className="h-10 w-full rounded-xl border border-[rgba(246,198,95,0.18)] bg-[#071827] px-3 text-sm text-slate-100 outline-none focus:border-[#F97316]"
-              />
-              <div className="mt-2 flex items-center justify-between text-[11px] text-gray-400">
-                <span>{filteredPushUsers.length} usuario(s)</span>
-                {pushUserId && (
-                  <button type="button" onClick={() => setPushUserId('')} className="font-black text-[#F97316]">Limpiar</button>
-                )}
-              </div>
-              <div className="mt-2 max-h-[336px] overflow-y-auto pr-1 custom-scrollbar">
-                {filteredPushUsers.length === 0 ? (
-                  <p className="py-3 text-center text-xs text-gray-500">No encontramos usuarios con ese texto.</p>
-                ) : filteredPushUsers.map((u) => {
-                  const selected = pushUserId === u.id;
-                  return (
-                    <button
-                      key={u.id}
-                      type="button"
-                      onClick={() => setPushUserId(u.id)}
-                      className={`mb-1 flex min-h-11 w-full items-center gap-2 rounded-xl px-2 py-2 text-left transition ${selected ? 'bg-[#F97316]/15 ring-1 ring-[#F97316]/40' : 'hover:bg-white/5'}`}
-                    >
-                      <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-black ${selected ? 'bg-[#F97316] text-white' : 'bg-white/10 text-slate-300'}`}>
-                        {(u.name || u.email || '?').trim().slice(0, 1).toUpperCase()}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-bold text-slate-100">{u.name || u.email}</span>
-                        <span className="block truncate text-[11px] text-gray-400">{u.email || u.phone || 'Sin contacto'}</span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+              <button
+                type="button"
+                onClick={() => setPushUserPickerOpen((open) => !open)}
+                className="flex min-h-11 w-full items-center gap-2 rounded-xl border border-[rgba(246,198,95,0.18)] bg-[#071827] px-3 py-2 text-left"
+              >
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#F97316]/15 text-xs font-black text-[#F97316]">
+                  {(selectedPushUser?.name || selectedPushUser?.email || '?').trim().slice(0, 1).toUpperCase()}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-bold text-slate-100">{selectedPushUser?.name || 'Seleccionar usuario'}</span>
+                  <span className="block truncate text-[11px] text-gray-400">{selectedPushUser?.email || 'Toca para buscar por nombre, email o teléfono'}</span>
+                </span>
+                <span className="text-xs font-black text-[#F97316]">{pushUserPickerOpen ? 'Cerrar' : 'Buscar'}</span>
+              </button>
+              {pushUserPickerOpen && (
+                <>
+                  <input
+                    value={pickerSearch.push}
+                    onChange={(e) => setPickerSearch((p) => ({ ...p, push: e.target.value }))}
+                    placeholder="Buscar por nombre, email o teléfono…"
+                    className="mt-2 h-10 w-full rounded-xl border border-[rgba(246,198,95,0.18)] bg-[#071827] px-3 text-sm text-slate-100 outline-none focus:border-[#F97316]"
+                    autoFocus
+                  />
+                  <div className="mt-2 flex items-center justify-between text-[11px] text-gray-400">
+                    <span>{filteredPushUsers.length} usuario(s)</span>
+                    {pushUserId && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPushUserId('');
+                          setPickerSearch((p) => ({ ...p, push: '' }));
+                        }}
+                        className="font-black text-[#F97316]"
+                      >
+                        Limpiar
+                      </button>
+                    )}
+                  </div>
+                  <div className="mt-2 max-h-[336px] overflow-y-auto pr-1 custom-scrollbar">
+                    {filteredPushUsers.length === 0 ? (
+                      <p className="py-3 text-center text-xs text-gray-500">No encontramos usuarios con ese texto.</p>
+                    ) : filteredPushUsers.map((u) => {
+                      const selected = pushUserId === u.id;
+                      return (
+                        <button
+                          key={u.id}
+                          type="button"
+                          onClick={() => {
+                            setPushUserId(u.id);
+                            setPushUserPickerOpen(false);
+                            setPickerSearch((p) => ({ ...p, push: '' }));
+                          }}
+                          className={`mb-1 flex min-h-11 w-full items-center gap-2 rounded-xl px-2 py-2 text-left transition ${selected ? 'bg-[#F97316]/15 ring-1 ring-[#F97316]/40' : 'hover:bg-white/5'}`}
+                        >
+                          <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-black ${selected ? 'bg-[#F97316] text-white' : 'bg-white/10 text-slate-300'}`}>
+                            {(u.name || u.email || '?').trim().slice(0, 1).toUpperCase()}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-bold text-slate-100">{u.name || u.email}</span>
+                            <span className="block truncate text-[11px] text-gray-400">{u.email || u.phone || 'Sin contacto'}</span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </div>
           )}
 
