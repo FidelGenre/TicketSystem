@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import api from '@/lib/api';
 import {
   HiOutlineBadgeCheck,
+  HiOutlineBell,
   HiOutlineChartBar,
   HiOutlineChatAlt2,
   HiOutlineCursorClick,
@@ -88,8 +89,15 @@ export default function AdminMarketingPage() {
   const [emailArtFileName, setEmailArtFileName] = useState('');
 
   const [smsMessage, setSmsMessage] = useState('');
+  const [pushTitle, setPushTitle] = useState('');
+  const [pushMessage, setPushMessage] = useState('');
+  const [pushAudience, setPushAudience] = useState<'all' | 'user'>('all');
+  const [pushUserId, setPushUserId] = useState('');
+  const [pushDestination, setPushDestination] = useState<'none' | 'event' | 'external'>('none');
+  const [pushEventId, setPushEventId] = useState('');
+  const [pushLink, setPushLink] = useState('');
   const [whatsappMessage, setWhatsappMessage] = useState('');
-  const [sending, setSending] = useState<'' | 'email' | 'sms' | 'whatsapp'>('');
+  const [sending, setSending] = useState<'' | 'email' | 'sms' | 'push' | 'whatsapp'>('');
 
   // Audience per channel: 'all' = todos, 'specify' = elegidos de la lista.
   const [emailAudience, setEmailAudience] = useState<'all' | 'specify'>('all');
@@ -102,6 +110,7 @@ export default function AdminMarketingPage() {
   const [emailSel, setEmailSel] = useState<string[]>([]);
   const [smsSel, setSmsSel] = useState<string[]>([]);
   const [waSel, setWaSel] = useState<string[]>([]);
+  const [pushEvents, setPushEvents] = useState<any[]>([]);
   const [pickerSearch, setPickerSearch] = useState<{ email: string; sms: string; whatsapp: string }>({ email: '', sms: '', whatsapp: '' });
 
   // Styled confirmation modal (replaces native confirm()).
@@ -115,6 +124,10 @@ export default function AdminMarketingPage() {
 
   useEffect(() => {
     api.get('/marketing/admin/recipients').then((r) => setRecipientsList(r.data || [])).catch(() => {});
+    api.get('/events').then((r) => {
+      const data = r.data;
+      setPushEvents(Array.isArray(data) ? data : data?.events || data?.data || []);
+    }).catch(() => {});
   }, []);
 
   const toggleSel = (
@@ -230,6 +243,54 @@ export default function AdminMarketingPage() {
       }
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Error al enviar');
+    } finally { setSending(''); }
+  };
+
+  const handleSendPush = async () => {
+    if (!pushTitle.trim() || !pushMessage.trim()) {
+      toast.error('Escribe título y mensaje.');
+      return;
+    }
+    if (pushAudience === 'user' && !pushUserId) {
+      toast.error('Selecciona un usuario.');
+      return;
+    }
+    const selectedEvent = pushEvents.find((event) => String(event.id) === pushEventId);
+    if (pushDestination === 'event' && !selectedEvent) {
+      toast.error('Selecciona un evento.');
+      return;
+    }
+    const link = pushDestination === 'event'
+      ? `lpticket://event/${selectedEvent?.slug || selectedEvent?.id}`
+      : pushDestination === 'external'
+        ? pushLink.trim()
+        : '';
+    if (pushDestination === 'external' && link && !/^https?:\/\//i.test(link)) {
+      toast.error('Usa un link que empiece con https://');
+      return;
+    }
+    const who = pushAudience === 'user'
+      ? recipientsList.find((u) => u.id === pushUserId)?.name || 'un usuario'
+      : 'todos los dispositivos activos';
+    if (!(await askConfirm('Enviar push', `¿Enviar esta notificación push a ${who}?`))) return;
+    setSending('push');
+    try {
+      const { data } = await api.post('/marketing/admin/push-campaign', {
+        title: pushTitle.trim(),
+        message: pushMessage.trim(),
+        audience: pushAudience,
+        userId: pushAudience === 'user' ? pushUserId : undefined,
+        link: link || undefined,
+      });
+      if (data.error) toast.error(data.error);
+      else toast.success(`Push enviado: ${data.sent}/${data.total} (${data.failed} fallidos)`);
+      setPushTitle('');
+      setPushMessage('');
+      setPushLink('');
+      setPushEventId('');
+      setPushDestination('none');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'No se pudo enviar el push');
     } finally { setSending(''); }
   };
 
@@ -607,8 +668,8 @@ export default function AdminMarketingPage() {
         </div>
       </section>
 
-      {/* SMS & WhatsApp campaigns */}
-      <section className="grid gap-5 sm:grid-cols-2">
+      {/* SMS, Push & WhatsApp campaigns */}
+      <section className="grid gap-5 xl:grid-cols-3">
         <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-[#0A375A]">
@@ -639,6 +700,102 @@ export default function AdminMarketingPage() {
           <div className="mt-1 text-right text-[11px] text-gray-400">{smsMessage.length}/320</div>
           <button type="button" onClick={() => handleSendMessaging('sms')} disabled={sending === 'sms'} className="btn-primary mt-2 w-full py-3 disabled:opacity-60">
             {sending === 'sms' ? 'Enviando…' : 'Enviar SMS'}
+          </button>
+        </div>
+
+        <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-orange-50 text-[#F97316]">
+              <HiOutlineBell className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-base font-black text-gray-950">Notificaciones push</h2>
+              <p className="text-xs text-gray-500">Avisos directos a la app, para todos o un usuario.</p>
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <button type="button" onClick={() => setPushAudience('all')} className={`rounded-xl border px-3 py-2 text-xs font-black ${pushAudience === 'all' ? 'border-orange-300 bg-orange-50 text-[#F97316]' : 'border-gray-200 text-gray-500'}`}>Todos</button>
+            <button type="button" onClick={() => setPushAudience('user')} className={`rounded-xl border px-3 py-2 text-xs font-black ${pushAudience === 'user' ? 'border-orange-300 bg-orange-50 text-[#F97316]' : 'border-gray-200 text-gray-500'}`}>Usuario</button>
+          </div>
+
+          {pushAudience === 'user' && (
+            <select
+              value={pushUserId}
+              onChange={(e) => setPushUserId(e.target.value)}
+              className="mt-2 h-11 w-full rounded-xl border border-[rgba(246,198,95,0.18)] bg-[#0b2236] px-3 text-sm text-slate-100 outline-none focus:border-[#F97316]"
+            >
+              <option value="" className="bg-[#0b2236] text-slate-100">Seleccionar usuario</option>
+              {recipientsList.map((u) => (
+                <option key={u.id} value={u.id} className="bg-[#0b2236] text-slate-100">{u.name || u.email}</option>
+              ))}
+            </select>
+          )}
+
+          <input
+            value={pushTitle}
+            onChange={(e) => setPushTitle(e.target.value)}
+            maxLength={80}
+            placeholder="Título de la notificación"
+            className="mt-2 h-11 w-full rounded-xl border border-[rgba(246,198,95,0.18)] bg-[#0b2236] px-3 text-sm text-slate-100 outline-none focus:border-[#F97316]"
+          />
+          <textarea
+            value={pushMessage}
+            onChange={(e) => setPushMessage(e.target.value)}
+            rows={4}
+            maxLength={120}
+            placeholder="Mensaje push…"
+            className="mt-2 w-full resize-none rounded-2xl border border-[rgba(246,198,95,0.18)] bg-[#0b2236] p-4 text-sm text-slate-100 outline-none focus:border-[#F97316]"
+          />
+          <div className="mt-1 text-right text-[11px] text-gray-400">{pushMessage.length}/120</div>
+
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {([
+              ['none', 'Sin destino'],
+              ['event', 'Evento'],
+              ['external', 'Link'],
+            ] as const).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setPushDestination(key)}
+                className={`rounded-xl border px-2 py-2 text-[11px] font-black ${pushDestination === key ? 'border-orange-300 bg-orange-50 text-[#F97316]' : 'border-gray-200 text-gray-500'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {pushDestination === 'event' && (
+            <select
+              value={pushEventId}
+              onChange={(e) => setPushEventId(e.target.value)}
+              className="mt-2 h-11 w-full rounded-xl border border-[rgba(246,198,95,0.18)] bg-[#0b2236] px-3 text-sm text-slate-100 outline-none focus:border-[#F97316]"
+            >
+              <option value="" className="bg-[#0b2236] text-slate-100">Seleccionar evento</option>
+              {pushEvents.map((event) => (
+                <option key={event.id || event.slug} value={event.id} className="bg-[#0b2236] text-slate-100">{event.title || event.name || 'Evento'}</option>
+              ))}
+            </select>
+          )}
+
+          {pushDestination === 'external' && (
+            <input
+              value={pushLink}
+              onChange={(e) => setPushLink(e.target.value)}
+              placeholder="https://tu-link.com"
+              className="mt-2 h-11 w-full rounded-xl border border-[rgba(246,198,95,0.18)] bg-[#0b2236] px-3 text-sm text-slate-100 outline-none focus:border-[#F97316]"
+            />
+          )}
+
+          <div className="mt-3 rounded-2xl border border-[rgba(246,198,95,0.18)] bg-[#0b2236] p-3">
+            <p className="text-[11px] font-black uppercase tracking-wide text-gray-500">Preview</p>
+            <p className="mt-2 truncate text-sm font-black text-slate-100">{pushTitle || 'LPTicket'}</p>
+            <p className="mt-1 line-clamp-2 text-xs leading-5 text-gray-400">{pushMessage || 'Tu notificación se verá así.'}</p>
+          </div>
+
+          <button type="button" onClick={handleSendPush} disabled={sending === 'push'} className="btn-primary mt-3 w-full py-3 disabled:opacity-60">
+            {sending === 'push' ? 'Enviando…' : 'Enviar push'}
           </button>
         </div>
 
