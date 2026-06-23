@@ -109,7 +109,11 @@ export default function AdminMarketingPage() {
   ) => {
     const q = pickerSearch[channel].toLowerCase();
     const list = recipientsList.filter(
-      (u) => u[field] && (u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || (u.phone || '').includes(q)),
+      (u) => (field === 'phone'
+        // WhatsApp: show all users, not just those with phone
+        ? (u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || (u.phone || '').includes(q))
+        : (u[field] && (u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || (u.phone || '').includes(q)))
+      ),
     );
     return (
       <div className="mt-2 rounded-xl border border-[rgba(246,198,95,0.18)] bg-[#0b2236] p-3">
@@ -128,17 +132,19 @@ export default function AdminMarketingPage() {
         </div>
         <div className="mt-2 max-h-48 space-y-1 overflow-y-auto custom-scrollbar">
           {list.length === 0 && (
-            <p className="py-2 text-center text-xs text-gray-500">Sin usuarios con {field === 'email' ? 'correo' : 'teléfono'}.</p>
+            <p className="py-2 text-center text-xs text-gray-500">Sin usuarios.</p>
           )}
-          {list.map((u) => (
-            <label key={u.id} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-white/5">
-              <input type="checkbox" checked={sel.includes(u.id)} onChange={() => toggleSel(setSel, u.id)} className="accent-[#F97316]" />
-              <span className="min-w-0 flex-1 truncate text-sm text-slate-200">{u.name || (field === 'email' ? u.email : u.phone)}</span>
-              {(field === 'email' ? u.email : u.phone) && (
-                <span className="shrink-0 text-[11px] text-gray-400">{field === 'email' ? u.email : u.phone}</span>
-              )}
-            </label>
-          ))}
+          {list.map((u) => {
+            const contactValue = field === 'email' ? u.email : u.phone;
+            const noPhone = field === 'phone' && !u.phone;
+            return (
+              <label key={u.id} className={`flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-white/5 ${noPhone ? 'opacity-50' : ''}`}>
+                <input type="checkbox" checked={sel.includes(u.id)} onChange={() => toggleSel(setSel, u.id)} className="accent-[#F97316]" disabled={noPhone} />
+                <span className="min-w-0 flex-1 truncate text-sm text-slate-200">{u.name || u.email}</span>
+                <span className="shrink-0 text-[11px] text-gray-400">{noPhone ? 'Sin teléfono' : contactValue}</span>
+              </label>
+            );
+          })}
         </div>
       </div>
     );

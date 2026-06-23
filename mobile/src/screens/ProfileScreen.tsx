@@ -413,9 +413,11 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.14)',
     backgroundColor: 'rgba(255,255,255,0.018)',
     paddingHorizontal: 16,
+    paddingVertical: 0,
     color: '#F8FAFC',
     fontSize: 16,
     fontWeight: '600',
+    textAlignVertical: 'center',
   },
   codeInputWrap: {
     flexDirection: 'row',

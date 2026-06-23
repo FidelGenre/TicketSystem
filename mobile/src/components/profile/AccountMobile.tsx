@@ -365,9 +365,11 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.14)',
     backgroundColor: '#030B14',
     paddingHorizontal: 16,
+    paddingVertical: 0,
     color: '#F8FAFC',
     fontSize: 16,
     fontWeight: '600',
+    textAlignVertical: 'center',
   },
   textArea: { minHeight: 92, paddingTop: 14, textAlignVertical: 'top' },
   saveButton: {

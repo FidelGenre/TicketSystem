@@ -134,7 +134,6 @@ export default function HomeContent({ initialEvents, initialBanner }: HomeConten
               <Link href={isMarketingBanner(bannerEvent) ? '#' : `/events/${bannerEvent.slug}`} className="absolute inset-0 z-[5] block overflow-hidden bg-[#0A375A]" aria-label={isMarketingBanner(bannerEvent) ? (bannerEvent.fileName || 'Banner publicitario LPTicket') : bannerEvent.title}>
                 {/* Shimmer skeleton behind the banner image while it loads */}
                 <span className="absolute inset-0 z-0 animate-shimmer" aria-hidden="true" />
-                <div className="home-hero-overlay" aria-hidden="true" />
                 <AnimatePresence initial={false}>
                   <motion.img
                     key={`${bannerEvent.id}-mobile`}
@@ -165,6 +164,7 @@ export default function HomeContent({ initialEvents, initialBanner }: HomeConten
                     onError={(e) => { (e.target as HTMLImageElement).src = '/demo/concert.png'; }}
                   />
                 </AnimatePresence>
+                <div className="home-hero-overlay" aria-hidden="true" />
               </Link>
 
               {!isMarketingBanner(bannerEvent) && (
