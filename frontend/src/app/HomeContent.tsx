@@ -149,18 +149,18 @@ export default function HomeContent({ initialEvents, initialBanners }: HomeConte
         <section className="home-hero-shell">
           <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8">
             <div className="home-hero-frame group">
-              <Link href={isMarketingBanner(bannerEvent) ? '#' : `/events/${bannerEvent.slug}`} className="absolute inset-0 z-[5] block overflow-hidden bg-[#0A375A]" aria-label={isMarketingBanner(bannerEvent) ? (bannerEvent.fileName || 'Banner publicitario LPTicket') : bannerEvent.title}>
+              <Link href={isMarketingBanner(bannerEvent) ? '#' : `/events/${bannerEvent.slug}`} className={`absolute inset-0 z-[5] block overflow-hidden ${isMarketingBanner(bannerEvent) ? 'bg-black' : 'bg-[#0A375A]'}`} aria-label={isMarketingBanner(bannerEvent) ? (bannerEvent.fileName || 'Banner publicitario LPTicket') : bannerEvent.title}>
                 {/* Shimmer skeleton behind the banner image while it loads */}
-                <span className="absolute inset-0 z-0 animate-shimmer" aria-hidden="true" />
+                {!isMarketingBanner(bannerEvent) && <span className="absolute inset-0 z-0 animate-shimmer" aria-hidden="true" />}
                 <AnimatePresence initial={false}>
                   <motion.img
                     key={`${bannerEvent.id}-mobile`}
                     src={isMarketingBanner(bannerEvent) ? resolveHomeImage(bannerEvent.mobileImageUrl || bannerEvent.mobileImageData || bannerEvent.imageUrl || bannerEvent.imageData) : (getImageUrl(bannerEvent.imageUrl) || '/demo/concert.png')}
                     alt={isMarketingBanner(bannerEvent) ? (bannerEvent.fileName || 'Banner publicitario LPTicket') : bannerEvent.title}
-                    initial={{ opacity: 0, scale: 1.02 }}
+                    initial={{ opacity: isMarketingBanner(bannerEvent) ? 1 : 0, scale: 1.02 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 1.2, ease: 'easeInOut' }}
+                    transition={{ duration: isMarketingBanner(bannerEvent) ? 0.4 : 1.2, ease: 'easeInOut' }}
                     className="absolute inset-0 block h-full w-full object-cover transition-transform duration-[1600ms] group-hover:scale-[1.025] sm:hidden"
                     style={{ objectPosition: bannerEvent.bannerPosition || 'center' }}
                     loading="eager"
@@ -171,10 +171,10 @@ export default function HomeContent({ initialEvents, initialBanners }: HomeConte
                     key={`${bannerEvent.id}-desktop`}
                     src={isMarketingBanner(bannerEvent) ? resolveHomeImage(bannerEvent.imageUrl || bannerEvent.imageData) : (getImageUrl(bannerEvent.bannerImageUrl || bannerEvent.imageUrl) || '/demo/concert.png')}
                     alt={isMarketingBanner(bannerEvent) ? (bannerEvent.fileName || 'Banner publicitario LPTicket') : bannerEvent.title}
-                    initial={{ opacity: 0, scale: 1.02 }}
+                    initial={{ opacity: isMarketingBanner(bannerEvent) ? 1 : 0, scale: 1.02 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 1.2, ease: 'easeInOut' }}
+                    transition={{ duration: isMarketingBanner(bannerEvent) ? 0.4 : 1.2, ease: 'easeInOut' }}
                     className="absolute inset-0 hidden h-full w-full object-cover transition-transform duration-[1600ms] group-hover:scale-[1.025] sm:block"
                     style={{ objectPosition: bannerEvent.bannerPosition || 'center' }}
                     loading="eager"
