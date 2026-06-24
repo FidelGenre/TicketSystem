@@ -149,7 +149,7 @@ export default function HomeContent({ initialEvents, initialBanners }: HomeConte
         <section className="home-hero-shell">
           <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8">
             <div className="home-hero-frame group">
-              <Link href={isMarketingBanner(bannerEvent) ? '#' : `/events/${bannerEvent.slug}`} className={`absolute inset-0 z-[5] block overflow-hidden ${isMarketingBanner(bannerEvent) ? 'bg-black' : 'bg-[#0A375A]'}`} aria-label={isMarketingBanner(bannerEvent) ? (bannerEvent.fileName || 'Banner publicitario LPTicket') : bannerEvent.title}>
+              <Link href={isMarketingBanner(bannerEvent) ? '#' : `/events/${bannerEvent.slug}`} className={`absolute inset-0 z-[5] block overflow-hidden ${isMarketingBanner(bannerEvent) ? '' : 'bg-[#0A375A]'}`} aria-label={isMarketingBanner(bannerEvent) ? (bannerEvent.fileName || 'Banner publicitario LPTicket') : bannerEvent.title}>
                 {/* Shimmer skeleton behind the banner image while it loads */}
                 {!isMarketingBanner(bannerEvent) && <span className="absolute inset-0 z-0 animate-shimmer" aria-hidden="true" />}
                 <AnimatePresence initial={false}>

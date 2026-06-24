@@ -684,7 +684,7 @@ html {
   overflow: hidden;
   border-radius: 0 0 1.35rem 1.35rem;
   border: 1px solid rgba(15, 74, 120, 0.08);
-  background: #dbeafe;
+  background: #000;
   box-shadow: 0 24px 60px rgba(10, 55, 90, 0.14);
 }
 
