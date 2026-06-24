@@ -98,6 +98,10 @@ export default function AdminCategoriesPage() {
     return payload;
   };
 
+  const invalidateCategoryCache = () => {
+    try { window.localStorage.removeItem('lp_categories_v2'); } catch { /* ignore */ }
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true); setError('');
@@ -105,6 +109,7 @@ export default function AdminCategoriesPage() {
       await api.post('/categories', buildPayload());
       setForm(emptyForm);
       setShowForm(false);
+      invalidateCategoryCache();
       await loadCategories();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al crear categoría');
@@ -114,6 +119,7 @@ export default function AdminCategoriesPage() {
   const handleUpdate = async (id: string, updates: Partial<Category>) => {
     try {
       await api.patch(`/categories/${id}`, updates);
+      invalidateCategoryCache();
       await loadCategories();
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Error');
@@ -124,6 +130,7 @@ export default function AdminCategoriesPage() {
     if (!confirm(`¿Eliminar categoría "${label}"? Los eventos con esta categoría mostrarán "otro".`)) return;
     try {
       await api.delete(`/categories/${id}`);
+      invalidateCategoryCache();
       await loadCategories();
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Error al eliminar');
@@ -142,6 +149,7 @@ export default function AdminCategoriesPage() {
     try {
       await api.patch(`/categories/${id}`, buildPayload());
       setEditingId(null);
+      invalidateCategoryCache();
       await loadCategories();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error');

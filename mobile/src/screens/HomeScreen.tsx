@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, Image, Keyboard, ScrollView, Share, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { Animated, AppState, Easing, Image, Keyboard, ScrollView, Share, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, Polygon } from 'react-native-svg';
@@ -298,13 +298,20 @@ export function HomeScreen({ onOpenEvent, scrollToTopSignal = 0 }: Props) {
         if (mounted) setLoading(false);
       });
 
-    apiGet<ApiCategory[]>('/categories')
-      .then((categoryItems) => {
-        if (mounted) setRealCategories(Array.isArray(categoryItems) ? categoryItems : []);
-      })
-      .catch(() => {
-        if (mounted) setRealCategories([]);
-      });
+    const fetchCategories = () =>
+      apiGet<ApiCategory[]>('/categories')
+        .then((categoryItems) => {
+          if (mounted) setRealCategories(Array.isArray(categoryItems) ? categoryItems : []);
+        })
+        .catch(() => {
+          if (mounted) setRealCategories([]);
+        });
+
+    fetchCategories();
+
+    const appStateSub = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') fetchCategories();
+    });
 
     apiGet<ApiHomeBanner[]>('/marketing/banners/home')
       .then((banners) => {
@@ -317,6 +324,7 @@ export function HomeScreen({ onOpenEvent, scrollToTopSignal = 0 }: Props) {
 
     return () => {
       mounted = false;
+      appStateSub.remove();
     };
   }, []);
 
