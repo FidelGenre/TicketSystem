@@ -39,7 +39,9 @@ export class AuthService {
       idNumber: dto.idNumber,
       phone: dto.phone,
       address: dto.address,
-      role: dto.role || UserRole.CLIENT,
+      // SECURITY: never trust a client-supplied role. Self-registration is
+      // always a CLIENT; elevating to admin is an admin-only operation.
+      role: UserRole.CLIENT,
     });
 
     const saved = await this.userRepo.save(user);
@@ -119,11 +121,19 @@ export class AuthService {
     return this.userRepo.findOne({ where: { id: userId, isActive: true } });
   }
 
+  private getRefreshSecret(): string {
+    const secret = this.configService.get<string>('JWT_REFRESH_SECRET');
+    if (!secret) {
+      throw new Error('JWT_REFRESH_SECRET is not set. Refusing to issue or verify refresh tokens with an insecure default.');
+    }
+    return secret;
+  }
+
   async refreshSession(refreshToken: string) {
     let payload: any;
     try {
       payload = this.jwtService.verify(refreshToken, {
-        secret: this.configService.get<string>('JWT_REFRESH_SECRET') || 'fallback-refresh-secret-for-production-please-change-it',
+        secret: this.getRefreshSecret(),
       });
     } catch {
       throw new UnauthorizedException('Refresh token inválido o expirado');
@@ -182,7 +192,7 @@ export class AuthService {
 
     const accessToken = this.jwtService.sign(payload);
     const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_REFRESH_SECRET') || 'fallback-refresh-secret-for-production-please-change-it',
+      secret: this.getRefreshSecret(),
       expiresIn: (this.configService.get<string>('JWT_REFRESH_EXPIRATION') || '7d') as any,
     });
 

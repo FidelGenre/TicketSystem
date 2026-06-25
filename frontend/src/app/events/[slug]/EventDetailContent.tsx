@@ -321,7 +321,9 @@ export default function EventDetailContent({ initialEvent, initialSeatMap }: Eve
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(eventJsonLd) }}
+        // Escape "<" so a malicious event title containing "</script>" cannot
+        // break out of the JSON-LD block and inject markup (XSS).
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(eventJsonLd).replace(/</g, '\\u003c') }}
       />
       <div className="event-dark max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-8 lg:pt-24">
       {/* Hero Image */}

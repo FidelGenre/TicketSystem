@@ -12,6 +12,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { Throttle } from '@nestjs/throttler';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { FacebookAuthGuard } from './guards/facebook-auth.guard';
 import { ConfigService } from '@nestjs/config';
@@ -29,26 +30,32 @@ export class AuthController {
     private readonly storageService: StorageService,
   ) {}
 
+  // Strict throttle on credential endpoints to blunt brute-force / enumeration.
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @Post('register')
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
 
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
   }
 
+  @Throttle({ default: { ttl: 60_000, limit: 20 } })
   @Post('refresh')
   refreshSession(@Body('refreshToken') refreshToken: string) {
     return this.authService.refreshSession(refreshToken);
   }
 
+  @Throttle({ default: { ttl: 60_000, limit: 3 } })
   @Post('forgot-password')
   forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.authService.forgotPassword(dto.email);
   }
 
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @Post('reset-password')
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto.token, dto.password);

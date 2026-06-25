@@ -5,10 +5,18 @@ export async function GET(request: NextRequest) {
   const secret = request.nextUrl.searchParams.get('secret');
   const path = request.nextUrl.searchParams.get('path');
 
-  // Simple secret check (change this to a real secret in .env)
-  const revalidateSecret = process.env.REVALIDATE_SECRET || 'dev-secret-change-me';
+  const revalidateSecret = process.env.REVALIDATE_SECRET;
 
-  if (secret !== revalidateSecret) {
+  // Refuse to run without a configured secret in production — otherwise anyone
+  // could trigger cache revalidation. In dev, fall back to a local-only secret.
+  if (!revalidateSecret) {
+    if (process.env.NODE_ENV === 'production') {
+      return NextResponse.json({ error: 'Revalidation is not configured' }, { status: 503 });
+    }
+  }
+
+  const effectiveSecret = revalidateSecret || 'dev-secret-change-me';
+  if (!secret || secret !== effectiveSecret) {
     return NextResponse.json({ error: 'Invalid secret' }, { status: 401 });
   }
 

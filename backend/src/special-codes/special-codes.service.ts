@@ -100,7 +100,17 @@ export class SpecialCodesService {
     });
   }
 
-  async getCodesByEvent(eventId: string) {
+  async getCodesByEvent(eventId: string, user?: { id: string; role?: string }) {
+    // Authorization: only the event's organizer (or an admin) may list its codes,
+    // owners and per-buyer commission data. Prevents IDOR by event id.
+    if (user) {
+      const event = await this.eventRepo.findOne({ where: { id: eventId } });
+      if (!event) throw new NotFoundException('Evento no encontrado.');
+      if (user.role !== 'admin' && event.organizerId !== user.id) {
+        throw new ForbiddenException('No tienes permiso para ver los codigos de este evento.');
+      }
+    }
+
     const codes = await this.specialCodeRepo.find({
       where: { eventId },
       relations: ['owner', 'event'],

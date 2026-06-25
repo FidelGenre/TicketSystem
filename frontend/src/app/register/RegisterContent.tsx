@@ -66,7 +66,7 @@ export default function RegisterContent() {
         lastName: form.lastName,
         phone: form.phone,
         address: form.address as any,
-        role: 'client' as any,
+        // role is assigned server-side (always CLIENT on self-registration).
         lang,
       } as any);
       router.push(redirect || '/');

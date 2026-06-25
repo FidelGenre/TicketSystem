@@ -4,6 +4,7 @@ import {
   HttpException, HttpStatus,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { SkipThrottle } from '@nestjs/throttler';
 import { ConfigService } from '@nestjs/config';
 import { OrdersService } from './orders.service';
 import { WalletService } from '../common/services/wallet.service';
@@ -121,6 +122,7 @@ export class OrdersController {
     );
   }
 
+  @SkipThrottle()
   @Post('webhook')
   async handleWebhook(
     @Req() req: any,
@@ -195,9 +197,10 @@ export class OrdersController {
     return this.ordersService.getUserTickets(userId);
   }
 
+  // Public (unauthenticated) gate verification — returns a sanitized view only.
   @Get('ticket/:code')
   getTicketByCode(@Param('code') code: string) {
-    return this.ordersService.getTicketByCode(code);
+    return this.ordersService.getPublicTicketByCode(code);
   }
 
   @UseGuards(AuthGuard('jwt'))
@@ -256,15 +259,15 @@ export class OrdersController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.CLIENT, UserRole.ADMIN)
   @Get('event/:eventId/scanner-stats')
-  getScannerStats(@Param('eventId') eventId: string) {
-    return this.ordersService.getScannerEventStats(eventId);
+  getScannerStats(@Param('eventId') eventId: string, @Request() req: any) {
+    return this.ordersService.getScannerEventStats(eventId, req.user);
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.CLIENT, UserRole.ADMIN)
   @Get('event/:eventId/sales')
-  getEventSales(@Param('eventId') eventId: string) {
-    return this.ordersService.getEventSales(eventId);
+  getEventSales(@Param('eventId') eventId: string, @Request() req: any) {
+    return this.ordersService.getEventSales(eventId, req.user);
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -277,8 +280,8 @@ export class OrdersController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.CLIENT, UserRole.ADMIN)
   @Get('event/:eventId/attendees')
-  getEventAttendees(@Param('eventId') eventId: string) {
-    return this.ordersService.getEventAttendees(eventId);
+  getEventAttendees(@Param('eventId') eventId: string, @Request() req: any) {
+    return this.ordersService.getEventAttendees(eventId, req.user);
   }
 
   @UseGuards(AuthGuard('jwt'))

@@ -20,10 +20,16 @@ import { MarketingModule } from '../marketing/marketing.module';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET') || 'fallback-secret-for-production-please-change-it',
-        signOptions: { expiresIn: (config.get<string>('JWT_EXPIRATION') || '1h') as any },
-      }),
+      useFactory: (config: ConfigService) => {
+        const secret = config.get<string>('JWT_SECRET');
+        if (!secret) {
+          throw new Error('JWT_SECRET is not set. Refusing to start with an insecure default.');
+        }
+        return {
+          secret,
+          signOptions: { expiresIn: (config.get<string>('JWT_EXPIRATION') || '1h') as any },
+        };
+      },
     }),
   ],
   controllers: [AuthController],

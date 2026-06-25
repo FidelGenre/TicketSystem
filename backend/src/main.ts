@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import fastifyMultipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
+import fastifyHelmet from '@fastify/helmet';
 import secureSession from '@fastify/secure-session';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -16,18 +17,38 @@ async function bootstrap() {
     new FastifyAdapter({ bodyLimit: 10 * 1024 * 1024 }), // 10MB limit
     { rawBody: true }
   );
-  
-  await app.register(fastifyMultipart);
-  
+
   const configService = app.get(ConfigService);
-  
+  const isProd = configService.get<string>('NODE_ENV') === 'production';
+
+  // Fail fast: never run with insecure default secrets in production.
+  const sessionSecret = configService.get<string>('SESSION_SECRET') || configService.get<string>('JWT_SECRET');
+  if (isProd && (!configService.get<string>('JWT_SECRET') || !configService.get<string>('JWT_REFRESH_SECRET'))) {
+    throw new Error('JWT_SECRET and JWT_REFRESH_SECRET must be set in production.');
+  }
+  if (!sessionSecret || sessionSecret.length < 32) {
+    throw new Error('A session secret of at least 32 characters is required (set SESSION_SECRET or JWT_SECRET).');
+  }
+
+  await app.register(fastifyMultipart);
+
+  // Security headers (HSTS, X-Content-Type-Options, frameguard, etc.).
+  // CSP is disabled here because the static /uploads assets and external
+  // payment scripts are served cross-origin; enable a tailored policy later.
+  await app.register(fastifyHelmet as any, {
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    hsts: isProd ? { maxAge: 15552000, includeSubDomains: true } : false,
+  });
+
   await app.register(secureSession, {
-    secret: configService.get<string>('JWT_SECRET') || 'a-very-long-and-secure-secret-key-at-least-32-chars',
-    salt: 'mq9h9p7uY9sc99h9', // Must be 16 chars
+    secret: sessionSecret,
+    salt: configService.get<string>('SESSION_SALT') || 'mq9h9p7uY9sc99h9', // Must be 16 chars
     cookie: {
       path: '/',
       httpOnly: true,
-      secure: configService.get<string>('NODE_ENV') === 'production',
+      sameSite: 'lax',
+      secure: isProd,
     }
   });
 
@@ -47,22 +68,34 @@ async function bootstrap() {
     }),
   );
 
-  // CORS
-  const appUrl = configService.get('APP_URL') || 'http://localhost:3000';
-  const origins = [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    appUrl
-  ];
-  if (appUrl.includes(',')) {
-    origins.push(...appUrl.split(',').map((o: string) => o.trim()));
-  }
+  // CORS — explicit allow-list. APP_URL / CORS_ORIGINS may hold a comma-separated
+  // list of allowed web origins. Mobile (native) requests send no Origin header
+  // and are allowed through (they are not subject to the browser same-origin policy).
+  const appUrl = configService.get<string>('APP_URL') || 'http://localhost:3000';
+  const extraOrigins = configService.get<string>('CORS_ORIGINS') || '';
+  const allowedOrigins = new Set<string>(
+    [
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      ...appUrl.split(',').map((o) => o.trim()),
+      ...extraOrigins.split(',').map((o) => o.trim()),
+    ]
+      .filter(Boolean)
+      .map((o) => o.replace(/\/$/, '')),
+  );
+
+  const corsOrigin = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    // No Origin header → non-browser client (mobile app, curl, server-to-server).
+    if (!origin) return callback(null, true);
+    const normalized = origin.replace(/\/$/, '');
+    if (allowedOrigins.has(normalized)) return callback(null, true);
+    // In non-production, be permissive to ease local development.
+    if (!isProd) return callback(null, true);
+    return callback(new Error(`Origin ${origin} is not allowed by CORS`), false);
+  };
 
   app.enableCors({
-    origin: (origin, callback) => {
-      // Safely mirror incoming request origin to bypass deployment CORS blocks
-      callback(null, true);
-    },
+    origin: corsOrigin as any,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });

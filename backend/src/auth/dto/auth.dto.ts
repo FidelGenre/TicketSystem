@@ -1,5 +1,4 @@
-import { IsEmail, IsString, MinLength, IsOptional, IsEnum } from 'class-validator';
-import { UserRole } from '../../database/entities';
+import { IsEmail, IsString, MinLength, IsOptional } from 'class-validator';
 
 export class RegisterDto {
   @IsEmail()
@@ -37,9 +36,9 @@ export class RegisterDto {
   @IsString()
   address?: string;
 
-  @IsOptional()
-  @IsEnum(UserRole)
-  role?: UserRole;
+  // SECURITY: `role` is intentionally NOT accepted from the registration body.
+  // Allowing it would let anyone self-register as an admin. New users are always
+  // created as CLIENT; role changes go through the admin-only endpoint.
 
   @IsOptional()
   @IsString()

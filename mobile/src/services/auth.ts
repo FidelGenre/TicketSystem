@@ -49,7 +49,7 @@ export async function register(payload: {
     ...payload,
     email: payload.email.trim(),
     username,
-    role: 'client',
+    // role is assigned server-side (always CLIENT on self-registration).
   });
   setAuthTokens(data.accessToken, data.refreshToken);
   await persist({ accessToken: data.accessToken, refreshToken: data.refreshToken }, data.user);

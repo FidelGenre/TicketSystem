@@ -1214,6 +1214,10 @@ export class OrdersService {
   /**
    * Finds a ticket by its unique public code (used for scanning).
    */
+  /**
+   * Internal lookup — returns the full ticket entity with relations.
+   * Used by wallet pass generation and email resend, NOT exposed directly.
+   */
   async getTicketByCode(code: string) {
     const ticket = await this.ticketRepo.findOne({
       where: { ticketCode: code },
@@ -1224,10 +1228,66 @@ export class OrdersService {
   }
 
   /**
+   * Public verification view — this endpoint is unauthenticated (gate scanning).
+   * Returns only the fields needed to display/verify a ticket, never the buyer's
+   * password hash, address, payment data or full order/user record.
+   */
+  async getPublicTicketByCode(code: string) {
+    const ticket = await this.getTicketByCode(code);
+    const u = ticket.user;
+    const attendeeName =
+      [u?.firstName, u?.lastName].filter(Boolean).join(' ').trim() || 'Invitado';
+    return {
+      ticketCode: ticket.ticketCode,
+      status: ticket.status,
+      sectionName: ticket.sectionName,
+      rowLabel: ticket.rowLabel,
+      seatNumber: ticket.seatNumber,
+      price: ticket.price,
+      createdAt: ticket.createdAt,
+      attendeeName,
+      event: ticket.event
+        ? {
+            id: ticket.event.id,
+            title: ticket.event.title,
+            slug: ticket.event.slug,
+            eventDate: ticket.event.eventDate,
+            eventTimezone: ticket.event.eventTimezone,
+            venueName: ticket.event.venueName,
+            venueAddress: ticket.event.venueAddress,
+            imageUrl: ticket.event.imageUrl,
+            bannerImageUrl: ticket.event.bannerImageUrl,
+          }
+        : null,
+    };
+  }
+
+  /**
+   * Authorization helper: ensure the requesting user owns the event (or is admin).
+   * Prevents IDOR where any authenticated user could read another organizer's
+   * sales, attendee emails or scanner stats by guessing an event id.
+   */
+  private async assertEventAccess(eventId: string, user: { id: string; role?: string }) {
+    const event = await this.eventRepo.findOne({ where: { id: eventId } });
+    if (!event) throw new NotFoundException('Evento no encontrado');
+    if (user?.role !== UserRole.ADMIN && event.organizerId !== user?.id) {
+      throw new ForbiddenException('No tienes permiso para acceder a este evento');
+    }
+    return event;
+  }
+
+  /**
    * Validates a ticket (Scanning Logic).
    * Ensures the user has permission to scan and that the ticket hasn't been used.
    */
-  async getScannerEventStats(eventId: string) {
+  async getScannerEventStats(eventId: string, user: { id: string; role?: string }) {
+    await this.assertEventAccess(eventId, user);
+    return this.computeScannerEventStats(eventId);
+  }
+
+  // Internal stats computation without an ownership check — only called from
+  // contexts that have already authorized the caller (e.g. validateTicket).
+  private async computeScannerEventStats(eventId: string) {
     const sections = await this.sectionRepo.find({ where: { eventId } });
 
     const activeSections = sections.filter(s => {
@@ -1294,21 +1354,22 @@ export class OrdersService {
     }
 
     if (ticket.status === TicketStatus.USED) {
-      return { valid: false, message: 'This ticket has already been used', ticket, eventStats: await this.getScannerEventStats(ticket.eventId) };
+      return { valid: false, message: 'This ticket has already been used', ticket, eventStats: await this.computeScannerEventStats(ticket.eventId) };
     }
     if (ticket.status === TicketStatus.CANCELLED) {
-      return { valid: false, message: 'This ticket was cancelled', ticket, eventStats: await this.getScannerEventStats(ticket.eventId) };
+      return { valid: false, message: 'This ticket was cancelled', ticket, eventStats: await this.computeScannerEventStats(ticket.eventId) };
     }
     
     // Mark as USED to prevent double-entry
     await this.ticketRepo.update(ticket.id, { status: TicketStatus.USED });
-    return { valid: true, message: 'Valid Ticket — entry confirmed', ticket, eventStats: await this.getScannerEventStats(ticket.eventId) };
+    return { valid: true, message: 'Valid Ticket — entry confirmed', ticket, eventStats: await this.computeScannerEventStats(ticket.eventId) };
   }
 
   /**
    * Aggregate sales data for an event.
    */
-  async getEventSales(eventId: string) {
+  async getEventSales(eventId: string, user: { id: string; role?: string }) {
+    await this.assertEventAccess(eventId, user);
     const orders = await this.orderRepo.find({
       where: { eventId, status: OrderStatus.PAID },
       relations: ['user'],
@@ -1433,7 +1494,8 @@ export class OrdersService {
   /**
    * Retrieves list of attendees for an event.
    */
-  async getEventAttendees(eventId: string) {
+  async getEventAttendees(eventId: string, user: { id: string; role?: string }) {
+    await this.assertEventAccess(eventId, user);
     return this.ticketRepo.find({
       where: { eventId },
       relations: ['user'],

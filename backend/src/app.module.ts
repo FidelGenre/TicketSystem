@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { join } from 'path';
 import { AuthModule } from './auth/auth.module';
 import { EventsModule } from './events/events.module';
@@ -49,6 +51,9 @@ import { ScannerAccess } from './database/entities';
       },
     }),
     ScheduleModule.forRoot(),
+    // Global rate limiting: 120 requests / minute per IP by default.
+    // Sensitive auth routes add their own stricter @Throttle() on top.
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     AuthModule,
     EventsModule,
     OrdersModule,
@@ -63,6 +68,10 @@ import { ScannerAccess } from './database/entities';
     MarketingModule,
     AnalyticsModule,
     ScannerAccessModule,
+  ],
+  providers: [
+    // Apply the throttler globally.
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
 export class AppModule {}

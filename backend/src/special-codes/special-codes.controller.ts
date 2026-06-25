@@ -11,8 +11,8 @@ export class SpecialCodesController {
 
   @UseGuards(AuthGuard('jwt'))
   @Get('by-event/:eventId')
-  getCodesByEvent(@Param('eventId') eventId: string) {
-    return this.specialCodesService.getCodesByEvent(eventId);
+  getCodesByEvent(@Param('eventId') eventId: string, @Request() req: any) {
+    return this.specialCodesService.getCodesByEvent(eventId, req.user);
   }
 
   @UseGuards(AuthGuard('jwt'))

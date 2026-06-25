@@ -15,6 +15,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private readonly configService: ConfigService,
     private readonly authService: AuthService,
   ) {
+    const secret = configService.get<string>('JWT_SECRET');
+    if (!secret) {
+      throw new Error('JWT_SECRET is not set. Refusing to start with an insecure default.');
+    }
     super({
       // Look for the token in 'Authorization: Bearer <token>' or query parameter '?token=<token>'
       jwtFromRequest: ExtractJwt.fromExtractors([
@@ -22,8 +26,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         ExtractJwt.fromUrlQueryParameter('token'),
       ]),
       ignoreExpiration: false,
-      // CRITICAL: Ensure JWT_SECRET is set in environment variables
-      secretOrKey: configService.get<string>('JWT_SECRET') || 'fallback-secret-for-production-please-change-it',
+      secretOrKey: secret,
     });
   }
 
