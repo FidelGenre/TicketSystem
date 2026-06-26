@@ -157,12 +157,12 @@ export default function HomeContent({ initialEvents, initialBanners }: HomeConte
                     key={`${bannerEvent.id}-mobile`}
                     src={isMarketingBanner(bannerEvent) ? resolveHomeImage(bannerEvent.mobileImageUrl || bannerEvent.mobileImageData || bannerEvent.imageUrl || bannerEvent.imageData) : (getImageUrl(bannerEvent.imageUrl) || '/demo/concert.png')}
                     alt={isMarketingBanner(bannerEvent) ? (bannerEvent.fileName || 'Banner publicitario LPTicket') : bannerEvent.title}
-                    // Cross-fade without the blue flash: the incoming image fades
-                    // IN on top while the outgoing one stays opaque underneath (no
-                    // exit fade), so there's never a frame where both are
-                    // translucent and the background shows through.
+                    // Smooth cross-fade: incoming fades in, outgoing fades out.
+                    // The dark hero overlay was removed, so the frame behind is
+                    // plain black (not blue) — no blue veil during the change.
                     initial={{ opacity: 0, scale: 1.02 }}
                     animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0 }}
                     transition={{ duration: 1.2, ease: 'easeInOut' }}
                     className="absolute inset-0 block h-full w-full object-cover transition-transform duration-[1600ms] group-hover:scale-[1.025] sm:hidden"
                     style={{ objectPosition: bannerEvent.bannerPosition || 'center' }}
@@ -176,6 +176,7 @@ export default function HomeContent({ initialEvents, initialBanners }: HomeConte
                     alt={isMarketingBanner(bannerEvent) ? (bannerEvent.fileName || 'Banner publicitario LPTicket') : bannerEvent.title}
                     initial={{ opacity: 0, scale: 1.02 }}
                     animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0 }}
                     transition={{ duration: 1.2, ease: 'easeInOut' }}
                     className="absolute inset-0 hidden h-full w-full object-cover transition-transform duration-[1600ms] group-hover:scale-[1.025] sm:block"
                     style={{ objectPosition: bannerEvent.bannerPosition || 'center' }}
@@ -184,7 +185,6 @@ export default function HomeContent({ initialEvents, initialBanners }: HomeConte
                     onError={(e) => { (e.target as HTMLImageElement).src = '/demo/concert.png'; }}
                   />
                 </AnimatePresence>
-                {!isMarketingBanner(bannerEvent) && <div className="home-hero-overlay" aria-hidden="true" />}
               </Link>
 
               {!isMarketingBanner(bannerEvent) && (
