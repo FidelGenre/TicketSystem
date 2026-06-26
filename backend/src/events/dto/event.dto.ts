@@ -22,6 +22,11 @@ export class CreateEventDto {
   @IsDateString()
   eventDate: string;
 
+  // Optional end time. Keeps the event visible/purchasable after it starts.
+  @IsOptional()
+  @IsDateString()
+  eventEndDate?: string;
+
   @IsOptional()
   @IsString()
   eventTimezone?: string;
@@ -76,6 +81,11 @@ export class UpdateEventDto {
   @IsOptional()
   @IsDateString()
   eventDate?: string;
+
+  // Optional end time. Keeps the event visible/purchasable after it starts.
+  @IsOptional()
+  @IsDateString()
+  eventEndDate?: string;
 
   @IsOptional()
   @IsString()

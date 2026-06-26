@@ -706,6 +706,7 @@ export default function EventDetailPage() {
     venueAddress: '',
     eventDate: '',
     eventTime: '',
+    eventEndTime: '', // optional; combined with eventDate to set eventEndDate
     eventTimezone: 'UTC',
     category: '',
     hasSeatMap: false,
@@ -750,6 +751,7 @@ export default function EventDetailPage() {
         venueAddress: ev.venueAddress || '',
         eventDate: formatDateInput(ev.eventDate, ev.eventTimezone || 'UTC'),
         eventTime: formatTimeInput(ev.eventDate, ev.eventTimezone || 'UTC'),
+        eventEndTime: ev.eventEndDate ? formatTimeInput(ev.eventEndDate, ev.eventTimezone || 'UTC') : '',
         eventTimezone: ev.eventTimezone || 'UTC',
         category: ev.pendingCategory || ev.category || '',
         hasSeatMap: ev.hasSeatMap || false,
@@ -904,6 +906,20 @@ export default function EventDetailPage() {
     }
     setSavingEdit(true);
     try {
+      // Build the optional end time. It shares the event's date; if the end
+      // time is at or before the start time, it rolls over to the next day
+      // (e.g. a party that starts 22:00 and ends 03:00).
+      let eventEndDate: string | null = null;
+      if (editForm.eventEndTime) {
+        let endDay = editForm.eventDate;
+        if (editForm.eventTime && editForm.eventEndTime <= editForm.eventTime) {
+          const [y, m, d] = editForm.eventDate.split('-').map(Number);
+          const next = new Date(Date.UTC(y, m - 1, d + 1));
+          endDay = `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, '0')}-${String(next.getUTCDate()).padStart(2, '0')}`;
+        }
+        eventEndDate = buildLocalEventDate(endDay, editForm.eventEndTime, editForm.eventTimezone);
+      }
+
       // 1. Save text fields
       await api.patch(`/events/${id}`, {
         title: editForm.title,
@@ -911,6 +927,7 @@ export default function EventDetailPage() {
         venueName: editForm.venueName,
         venueAddress: editForm.venueAddress,
         eventDate: buildLocalEventDate(editForm.eventDate, editForm.eventTime, editForm.eventTimezone),
+        eventEndDate,
         eventTimezone: editForm.eventTimezone,
         category: editForm.category,
         hasSeatMap: true,
@@ -2435,6 +2452,18 @@ export default function EventDetailPage() {
                   placeholder={lang === 'es' ? 'Selecciona la hora' : 'Select time'}
                   compact
                 />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">{lang === 'es' ? 'Hora de Finalización (opcional)' : 'End Time (optional)'}</label>
+                <PremiumTimeSelect
+                  value={editForm.eventEndTime}
+                  options={TIME_OPTIONS}
+                  onChange={(value) => setEditForm({ ...editForm, eventEndTime: value })}
+                  placeholder={lang === 'es' ? 'Sin hora de fin' : 'No end time'}
+                  compact
+                />
+                <p className="text-[11px] text-gray-400 leading-tight">{lang === 'es' ? 'El evento se sigue mostrando y vendiendo hasta esta hora. Si lo dejas vacío, se mantiene 6 h tras el inicio.' : 'The event stays listed and on sale until this time. If left empty, it stays 6h after start.'}</p>
               </div>
 
               <div className="space-y-1.5">

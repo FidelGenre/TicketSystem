@@ -535,6 +535,7 @@ export function OrganizerDetailsMobile({ eventTitle, setEventTitle, eventVenue, 
   const [address, setAddress] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [eventTime, setEventTime] = useState('');
+  const [eventEndTime, setEventEndTime] = useState(''); // optional HH:MM end time
   const [pickerDate, setPickerDate] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -594,17 +595,34 @@ export function OrganizerDetailsMobile({ eventTitle, setEventTitle, eventVenue, 
         setPickerDate(d);
       }
     }
+    if (event.eventEndDate) {
+      const zonedEnd = eventDatePartsInTimeZone(String(event.eventEndDate), eventTimeZone);
+      if (zonedEnd) setEventEndTime(zonedEnd.time);
+    }
   }, [event]);
 
   const saveEvent = async () => {
     if (saving || !selectedEventId) return;
     setSaving(true);
     try {
+      // Optional end time: same date as the event, rolling to the next day when
+      // the end is at/before the start (e.g. 22:00 → 03:00).
+      let eventEndDate: string | null = null;
+      if (eventEndTime) {
+        let endDay = eventDate;
+        if (eventTime && eventEndTime <= eventTime) {
+          const [y, m, d] = eventDate.split('-').map(Number);
+          const next = new Date(Date.UTC(y, m - 1, d + 1));
+          endDay = `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, '0')}-${String(next.getUTCDate()).padStart(2, '0')}`;
+        }
+        eventEndDate = zonedDateTimeToIso(endDay, eventEndTime, timezone || 'America/Chicago');
+      }
       await apiPatch(`/events/${selectedEventId}`, {
         title: eventTitle,
         description,
         category,
         eventDate: zonedDateTimeToIso(eventDate, eventTime, timezone || 'America/Chicago'),
+        eventEndDate,
         eventTimezone: timezone || 'America/Chicago',
         venueName: eventVenue,
         venueAddress: address,
@@ -797,6 +815,13 @@ export function OrganizerDetailsMobile({ eventTitle, setEventTitle, eventVenue, 
           )
         )}
 
+        <Field
+          label={t('Hora de finalización (opcional)', 'End time (optional)')}
+          value={eventEndTime}
+          onChangeText={setEventEndTime}
+          placeholder={t('HH:MM — vacío = 6 h tras el inicio', 'HH:MM — empty = 6h after start')}
+          keyboardType="numbers-and-punctuation"
+        />
         <Field label={t('Zona horaria', 'Timezone')} value={timezone} onChangeText={setTimezone} placeholder="America/Chicago" autoCapitalize="none" />
         <Field label={t('Lugar', 'Venue')} value={eventVenue} onChangeText={setEventVenue} />
         <Field label={t('Direccion', 'Address')} value={address} onChangeText={setAddress} multiline />

@@ -16,6 +16,10 @@ import * as path from 'path';
 import { Event, EventStatus, EventCategory, VenueSection, Seat, SeatStatus, User, Ticket, TicketStatus, Order, OrderStatus, EventCategoryEntity } from '../database/entities';
 import { CreateEventDto, UpdateEventDto, EventQueryDto } from './dto/event.dto';
 
+// How long an event stays visible/purchasable after its start time when the
+// organizer did NOT set an explicit end time. Covers late buyers / walk-ins.
+const EVENT_VISIBILITY_GRACE_HOURS = 6;
+
 /**
  * EventsService
  * Core service for managing the lifecycle of events, venue sections, and seat inventory.
@@ -115,45 +119,52 @@ export class EventsService {
     const limit = query.limit || 12;
     const skip = (page - 1) * limit;
 
-    const { MoreThanOrEqual, LessThanOrEqual, Between } = require('typeorm');
-    const where: any = { status: EventStatus.PUBLISHED, publicVisible: true };
+    const qb = this.eventRepo
+      .createQueryBuilder('event')
+      .where('event.status = :status', { status: EventStatus.PUBLISHED })
+      .andWhere('event.publicVisible = :publicVisible', { publicVisible: true });
 
-    // Filter out past events by default to ensure buyers only see upcoming shows
+    // Hide events that are already over, UNLESS includePast / a startDate is set.
+    // "Over" = the event's end has passed. We use eventEndDate when the organizer
+    // set one; otherwise eventDate + a grace period (so late buyers / walk-ins
+    // can still find an event that has started but not finished).
     if (query.includePast !== 'true' && !query.startDate) {
-      where.eventDate = MoreThanOrEqual(new Date());
+      qb.andWhere(
+        `COALESCE(event."eventEndDate", event."eventDate" + (:graceHours * INTERVAL '1 hour')) >= :now`,
+        { graceHours: EVENT_VISIBILITY_GRACE_HOURS, now: new Date() },
+      );
     }
 
-    if (query.category) where.category = query.category;
-    if (query.search) where.title = ILike(`%${query.search}%`);
+    if (query.category) qb.andWhere('event.category = :category', { category: query.category });
+    if (query.search) qb.andWhere('event.title ILIKE :search', { search: `%${query.search}%` });
 
     // Price range filtering (based on event's calculated minPrice)
     if (query.minPrice !== undefined && query.maxPrice !== undefined) {
-      where.minPrice = Between(query.minPrice, query.maxPrice);
+      qb.andWhere('event.minPrice BETWEEN :minPrice AND :maxPrice', { minPrice: query.minPrice, maxPrice: query.maxPrice });
     } else if (query.minPrice !== undefined) {
-      where.minPrice = MoreThanOrEqual(query.minPrice);
+      qb.andWhere('event.minPrice >= :minPrice', { minPrice: query.minPrice });
     } else if (query.maxPrice !== undefined) {
-      where.minPrice = LessThanOrEqual(query.maxPrice);
+      qb.andWhere('event.minPrice <= :maxPrice', { maxPrice: query.maxPrice });
     }
 
-    // Date range filtering
+    // Date range filtering (by start date)
     if (query.startDate && query.endDate) {
-      where.eventDate = Between(new Date(query.startDate), new Date(query.endDate));
+      qb.andWhere('event.eventDate BETWEEN :start AND :end', { start: new Date(query.startDate), end: new Date(query.endDate) });
     } else if (query.startDate) {
-      where.eventDate = MoreThanOrEqual(new Date(query.startDate));
+      qb.andWhere('event.eventDate >= :start', { start: new Date(query.startDate) });
     } else if (query.endDate) {
       if (query.includePast === 'true') {
-        where.eventDate = LessThanOrEqual(new Date(query.endDate));
+        qb.andWhere('event.eventDate <= :end', { end: new Date(query.endDate) });
       } else {
-        where.eventDate = Between(new Date(), new Date(query.endDate));
+        qb.andWhere('event.eventDate BETWEEN :now AND :end', { now: new Date(), end: new Date(query.endDate) });
       }
     }
 
-    const [events, total] = await this.eventRepo.findAndCount({
-      where,
-      order: { eventDate: 'ASC' },
-      skip,
-      take: limit,
-    });
+    const [events, total] = await qb
+      .orderBy('event.eventDate', 'ASC')
+      .skip(skip)
+      .take(limit)
+      .getManyAndCount();
 
     return {
       events: events.map((event) => this.routeBase64EventImages(event)),
@@ -168,17 +179,20 @@ export class EventsService {
    * Returns a limited list of active events marked as featured for the homepage.
    */
   async findFeatured() {
-    const { MoreThanOrEqual } = require('typeorm');
-    const events = await this.eventRepo.find({
-      where: { 
-        status: EventStatus.PUBLISHED, 
-        isFeatured: true,
-        publicVisible: true,
-        eventDate: MoreThanOrEqual(new Date())
-      },
-      order: { eventDate: 'ASC' },
-      take: 6,
-    });
+    const events = await this.eventRepo
+      .createQueryBuilder('event')
+      .where('event.status = :status', { status: EventStatus.PUBLISHED })
+      .andWhere('event.isFeatured = :isFeatured', { isFeatured: true })
+      .andWhere('event.publicVisible = :publicVisible', { publicVisible: true })
+      // Same visibility rule as findAll: keep an event until its (explicit or
+      // grace-period) end has passed, not the instant it starts.
+      .andWhere(
+        `COALESCE(event."eventEndDate", event."eventDate" + (:graceHours * INTERVAL '1 hour')) >= :now`,
+        { graceHours: EVENT_VISIBILITY_GRACE_HOURS, now: new Date() },
+      )
+      .orderBy('event.eventDate', 'ASC')
+      .take(6)
+      .getMany();
     return events.map((event) => this.routeBase64EventImages(event));
   }
 
@@ -300,6 +314,11 @@ export class EventsService {
         // Timezone is always updated immediately so the displayed time stays
         // consistent with whatever wall-clock time the organizer entered.
         ...(cleanDto.eventTimezone !== undefined ? { eventTimezone: cleanDto.eventTimezone } : {}),
+        // End time only controls listing visibility (no public-facing approval
+        // needed), so apply it immediately even for published events.
+        ...(cleanDto.eventEndDate !== undefined
+          ? { eventEndDate: cleanDto.eventEndDate ? new Date(cleanDto.eventEndDate) : null }
+          : {}),
       };
 
       if (cleanDto.eventDate) {

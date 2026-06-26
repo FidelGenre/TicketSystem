@@ -90,6 +90,12 @@ export class Event {
   @Column({ type: 'timestamp' })
   eventDate: Date;
 
+  // Optional end time. The event stays visible and purchasable until this
+  // moment (lets late buyers / walk-ins still find it after it has started).
+  // When null, the listing logic falls back to a grace period after eventDate.
+  @Column({ type: 'timestamp', nullable: true })
+  eventEndDate: Date | null;
+
   @Column({ length: 50, default: 'UTC' })
   eventTimezone: string;
 
