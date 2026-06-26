@@ -294,6 +294,7 @@ export function OrganizerCreateEventMobile({ eventTitle, setEventTitle, eventVen
   const [address, setAddress] = useState('23501 Cinco Ranch Blvd, Katy, TX 77494');
   const [eventDate, setEventDate] = useState('2026-06-25');
   const [eventTime, setEventTime] = useState('19:00');
+  const [eventEndTime, setEventEndTime] = useState(''); // optional HH:MM end time
   const [pickerDate, setPickerDate] = useState<Date>(new Date('2026-06-25T19:00:00'));
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -325,11 +326,23 @@ export function OrganizerCreateEventMobile({ eventTitle, setEventTitle, eventVen
     if (saving) return;
     setSaving(true);
     try {
+      // Optional end time: same date, rolling to next day when end <= start.
+      let eventEndDate: string | null = null;
+      if (eventEndTime) {
+        let endDay = eventDate;
+        if (eventTime && eventEndTime <= eventTime) {
+          const [y, m, d] = eventDate.split('-').map(Number);
+          const next = new Date(Date.UTC(y, m - 1, d + 1));
+          endDay = `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, '0')}-${String(next.getUTCDate()).padStart(2, '0')}`;
+        }
+        eventEndDate = zonedDateTimeToIso(endDay, eventEndTime, timezone || 'America/Chicago');
+      }
       const result = await apiPost<any>('/events', {
         title: eventTitle,
         description,
         category,
         eventDate: zonedDateTimeToIso(eventDate, eventTime, timezone || 'America/Chicago'),
+        eventEndDate,
         timezone: timezone || 'America/Chicago',
         venueName: eventVenue,
         venueAddress: address,
@@ -507,6 +520,13 @@ export function OrganizerCreateEventMobile({ eventTitle, setEventTitle, eventVen
           )
         )}
 
+        <Field
+          label={t('Hora de finalización (opcional)', 'End time (optional)')}
+          value={eventEndTime}
+          onChangeText={setEventEndTime}
+          placeholder={t('HH:MM — vacío = 6 h tras el inicio', 'HH:MM — empty = 6h after start')}
+          keyboardType="numbers-and-punctuation"
+        />
         <Field label={t('Zona horaria', 'Timezone')} value={timezone} onChangeText={setTimezone} placeholder="America/Chicago" autoCapitalize="none" />
         <Field label={t('Lugar', 'Venue')} value={eventVenue} onChangeText={setEventVenue} />
         <Field label={t('Direccion', 'Address')} value={address} onChangeText={setAddress} multiline />

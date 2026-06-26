@@ -185,6 +185,7 @@ export default function CreateEventPage() {
     venueAddress: '',
     eventDate: '',
     eventTime: '',
+    eventEndTime: '', // optional; combined with eventDate to set eventEndDate
     eventTimezone: 'UTC',
     doorsOpen: '',
     maxTicketsPerTransaction: '10',
@@ -248,6 +249,18 @@ export default function CreateEventPage() {
       if (form.eventDate) {
         payload.eventDate = buildLocalEventDate(form.eventDate, form.eventTime, form.eventTimezone);
       }
+      // Optional end time → eventEndDate. Same date as the event, rolling to the
+      // next day when the end is at/before the start (e.g. 22:00 → 03:00).
+      if (form.eventEndTime && form.eventDate) {
+        let endDay = form.eventDate;
+        if (form.eventTime && form.eventEndTime <= form.eventTime) {
+          const [y, m, d] = form.eventDate.split('-').map(Number);
+          const next = new Date(Date.UTC(y, m - 1, d + 1));
+          endDay = `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, '0')}-${String(next.getUTCDate()).padStart(2, '0')}`;
+        }
+        payload.eventEndDate = buildLocalEventDate(endDay, form.eventEndTime, form.eventTimezone);
+      }
+      delete payload.eventEndTime;
       if (form.doorsOpen) {
         payload.doorsOpen = `${form.eventDate}T${form.doorsOpen}:00`;
       } else {
@@ -405,6 +418,16 @@ export default function CreateEventPage() {
                       onChange={(value) => updateForm('eventTime', value)}
                       placeholder={lang === 'es' ? 'Selecciona la hora' : 'Select time'}
                     />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">{lang === 'es' ? 'Hora de finalización (opcional)' : 'End Time (optional)'}</label>
+                    <PremiumTimeSelect
+                      value={form.eventEndTime}
+                      options={TIME_OPTIONS}
+                      onChange={(value) => updateForm('eventEndTime', value)}
+                      placeholder={lang === 'es' ? 'Sin hora de fin' : 'No end time'}
+                    />
+                    <p className="text-xs text-gray-400 mt-1 leading-tight">{lang === 'es' ? 'El evento se sigue mostrando y vendiendo hasta esta hora. Vacío = 6 h tras el inicio.' : 'The event stays listed and on sale until this time. Empty = 6h after start.'}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">{lang === 'es' ? 'Zona horaria del evento *' : 'Event Timezone *'}</label>
