@@ -215,6 +215,22 @@ export class OrdersController {
     return this.ordersService.getPublicTicketByCode(code);
   }
 
+  // Public QR image for a ticket as a real PNG URL. Used as a robust fallback in
+  // the confirmation email: some mail clients block inline (CID) images, so the
+  // <img> also points here and renders the QR reliably.
+  @SkipThrottle()
+  @Get('ticket/:code/qr.png')
+  async getTicketQrImage(@Param('code') code: string, @Res() res: any) {
+    try {
+      const png = await this.ordersService.getTicketQrPng(code);
+      res.header('Content-Type', 'image/png');
+      res.header('Cache-Control', 'public, max-age=86400');
+      return res.send(png);
+    } catch {
+      return res.status(404).send({ message: 'QR not found' });
+    }
+  }
+
   @UseGuards(AuthGuard('jwt'))
   @Post('ticket/:code/validate')
   validateTicket(@Param('code') code: string, @Request() req: any) {
@@ -280,6 +296,18 @@ export class OrdersController {
   @Get('event/:eventId/sales')
   getEventSales(@Param('eventId') eventId: string, @Request() req: any) {
     return this.ordersService.getEventSales(eventId, req.user);
+  }
+
+  // Gate search by attendee name / email / code (when the QR can't be scanned).
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.CLIENT, UserRole.ADMIN)
+  @Get('event/:eventId/search-tickets')
+  searchEventTickets(
+    @Param('eventId') eventId: string,
+    @Query('q') q: string,
+    @Request() req: any,
+  ) {
+    return this.ordersService.searchEventTickets(eventId, q || '', req.user);
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)

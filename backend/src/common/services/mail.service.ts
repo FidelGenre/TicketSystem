@@ -194,10 +194,12 @@ export class MailService {
           ` : ''}
         </div>
 
-        <!-- Center QR (CID inline image) -->
+        <!-- Center QR. Uses the public PNG URL (renders even when a mail client
+             blocks inline CID images); CID stays as an attachment fallback. -->
         <div style="text-align: center; margin: 20px 0;">
-          <img src="cid:${qrCid}" alt="QR Code" width="160" height="160" style="border: 1px solid #e2e8f0; padding: 8px; border-radius: 12px; background: #ffffff;" />
+          <img src="${apiBase}/api/orders/ticket/${t.ticketCode}/qr.png" alt="QR Code" width="160" height="160" style="border: 1px solid #e2e8f0; padding: 8px; border-radius: 12px; background: #ffffff;" />
           <span style="display: block; font-size: 10px; color: #94a3b8; margin-top: 8px; font-weight: bold; letter-spacing: 0.5px; text-transform: uppercase;">Presentar este código QR en el acceso</span>
+          <span style="display: block; font-size: 11px; color: #475569; margin-top: 6px;">Si no ves el QR, usa el botón <strong>Ver entrada</strong> o tu código <strong style="font-family: monospace; color:#F97316;">${t.ticketCode}</strong>.</span>
         </div>
 
                 <div style="text-align: center; margin: 18px 0 6px 0;">

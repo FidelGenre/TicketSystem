@@ -1233,6 +1233,27 @@ export class OrdersService {
   }
 
   /**
+   * Returns the ticket's QR as a PNG buffer (public). Mail clients that block
+   * inline CID images can still load this URL, so the confirmation email always
+   * shows a working QR.
+   */
+  async getTicketQrPng(code: string): Promise<Buffer> {
+    const ticket = await this.ticketRepo.findOne({
+      where: { ticketCode: code },
+      select: ['id', 'ticketCode', 'qrData'],
+    });
+    if (!ticket) throw new NotFoundException('Ticket not found');
+
+    // Prefer the stored data-URL; fall back to regenerating from the verify URL.
+    const stored = ticket.qrData || '';
+    if (stored.startsWith('data:image/png;base64,')) {
+      return Buffer.from(stored.replace(/^data:image\/png;base64,/, ''), 'base64');
+    }
+    const appUrl = this.configService.get('APP_URL');
+    return QRCode.toBuffer(`${appUrl}/verify/${ticket.ticketCode}`, { width: 320, margin: 1 });
+  }
+
+  /**
    * Public verification view — this endpoint is unauthenticated (gate scanning).
    * Returns only the fields needed to display/verify a ticket, never the buyer's
    * password hash, address, payment data or full order/user record.
@@ -1293,41 +1314,36 @@ export class OrdersService {
   // Internal stats computation without an ownership check — only called from
   // contexts that have already authorized the caller (e.g. validateTicket).
   private async computeScannerEventStats(eventId: string) {
-    const sections = await this.sectionRepo.find({ where: { eventId } });
+    // Capacity per section is computed in ONE aggregated query instead of a
+    // per-section count loop (which made gate scanning slow). For seated
+    // sections we need the real seat count, so we LEFT JOIN + GROUP BY and let
+    // SQL count seats in a single round-trip.
+    const sectionRows: Array<{
+      sectionType: string; capacity: string | number; rows: string | number;
+      seatsPerRow: string | number; seatCount: string | number;
+    }> = await this.sectionRepo
+      .createQueryBuilder('section')
+      .select('section.sectionType', 'sectionType')
+      .addSelect('section.capacity', 'capacity')
+      .addSelect('section.rows', 'rows')
+      .addSelect('section.seatsPerRow', 'seatsPerRow')
+      .addSelect('COUNT(seat.id)', 'seatCount')
+      .leftJoin(Seat, 'seat', 'seat.sectionId = section.id')
+      .where('section.eventId = :eventId', { eventId })
+      .groupBy('section.id')
+      .getRawMany();
 
-    const activeSections = sections.filter(s => {
-      const t = String(s.sectionType).toLowerCase();
-      return t !== 'stage' && t !== 'decor';
-    });
-
-    // Per section, the meaningful capacity depends on the section type:
-    //  - seated / vip / table: real seats live in DB (one record per seat). Use max(seatCount, rows×seatsPerRow)
-    //    so we still match the grid if seats were never regenerated after a layout change.
-    //  - standing (GA): no seat records ever exist; the organizer's UI only exposes the capacity field.
-    //    rows/seatsPerRow are leftover defaults from creation (5×10) — ignore them entirely.
     let totalCapacity = 0;
-    const sectionBreakdown: any[] = [];
-    for (const section of activeSections) {
-      const type = String(section.sectionType).toLowerCase();
-      const seatCount = await this.seatRepo.count({ where: { sectionId: section.id } });
-      const capField = Number(section.capacity) || 0;
-      const rowsCalc = (Number(section.rows) || 0) * (Number(section.seatsPerRow) || 0);
-
-      let contribution = 0;
-      if (type === 'standing') {
-        // GA sections store their capacity in capField. Fall back to rowsCalc
-        // (5x10 default) when the organizer never edited it, so the section
-        // still counts for something instead of disappearing as 0.
-        contribution = Math.max(capField, rowsCalc);
-      } else {
-        // seated / vip / table
-        contribution = Math.max(seatCount, rowsCalc);
-      }
-
-      totalCapacity += contribution;
-      sectionBreakdown.push({ name: section.name, type: section.sectionType, seatCount, capField, rowsCalc, contribution });
+    for (const row of sectionRows) {
+      const type = String(row.sectionType || '').toLowerCase();
+      if (type === 'stage' || type === 'decor') continue;
+      const capField = Number(row.capacity) || 0;
+      const rowsCalc = (Number(row.rows) || 0) * (Number(row.seatsPerRow) || 0);
+      const seatCount = Number(row.seatCount) || 0;
+      totalCapacity += type === 'standing'
+        ? Math.max(capField, rowsCalc)     // GA: no seat records
+        : Math.max(seatCount, rowsCalc);   // seated/vip/table
     }
-    console.log(`[ScannerStats] eventId=${eventId} totalCapacity=${totalCapacity}`, JSON.stringify(sectionBreakdown));
 
     const [activeTickets, usedTickets] = await Promise.all([
       this.ticketRepo.count({ where: { eventId, status: TicketStatus.ACTIVE } }),
@@ -1342,32 +1358,42 @@ export class OrdersService {
       totalPurchased: totalIssued,
       ticketsToScan: activeTickets,
       ticketsEntered: usedTickets,
-      _debug: sectionBreakdown,
     };
   }
 
   async validateTicket(code: string, user: any, options?: { eventId?: string; allowScannerAccess?: boolean }) {
-    const ticket = await this.getTicketByCode(code);
+    // Lightweight lookup — only the fields needed to authorize + display the
+    // scan result. The heavy event/order relations and per-event stats are NOT
+    // loaded here, so the gate response is near-instant. The scanner UI keeps
+    // its live counts fresh via the separate /scanner-stats polling endpoint.
+    const ticket = await this.ticketRepo.findOne({
+      where: { ticketCode: code },
+      relations: ['user', 'event'],
+    });
+    if (!ticket) {
+      return { valid: false, message: 'Ticket not found' };
+    }
 
     if (options?.eventId && ticket.eventId !== options.eventId) {
       throw new ForbiddenException('This ticket does not belong to the selected event');
     }
-    
+
     // Authorization: admins, event organizer, or a pre-approved scanner access flow.
-    if (!options?.allowScannerAccess && user.role !== 'admin' && ticket.event.organizerId !== user.id) {
+    if (!options?.allowScannerAccess && user.role !== 'admin' && ticket.event?.organizerId !== user.id) {
       throw new ForbiddenException('You do not have permission to validate tickets for this event');
     }
 
     if (ticket.status === TicketStatus.USED) {
-      return { valid: false, message: 'This ticket has already been used', ticket, eventStats: await this.computeScannerEventStats(ticket.eventId) };
+      return { valid: false, message: 'This ticket has already been used', ticket };
     }
     if (ticket.status === TicketStatus.CANCELLED) {
-      return { valid: false, message: 'This ticket was cancelled', ticket, eventStats: await this.computeScannerEventStats(ticket.eventId) };
+      return { valid: false, message: 'This ticket was cancelled', ticket };
     }
-    
-    // Mark as USED to prevent double-entry
+
+    // Mark as USED to prevent double-entry.
     await this.ticketRepo.update(ticket.id, { status: TicketStatus.USED });
-    return { valid: true, message: 'Valid Ticket — entry confirmed', ticket, eventStats: await this.computeScannerEventStats(ticket.eventId) };
+    ticket.status = TicketStatus.USED;
+    return { valid: true, message: 'Valid Ticket — entry confirmed', ticket };
   }
 
   /**
@@ -1505,6 +1531,54 @@ export class OrdersService {
       where: { eventId },
       relations: ['user'],
       order: { createdAt: 'ASC' },
+    });
+  }
+
+  /**
+   * Gate search — find an event's tickets by attendee name, email or code.
+   * Used at the door when a QR can't be scanned (it never arrived, the screen
+   * is broken, etc.) so staff can still look the ticket up and validate it.
+   */
+  async searchEventTickets(
+    eventId: string,
+    query: string,
+    user: { id: string; role?: string },
+  ) {
+    await this.assertEventAccess(eventId, user);
+    const q = (query || '').trim();
+    if (q.length < 2) return [];
+
+    const like = `%${q.toLowerCase()}%`;
+    const tickets = await this.ticketRepo
+      .createQueryBuilder('ticket')
+      .leftJoinAndSelect('ticket.user', 'user')
+      .where('ticket.eventId = :eventId', { eventId })
+      .andWhere(
+        `(
+          LOWER(user.firstName) LIKE :like OR
+          LOWER(user.lastName) LIKE :like OR
+          LOWER(user.firstName || ' ' || user.lastName) LIKE :like OR
+          LOWER(user.email) LIKE :like OR
+          LOWER(ticket.ticketCode) LIKE :like
+        )`,
+        { like },
+      )
+      .orderBy('ticket.createdAt', 'ASC')
+      .limit(25)
+      .getMany();
+
+    // Return only what the gate needs (no buyer PII beyond name/email).
+    return tickets.map((ticket) => {
+      const u = ticket.user;
+      const name = [u?.firstName, u?.lastName].filter(Boolean).join(' ').trim() || u?.email || 'Invitado';
+      const seat = [ticket.sectionName, ticket.rowLabel, ticket.seatNumber].filter(Boolean).join(' · ');
+      return {
+        ticketCode: ticket.ticketCode,
+        status: ticket.status,
+        name,
+        email: u?.email || '',
+        seat: seat || 'General',
+      };
     });
   }
 
