@@ -1,6 +1,6 @@
-import { Alert, Dimensions, GestureResponderEvent, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, Dimensions, GestureResponderEvent, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { apiGet, apiPost } from '../../services/api';
 
@@ -149,6 +149,11 @@ export function VenueMapEditor({ eventId }: Props) {
   const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
   const [drag, setDrag] = useState<{ id: string; x: number; y: number; pageX: number; pageY: number } | null>(null);
   const [canvasPan, setCanvasPan] = useState({ x: 0, y: 0 });
+  // Animated pan drives the transform on the native side so dragging doesn't
+  // re-render React on every move (which caused the "warping"/lag).
+  const panAnim = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+  const panStart = useRef<{ x: number; y: number; pageX: number; pageY: number } | null>(null);
+  const panLast = useRef<{ x: number; y: number } | null>(null);
   const [canvasDrag, setCanvasDrag] = useState<{ x: number; y: number; pageX: number; pageY: number } | null>(null);
   const [objectDrag, setObjectDrag] = useState<{ id: string; x: number; y: number; pageX: number; pageY: number } | null>(null);
   const [saved, setSaved] = useState(false);
@@ -232,13 +237,21 @@ export function VenueMapEditor({ eventId }: Props) {
   const soldSeats = Math.min(8, capacity);
   const availableSeats = Math.max(capacity - soldSeats, 0);
 
+  // Pan comes from the Animated value (no re-render during drag); zoom is a
+  // normal state value (changes only on +/- taps).
   const canvasTransformStyle = {
     transform: [
-      { translateX: canvasPan.x },
-      { translateY: canvasPan.y },
+      { translateX: panAnim.x },
+      { translateY: panAnim.y },
       { scale: zoom },
     ],
   };
+
+  // Keep the Animated value in sync whenever pan state changes from code
+  // (fit-to-content, set view, etc.) — not during a drag.
+  useEffect(() => {
+    panAnim.setValue({ x: canvasPan.x, y: canvasPan.y });
+  }, [canvasPan.x, canvasPan.y, panAnim]);
 
   const updateSelected = (patch: Partial<VenueItem>) => {
     if (!selected) return;
@@ -429,22 +442,30 @@ export function VenueMapEditor({ eventId }: Props) {
             onMoveShouldSetResponder={() => true}
             onResponderGrant={(event: GestureResponderEvent) => {
               if (drag) return; // an item is being dragged
-              setCanvasDrag({ x: canvasPan.x, y: canvasPan.y, pageX: event.nativeEvent.pageX, pageY: event.nativeEvent.pageY });
+              panStart.current = { x: canvasPan.x, y: canvasPan.y, pageX: event.nativeEvent.pageX, pageY: event.nativeEvent.pageY };
+              panLast.current = { x: canvasPan.x, y: canvasPan.y };
             }}
             onResponderMove={(event: GestureResponderEvent) => {
-              if (!canvasDrag) return;
-              // Generous pan range so the whole canvas can be reached at any zoom.
-              setCanvasPan({
-                x: Math.max(-1400, Math.min(1000, canvasDrag.x + event.nativeEvent.pageX - canvasDrag.pageX)),
-                y: Math.max(-1100, Math.min(900, canvasDrag.y + event.nativeEvent.pageY - canvasDrag.pageY)),
-              });
+              if (!panStart.current) return;
+              // Drive the transform directly on the Animated value — no React
+              // re-render per move, so dragging is smooth (no warping/lag).
+              const nx = Math.max(-1400, Math.min(1000, panStart.current.x + event.nativeEvent.pageX - panStart.current.pageX));
+              const ny = Math.max(-1100, Math.min(900, panStart.current.y + event.nativeEvent.pageY - panStart.current.pageY));
+              panLast.current = { x: nx, y: ny };
+              panAnim.setValue({ x: nx, y: ny });
             }}
-            onResponderRelease={() => setCanvasDrag(null)}
-            onResponderTerminate={() => setCanvasDrag(null)}
+            onResponderRelease={() => {
+              if (panStart.current && panLast.current) setCanvasPan(panLast.current);
+              panStart.current = null;
+            }}
+            onResponderTerminate={() => {
+              if (panStart.current && panLast.current) setCanvasPan(panLast.current);
+              panStart.current = null;
+            }}
           >
             {/* Grid covers the whole viewport (fixed). */}
             <EditorGrid width={vpW} height={VP_H} />
-            <View
+            <Animated.View
             style={[styles.canvas, canvasTransformStyle]}
             pointerEvents="box-none"
           >
@@ -508,7 +529,7 @@ export function VenueMapEditor({ eventId }: Props) {
                   </View>
                 );
               })}
-            </View>
+            </Animated.View>
           </View>
       </View>
 
