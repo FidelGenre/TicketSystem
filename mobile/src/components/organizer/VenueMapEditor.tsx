@@ -419,25 +419,34 @@ export function VenueMapEditor({ eventId }: Props) {
       )}
 
       <View style={styles.workbench}>
-          <View style={styles.canvasViewport}>
-            {/* Grid covers the whole viewport (fixed), so the area around the
-                canvas isn't a flat blue — the cuadrícula shows everywhere. */}
-            <EditorGrid width={vpW} height={VP_H} />
-            <View
-            style={[styles.canvas, canvasTransformStyle]}
-            onStartShouldSetResponder={(event: any) => event.target === event.currentTarget}
-            onMoveShouldSetResponder={(event: any) => event.target === event.currentTarget}
+          {/* The VIEWPORT captures panning, so you can drag from anywhere in the
+              visible area — including outside the content — not only from an
+              empty spot on the moving canvas. Items still grab their own touches
+              (in edit mode), so dragging an item doesn't also pan. */}
+          <View
+            style={styles.canvasViewport}
+            onStartShouldSetResponder={() => true}
+            onMoveShouldSetResponder={() => true}
             onResponderGrant={(event: GestureResponderEvent) => {
+              if (drag) return; // an item is being dragged
               setCanvasDrag({ x: canvasPan.x, y: canvasPan.y, pageX: event.nativeEvent.pageX, pageY: event.nativeEvent.pageY });
             }}
             onResponderMove={(event: GestureResponderEvent) => {
               if (!canvasDrag) return;
+              // Generous pan range so the whole canvas can be reached at any zoom.
               setCanvasPan({
-                x: Math.max(-700, Math.min(160, canvasDrag.x + event.nativeEvent.pageX - canvasDrag.pageX)),
-                y: Math.max(-520, Math.min(160, canvasDrag.y + event.nativeEvent.pageY - canvasDrag.pageY)),
+                x: Math.max(-1400, Math.min(1000, canvasDrag.x + event.nativeEvent.pageX - canvasDrag.pageX)),
+                y: Math.max(-1100, Math.min(900, canvasDrag.y + event.nativeEvent.pageY - canvasDrag.pageY)),
               });
             }}
             onResponderRelease={() => setCanvasDrag(null)}
+            onResponderTerminate={() => setCanvasDrag(null)}
+          >
+            {/* Grid covers the whole viewport (fixed). */}
+            <EditorGrid width={vpW} height={VP_H} />
+            <View
+            style={[styles.canvas, canvasTransformStyle]}
+            pointerEvents="box-none"
           >
               {items.map((item, index) => {
                 const isSelected = selectedId === item.id;
