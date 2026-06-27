@@ -329,33 +329,37 @@ export function VenueMapEditor({ eventId }: Props) {
   return (
     <View style={styles.root}>
       <View style={styles.topBar}>
-        <View style={styles.brand}>
-          <View style={styles.brandMark}>
-            <Text style={styles.brandText}>Lpt</Text>
+        {/* Row 1: logo + title + save */}
+        <View style={styles.topBarRow}>
+          <View style={styles.brand}>
+            <View style={styles.brandMark}>
+              <Text style={styles.brandText}>Lpt</Text>
+            </View>
+            <View style={{ flexShrink: 1 }}>
+              <Text style={styles.brandEyebrow}>Chart</Text>
+              <Text style={styles.brandTitle} numberOfLines={1}>{t('Diseñador de Asientos', 'Seat Designer')}</Text>
+            </View>
           </View>
-          <View>
-            <Text style={styles.brandEyebrow}>Chart</Text>
-            <Text style={styles.brandTitle}>{t('Diseñador de Asientos', 'Seat Designer')}</Text>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.mapStatsScroller} contentContainerStyle={styles.mapStatsRow}>
-            <View style={[styles.mapStatPill, styles.statBlue]}>
-              <Text style={styles.mapStatLabel}>{t('Capacidad', 'Capacity')}</Text>
-              <Text style={[styles.mapStatValue, { color: '#60a5fa' }]}>{capacity}</Text>
-            </View>
-            <View style={[styles.mapStatPill, styles.statGreen]}>
-              <Text style={styles.mapStatLabel}>{t('Disponibles', 'Available')}</Text>
-              <Text style={[styles.mapStatValue, { color: '#34d399' }]}>{availableSeats}</Text>
-            </View>
-            <View style={[styles.mapStatPill, styles.statOrange]}>
-              <Text style={styles.mapStatLabel}>{t('Vendidas', 'Sold')}</Text>
-              <Text style={[styles.mapStatValue, { color: '#fb923c' }]}>{soldSeats}</Text>
-            </View>
-          </ScrollView>
+          <TouchableOpacity onPress={saveMap} disabled={saving} style={[styles.saveButton, saving && { opacity: 0.6 }]}>
+            <Text style={styles.saveText}>{saving ? t('GUARDANDO...', 'SAVING...') : saved ? t('GUARDADO', 'SAVED') : t('GUARDAR', 'SAVE')}</Text>
+          </TouchableOpacity>
         </View>
 
-        <TouchableOpacity onPress={saveMap} disabled={saving} style={[styles.saveButton, saving && { opacity: 0.6 }]}>
-          <Text style={styles.saveText}>{saving ? t('GUARDANDO...', 'SAVING...') : saved ? t('GUARDADO', 'SAVED') : t('GUARDAR', 'SAVE')}</Text>
-        </TouchableOpacity>
+        {/* Row 2: stats (all three visible) */}
+        <View style={styles.mapStatsRow}>
+          <View style={[styles.mapStatPill, styles.statBlue]}>
+            <Text style={styles.mapStatLabel}>{t('Capacidad', 'Capacity')}</Text>
+            <Text style={[styles.mapStatValue, { color: '#60a5fa' }]}>{capacity}</Text>
+          </View>
+          <View style={[styles.mapStatPill, styles.statGreen]}>
+            <Text style={styles.mapStatLabel}>{t('Disponibles', 'Available')}</Text>
+            <Text style={[styles.mapStatValue, { color: '#34d399' }]}>{availableSeats}</Text>
+          </View>
+          <View style={[styles.mapStatPill, styles.statOrange]}>
+            <Text style={styles.mapStatLabel}>{t('Vendidas', 'Sold')}</Text>
+            <Text style={[styles.mapStatValue, { color: '#fb923c' }]}>{soldSeats}</Text>
+          </View>
+        </View>
       </View>
 
       {/* Horizontal toolbar — Edit toggle + add-tools (tools only in edit mode). */}
@@ -859,8 +863,8 @@ function SeatToggle({ label, value, onPress, tone }: { label: string; value: boo
 
 const styles = StyleSheet.create({
   mapStatsScroller: { flex: 1, minWidth: 0, marginRight: 2 },
-  mapStatsRow: { flexDirection: 'row', alignItems: 'center', gap: 7, paddingLeft: 0, paddingRight: 6 },
-  mapStatPill: { minHeight: 28, flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, borderWidth: 1 },
+  mapStatsRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 9 },
+  mapStatPill: { flex: 1, minHeight: 30, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 5, borderRadius: 12, borderWidth: 1 },
   statBlue: { backgroundColor: 'rgba(59,130,246,0.10)', borderColor: 'rgba(59,130,246,0.30)' },
   statGreen: { backgroundColor: 'rgba(52,211,153,0.10)', borderColor: 'rgba(52,211,153,0.30)' },
   statOrange: { backgroundColor: 'rgba(249,115,22,0.10)', borderColor: 'rgba(249,115,22,0.30)' },
@@ -868,7 +872,8 @@ const styles = StyleSheet.create({
   mapStatLabel: { color: 'rgba(226,232,240,0.6)', fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3 },
   mapStatValue: { color: '#F8FAFC', fontSize: 12, fontWeight: '800' },
   root: { backgroundColor: 'rgba(255,255,255,0.018)', borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', overflow: 'hidden', shadowColor: '#000000', shadowOpacity: 0.18, shadowRadius: 16, shadowOffset: { width: 0, height: 8 } },
-  topBar: { minHeight: 64, backgroundColor: '#071423', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 14, paddingVertical: 11, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  topBar: { backgroundColor: '#071423', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 14, paddingTop: 11, paddingBottom: 12 },
+  topBarRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 },
   brandMark: { width: 36, height: 36, borderRadius: 11, backgroundColor: 'rgba(249,115,22,0.16)', borderWidth: 1, borderColor: 'rgba(249,115,22,0.40)', alignItems: 'center', justifyContent: 'center' },
   brandText: { color: '#F97316', fontWeight: '800', fontSize: 11, letterSpacing: 0.3 },
