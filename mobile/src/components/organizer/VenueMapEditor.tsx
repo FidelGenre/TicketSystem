@@ -466,7 +466,11 @@ export function VenueMapEditor({ eventId }: Props) {
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.inspectorContent}>
                 {selectedSeat && (selected.type === 'table' || selected.type === 'seat') && (() => {
                   const ov: SeatOverride = selected.seatConfig?.[selectedSeat] || {};
-                  const [defRow, defNum] = selectedSeat.split('-');
+                  // Default row/number derived from the canonical key:
+                  // "seat-{n}" → row "Mesa", number n; "{letter}-{n}" → letter, n.
+                  const isTableKey = selectedSeat.startsWith('seat-');
+                  const defRow = isTableKey ? (t('Mesa', 'Table')) : selectedSeat.split('-')[0];
+                  const defNum = isTableKey ? selectedSeat.replace('seat-', '') : selectedSeat.split('-')[1];
                   return (
                     <View style={styles.seatPanel}>
                       <View style={styles.seatPanelHead}>
@@ -626,13 +630,17 @@ function SeatDots({ item, selectedSeat, onSeatPress }: { item: VenueItem; select
 
   // Mirror ClientVenueMap's TableSection: chairs are arranged AROUND a central
   // table rather than in flat rows, so the editor looks like the client view.
-  // Slightly larger/clamped so seats read as robust filled circles.
-  const dot = Math.max(12, Math.min(22, Math.floor(Math.min(w, h) * 0.22)));
+  // Chair size proportional to the table but a bit smaller, so seats stay fully
+  // inside the item and don't overlap neighbouring tables.
+  const dot = Math.max(11, Math.min(18, Math.floor(Math.min(w, h) * 0.20)));
 
-  // Central table block sized so the edge-hugging chairs sit just outside it.
-  // Central block leaves a ring of space for the perimeter chairs.
-  const tableW = isRound ? w * 0.60 : Math.max(w * 0.4, w - dot * 2.2);
-  const tableH = isRound ? h * 0.60 : Math.max(h * 0.4, h - dot * 2.2);
+  // Seats are inset by a full chair so they sit INSIDE the item bounds (their
+  // outer edge touches the item edge, not poking out into a neighbour).
+  const inset = dot * 0.75 + 2;
+
+  // Central block leaves a clear ring of space for the perimeter chairs.
+  const tableW = isRound ? w * 0.58 : Math.max(w * 0.34, w - dot * 2.6);
+  const tableH = isRound ? h * 0.58 : Math.max(h * 0.34, h - dot * 2.6);
 
   // Compute a (cx, cy) for each seat. We distribute ALL seats evenly around the
   // table perimeter (same approach as ClientVenueMap's TableSection), instead of
@@ -642,16 +650,21 @@ function SeatDots({ item, selectedSeat, onSeatPress }: { item: VenueItem; select
   let i = 0;
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
-      const id = `${row}-${col}`;
+      // Canonical seat key, matching the backend/ClientVenueMap so per-seat
+      // overrides set here are actually read when buying:
+      //  - table  → "seat-{n}"          (n = 1-based linear index)
+      //  - grid   → "{rowLetter}-{n}"   (e.g. "A-1", matching A,B,C… rows)
+      const id = item.type === 'table'
+        ? `seat-${i + 1}`
+        : `${String.fromCharCode(65 + row)}-${col + 1}`;
       let cx: number; let cy: number;
       if (isRound) {
         const rad = ((i * 360) / total * Math.PI) / 180;
-        cx = w / 2 + (w / 2 - dot / 2 - 1) * Math.sin(rad);
-        cy = h / 2 - (h / 2 - dot / 2 - 1) * Math.cos(rad);
+        cx = w / 2 + (w / 2 - inset) * Math.sin(rad);
+        cy = h / 2 - (h / 2 - inset) * Math.cos(rad);
       } else {
         // Walk the rectangle perimeter: top edge → right → bottom → left,
         // proportional to each edge's length so spacing stays even.
-        const inset = dot / 2 + 1;
         const iw = Math.max(1, w - inset * 2);
         const ih = Math.max(1, h - inset * 2);
         const perim = 2 * (iw + ih);
