@@ -498,6 +498,20 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
     } : entry));
   };
 
+  // Apply a drag delta to the item's CURRENT stored position (always correct,
+  // no captured base that could go stale → no jumping to the corner).
+  const moveItemBy = (id: string, dx: number, dy: number) => {
+    setSaved(false);
+    setItems((current) => current.map((entry) => {
+      if (entry.id !== id || entry.locked) return entry;
+      return {
+        ...entry,
+        x: Math.max(0, Math.min(CANVAS_WIDTH - entry.width, entry.x + dx)),
+        y: Math.max(0, Math.min(CANVAS_HEIGHT - entry.height, entry.y + dy)),
+      };
+    }));
+  };
+
   // Drag a chair: update its xOffset/yOffset (baseX/baseY = offset when the drag began).
   const dragSeat = (seatId: string, itemId: string, baseX: number, baseY: number, dx: number, dy: number) => {
     setSaved(false);
@@ -752,7 +766,7 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
                     touchedItemRef={touchedItemRef}
                     onSelect={(id) => { setSelectedId(id); }}
                     onShowInfo={(it, px, py) => showItemInfo(it, px, py)}
-                    onDragMove={(it, x, y) => moveItem(it, x, y)}
+                    onDragMove={(it, dx, dy) => moveItemBy(it.id, dx, dy)}
                     onDragEnd={() => onScrollLock?.(false)}
                     onScrollLock={onScrollLock}
                     style={[
@@ -1081,12 +1095,11 @@ function ItemView({ item, isSelected, editMode, zoomRef, touchedItemRef, onSelec
       }}
       onResponderRelease={(e) => {
         if (start.current.moved) {
-          // Read the offset's actual current value so the commit matches exactly
-          // what's on screen, then commit and reset in the same tick.
-          const ox = (offset.x as any)._value ?? start.current.dx;
-          const oy = (offset.y as any)._value ?? start.current.dy;
+          // Commit by DELTA so the parent applies it to the item's live position —
+          // no reliance on a captured base that could be stale/zero.
+          const dx = start.current.dx, dy = start.current.dy;
           offset.setValue({ x: 0, y: 0 });
-          onDragMove(item, start.current.ix + ox, start.current.iy + oy);
+          onDragMove(item, dx, dy);
         } else {
           onSelect(item.id);
           onShowInfo(item, e.nativeEvent.pageX, e.nativeEvent.pageY);
@@ -1096,10 +1109,9 @@ function ItemView({ item, isSelected, editMode, zoomRef, touchedItemRef, onSelec
       }}
       onResponderTerminate={() => {
         if (start.current.moved) {
-          const ox = (offset.x as any)._value ?? start.current.dx;
-          const oy = (offset.y as any)._value ?? start.current.dy;
+          const dx = start.current.dx, dy = start.current.dy;
           offset.setValue({ x: 0, y: 0 });
-          onDragMove(item, start.current.ix + ox, start.current.iy + oy);
+          onDragMove(item, dx, dy);
         }
         touchedItemRef.current = false;
         onDragEnd();
