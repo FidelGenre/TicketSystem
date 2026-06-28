@@ -292,57 +292,18 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
     if (!t) return;
     touchRef.current = { x: t.locationX ?? t.pageX, y: t.locationY ?? t.pageY, panX: viewRef.current.pan.x, panY: viewRef.current.pan.y, isPinch: false, pinchDist: 0, pinchZoom: viewRef.current.zoom, pinchCx: 0, pinchCy: 0, moved: false };
   };
-  // In edit mode, find which item (if any) sits under a viewport-local point so
-  // the canvas pan can yield to dragging that item.
-  const itemAtPoint = (locX: number, locY: number): VenueItem | null => {
-    const z = viewRef.current.zoom || 1;
-    // Invert the canvas transform: screen = pan + halfCanvas*(z-1) + canvasPos*z.
-    const cx = (locX - viewRef.current.pan.x - (CANVAS_WIDTH / 2) * (z - 1)) / z;
-    const cy = (locY - viewRef.current.pan.y - (CANVAS_HEIGHT / 2) * (z - 1)) / z;
-    // Topmost first (last drawn = on top).
-    for (let i = itemsRef.current.length - 1; i >= 0; i -= 1) {
-      const it = itemsRef.current[i];
-      if (it.locked) continue;
-      if (cx >= it.x && cx <= it.x + it.width && cy >= it.y && cy <= it.y + it.height) return it;
-    }
-    return null;
-  };
-
   const onCanvasTouchStart = (e: any) => {
     if (animatingRef.current) return;
-    if (seatTouchRef.current) return; // a chair owns this touch
-    if (dragRef.current) return; // an item is being dragged — don't pan/pinch the canvas
+    if (seatTouchRef.current || touchedItemRef.current) return; // an item/chair owns this touch
+    onScrollLock?.(true); // stop the page from scrolling while moving the map
     const touches = e.nativeEvent.touches || [];
     const t0 = touches[0];
-    // Edit mode, single finger over an item → start an item drag, not a pan.
-    if (editMode && touches.length === 1 && t0) {
-      const hit = itemAtPoint(t0.locationX ?? 0, t0.locationY ?? 0);
-      if (hit) {
-        onScrollLock?.(true);
-        setSelectedId(hit.id);
-        setDragSafe({ id: hit.id, x: hit.x, y: hit.y, pageX: t0.pageX, pageY: t0.pageY });
-        return;
-      }
-    }
-    onScrollLock?.(true); // stop the page from scrolling while moving the map
     responderStart.current = { x: t0?.pageX || 0, y: t0?.pageY || 0 };
     if (touches.length >= 2) beginPinch(touches);
     else if (!touchRef.current.isPinch) beginPan(touches);
   };
   const onCanvasTouchMove = (e: any) => {
-    if (seatTouchRef.current) return; // a chair owns this touch
-    // An item is being dragged — move it instead of panning the canvas.
-    if (dragRef.current) {
-      const d = dragRef.current;
-      const t0 = (e.nativeEvent.touches || [])[0];
-      if (!t0) return;
-      const z = viewRef.current.zoom || 1;
-      const nextX = d.x + (t0.pageX - d.pageX) / z;
-      const nextY = d.y + (t0.pageY - d.pageY) / z;
-      const it = itemsRef.current.find((entry) => entry.id === d.id);
-      if (it) moveItem(it, nextX, nextY);
-      return;
-    }
+    if (seatTouchRef.current || touchedItemRef.current) return; // an item/chair owns this touch
     const touches = e.nativeEvent.touches || [];
     if (!touchRef.current.isPinch && touches.length >= 2) { beginPinch(touches); return; }
     if (touchRef.current.isPinch && touches.length >= 2) {
@@ -600,6 +561,29 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
     }, 4000);
   };
 
+  // Tapping a whole item (table/area/bar/stage) shows its summary card.
+  const showItemInfo = (it: VenueItem, _px: number, _py: number) => {
+    const typeLabel = it.type === 'table' ? t('Mesa', 'Table')
+      : it.type === 'seat' ? t('Asientos', 'Seats')
+      : it.type === 'area' ? t('Área general', 'General area')
+      : it.type === 'bar' ? t('Barra', 'Bar')
+      : it.type === 'stage' ? t('Escenario', 'Stage') : it.type;
+    const totalSeats = it.rows > 0 && it.seatsPerRow > 0 ? it.rows * it.seatsPerRow : 0;
+    const blocked = Object.values(it.seatConfig || {}).filter((v: SeatOverride) => v.reserved || v.disabled).length;
+    const available = Math.max(0, totalSeats - blocked);
+    const subtitle = totalSeats > 0
+      ? `${available} ${t('disp.', 'avail.')} · ${blocked} ${t('bloq.', 'blocked')} · ${totalSeats} ${t('total', 'total')}`
+      : typeLabel;
+    showSeatInfo({
+      title: `${it.name} · ${typeLabel}`,
+      subtitle,
+      status: it.saleMode === 'whole' ? t('Mesa completa', 'Whole table') : t('Por asiento', 'Per seat'),
+      price: it.price || 0,
+      tone: 'available',
+      px: 0, py: 0,
+    });
+  };
+
   const toggleSeat = (seatId: string, pageX = 0, pageY = 0, itemId = '') => {
     if (editMode) {
       // Select the chair's item too, so the inspector targets the right table.
@@ -762,13 +746,18 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
                 const isSelected = selectedId === item.id;
 
                 return (
-                  <View
+                  <ItemView
                     key={`${item.id || item.name || 'map-item'}-${index}`}
-                    // Dragging an item and panning the canvas are both handled by the
-                    // viewport's onTouch* handlers (which hit-test items in edit
-                    // mode). The item itself doesn't claim the responder, so chair
-                    // TouchableOpacity children still receive taps.
-                    pointerEvents="box-none"
+                    item={item}
+                    isSelected={isSelected}
+                    editMode={editMode}
+                    zoomRef={viewRef}
+                    touchedItemRef={touchedItemRef}
+                    onSelect={(id) => { setSelectedId(id); }}
+                    onShowInfo={(it, px, py) => showItemInfo(it, px, py)}
+                    onDragMove={(it, x, y) => moveItem(it, x, y)}
+                    onDragEnd={() => onScrollLock?.(false)}
+                    onScrollLock={onScrollLock}
                     style={[
                       styles.mapItem,
                       shapeStyle(item),
@@ -802,7 +791,7 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
                     ]}>
                       {item.name}
                     </Text>
-                  </View>
+                  </ItemView>
                 );
               })}
             </Animated.View>
@@ -1043,6 +1032,54 @@ function shapeStyle(item: VenueItem) {
     return { borderRadius: Math.min(item.width, item.height) / 2 };
   }
   return { borderRadius: 8 };
+}
+
+// An item (table/area/bar/stage). A tap always shows its info; in edit mode a
+// drag moves it. Owns its own responder so it never fights the canvas pan: it
+// flags `touchedItemRef` so the viewport ignores the gesture. Chairs sit above
+// (higher zIndex) and win their own taps via SeatDot.
+function ItemView({ item, isSelected, editMode, zoomRef, touchedItemRef, onSelect, onShowInfo, onDragMove, onDragEnd, onScrollLock, style, children }: {
+  item: VenueItem; isSelected: boolean; editMode: boolean;
+  zoomRef: React.MutableRefObject<{ zoom: number; pan: { x: number; y: number } }>;
+  touchedItemRef: React.MutableRefObject<boolean>;
+  onSelect: (id: string) => void;
+  onShowInfo: (item: VenueItem, px: number, py: number) => void;
+  onDragMove: (item: VenueItem, x: number, y: number) => void;
+  onDragEnd: () => void;
+  onScrollLock?: (locked: boolean) => void;
+  style: any; children: React.ReactNode;
+}) {
+  const start = useRef({ x: 0, y: 0, ix: 0, iy: 0, moved: false });
+  return (
+    <View
+      onStartShouldSetResponder={() => true}
+      onMoveShouldSetResponder={() => editMode}
+      onResponderGrant={(e) => {
+        touchedItemRef.current = true;
+        start.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY, ix: item.x, iy: item.y, moved: false };
+        onSelect(item.id);
+        if (editMode) onScrollLock?.(true);
+      }}
+      onResponderMove={(e) => {
+        if (!editMode) return;
+        const z = zoomRef.current.zoom || 1;
+        const dx = (e.nativeEvent.pageX - start.current.x) / z;
+        const dy = (e.nativeEvent.pageY - start.current.y) / z;
+        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) start.current.moved = true;
+        if (start.current.moved) onDragMove(item, start.current.ix + dx, start.current.iy + dy);
+      }}
+      onResponderRelease={(e) => {
+        // A tap (no drag) shows the item's info.
+        if (!start.current.moved) onShowInfo(item, e.nativeEvent.pageX, e.nativeEvent.pageY);
+        touchedItemRef.current = false;
+        onDragEnd();
+      }}
+      onResponderTerminate={() => { touchedItemRef.current = false; onDragEnd(); }}
+      style={style}
+    >
+      {children}
+    </View>
+  );
 }
 
 // One chair: a tap selects it (info/inspector); a drag adjusts its xOffset/yOffset
