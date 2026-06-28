@@ -431,7 +431,7 @@ export class MailService {
               </table>
             </td>
           </tr>
-          ${safeNotes ? `<tr><td style="padding:0 28px 12px;background:#ffffff;"><p style="margin:0;padding:14px 16px;border-radius:14px;background:#fff7ed;color:#9a3412;font-size:13px;line-height:1.5;">${safeNotes}</p></td></tr>` : ''}
+          ${safeNotes ? `<tr><td style="padding:0 28px 12px;background:#ffffff;"><p style="margin:0;padding:14px 16px;border-radius:14px;background:#fff7ed;color:#9a3412;font-size:13px;line-height:1.5;white-space:pre-line;">${safeNotes}</p></td></tr>` : ''}
           <tr>
             <td align="center" style="padding:22px 28px 30px;background:#ffffff;">
               <a href="${safePayUrl}" target="_blank" style="display:inline-block;background:#F97316;color:#ffffff;text-decoration:none;border-radius:14px;padding:15px 30px;font-size:14px;font-weight:900;">Pagar factura</a>

@@ -33,12 +33,8 @@ type InvoiceForm = {
   description: string;
   amount: string;
   currency: string;
-  addProcessingFee: boolean;
   dueDays: string;
-  notes: string;
 };
-
-const DEFAULT_INVOICE_NOTES = 'Gracias por confiar en LP Ticket. Esta factura corresponde a los servicios acordados. Si tienes alguna pregunta sobre el pago o necesitas asistencia, comunícate con nosotros al 281.625.6383.';
 
 const initialForm: InvoiceForm = {
   customerName: '',
@@ -48,9 +44,7 @@ const initialForm: InvoiceForm = {
   description: '',
   amount: '',
   currency: 'USD',
-  addProcessingFee: true,
   dueDays: '7',
-  notes: DEFAULT_INVOICE_NOTES,
 };
 
 export default function AdminInvoicesPage() {
@@ -64,9 +58,9 @@ export default function AdminInvoicesPage() {
 
   const baseAmount = Number(form.amount || 0);
   const feeAmount = useMemo(() => {
-    if (!form.addProcessingFee || !Number.isFinite(baseAmount) || baseAmount <= 0) return 0;
+    if (!Number.isFinite(baseAmount) || baseAmount <= 0) return 0;
     return Math.round(baseAmount * 0.035 * 100) / 100;
-  }, [baseAmount, form.addProcessingFee]);
+  }, [baseAmount]);
   const totalAmount = Number.isFinite(baseAmount) && baseAmount > 0
     ? Math.round((baseAmount + feeAmount) * 100) / 100
     : 0;
@@ -88,8 +82,7 @@ export default function AdminInvoicesPage() {
     amount: lang === 'es' ? 'Monto base' : 'Base amount',
     currency: lang === 'es' ? 'Moneda' : 'Currency',
     dueDays: lang === 'es' ? 'Días para pagar' : 'Days to pay',
-    notes: lang === 'es' ? 'Notas / términos' : 'Notes / terms',
-    fee: lang === 'es' ? 'Agregar Processing Fee 3.5%' : 'Add Processing Fee 3.5%',
+    fee: lang === 'es' ? 'Processing Fee 3.5% siempre activo' : 'Processing Fee 3.5% always active',
     create: lang === 'es' ? 'Crear y enviar factura' : 'Create and send invoice',
     sending: lang === 'es' ? 'Enviando factura...' : 'Sending invoice...',
     history: lang === 'es' ? 'Facturas enviadas desde LPTicket' : 'Invoices sent from LPTicket',
@@ -226,7 +219,7 @@ export default function AdminInvoicesPage() {
 
           <label className="space-y-1.5 block">
             <span className="text-xs font-black uppercase tracking-wider text-gray-500">{labels.description}</span>
-            <textarea className="input min-h-[110px] resize-y" value={form.description} onChange={(event) => updateField('description', event.target.value)} />
+            <textarea className="input min-h-[110px] resize-y" value={form.description} onChange={(event) => updateField('description', event.target.value)} required placeholder="Por concepto de evento noche de #TBT dia 06/11/2026" />
           </label>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -244,20 +237,14 @@ export default function AdminInvoicesPage() {
             </label>
           </div>
 
-          <label className="flex items-center gap-3 rounded-xl border border-orange-200 bg-orange-50/70 px-4 py-3">
-            <input
-              type="checkbox"
-              checked={form.addProcessingFee}
-              onChange={(event) => updateField('addProcessingFee', event.target.checked)}
-              className="h-5 w-5 rounded border-gray-300 text-primary-500 focus:ring-primary-500"
-            />
+          <div className="rounded-xl border border-orange-200 bg-orange-50/70 px-4 py-3">
             <span className="text-sm font-black text-gray-900">{labels.fee}</span>
-          </label>
-
-          <label className="space-y-1.5 block">
-            <span className="text-xs font-black uppercase tracking-wider text-gray-500">{labels.notes}</span>
-            <textarea className="input min-h-[90px] resize-y" value={form.notes} onChange={(event) => updateField('notes', event.target.value)} />
-          </label>
+            <p className="mt-1 text-xs font-medium text-orange-900">
+              {lang === 'es'
+                ? 'Se calcula automáticamente sobre el monto base y se envía como línea separada en Stripe.'
+                : 'It is calculated automatically from the base amount and sent as a separate Stripe line item.'}
+            </p>
+          </div>
 
           <button type="submit" disabled={submitting} className="btn-primary w-full flex items-center justify-center gap-2 py-3 text-sm">
             <HiOutlineMail className="w-5 h-5" />

@@ -36,12 +36,10 @@ export class AdminController {
     customerEmail: string;
     companyName?: string;
     concept: string;
-    description?: string;
+    description: string;
     amount: number;
     currency?: string;
-    addProcessingFee?: boolean;
     dueDays?: number;
-    notes?: string;
   }) {
     return this.adminInvoicesService.createManualInvoice(body);
   }

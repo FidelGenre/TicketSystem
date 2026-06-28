@@ -6,7 +6,14 @@ import { MailService } from '../common/services/mail.service';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const Stripe = require('stripe');
 
-const DEFAULT_INVOICE_NOTES = 'Gracias por confiar en LP Ticket. Esta factura corresponde a los servicios acordados. Si tienes alguna pregunta sobre el pago o necesitas asistencia, comunícate con nosotros al 281.625.6383.';
+const DEFAULT_INVOICE_FOOTER = [
+  'Gracias por confiar en LP Ticket. Esta factura corresponde a los servicios acordados. Si tienes alguna pregunta sobre el pago o necesitas asistencia, comunícate con nosotros al 281.625.6383.',
+  '',
+  'LP Ticket LLC - Estados Unidos.',
+  'Tu entrada a grandes experiencias.',
+  'Los pagos realizados por tarjeta pueden incluir un cargo adicional de procesamiento.',
+  'Gracias por elegirnos.',
+].join('\n');
 
 type CreateManualInvoiceInput = {
   customerName: string;
@@ -16,7 +23,6 @@ type CreateManualInvoiceInput = {
   description?: string;
   amount: number;
   currency?: string;
-  addProcessingFee?: boolean;
   dueDays?: number;
   notes?: string;
 };
@@ -96,7 +102,7 @@ export class AdminInvoicesService {
     const customerEmail = input.customerEmail?.trim().toLowerCase();
     const concept = input.concept?.trim();
     const description = input.description?.trim();
-    const notes = input.notes?.trim() || DEFAULT_INVOICE_NOTES;
+    const notes = DEFAULT_INVOICE_FOOTER;
     const companyName = input.companyName?.trim();
     const currency = (input.currency || 'USD').trim().toLowerCase();
     const dueDays = Math.max(1, Math.min(Number(input.dueDays) || 7, 90));
@@ -108,10 +114,11 @@ export class AdminInvoicesService {
     const suggestion = suggestEmailFix(customerEmail);
     if (suggestion) throw new BadRequestException(`Revisa el correo: ¿quisiste decir ${suggestion}?`);
     if (!concept) throw new BadRequestException('Ingresa el concepto de la factura.');
+    if (!description) throw new BadRequestException('Ingresa la descripción exacta de lo que se va a cobrar.');
     if (!/^[a-z]{3}$/i.test(currency)) throw new BadRequestException('La moneda debe tener 3 letras, por ejemplo USD.');
 
     const baseCents = this.toCents(input.amount);
-    const processingFeeCents = input.addProcessingFee ? Math.round(baseCents * 0.035) : 0;
+    const processingFeeCents = Math.round(baseCents * 0.035);
 
     const customer = await this.stripe.customers.create({
       name: companyName ? `${customerName} - ${companyName}` : customerName,
@@ -126,12 +133,11 @@ export class AdminInvoicesService {
       collection_method: 'send_invoice',
       days_until_due: dueDays,
       auto_advance: false,
-      description: description || concept,
       footer: notes,
       metadata: {
         source: 'lpticket_manual_invoice',
-        lp_fee: input.addProcessingFee ? 'true' : 'false',
-        lp_fee_percent: input.addProcessingFee ? '3.5' : '0',
+        lp_fee: 'true',
+        lp_fee_percent: '3.5',
       },
     });
 
@@ -140,18 +146,16 @@ export class AdminInvoicesService {
       invoice: invoice.id,
       amount: baseCents,
       currency,
-      description: description ? `${concept} - ${description}` : concept,
+      description,
     });
 
-    if (processingFeeCents > 0) {
-      await this.stripe.invoiceItems.create({
-        customer: customer.id,
-        invoice: invoice.id,
-        amount: processingFeeCents,
-        currency,
-        description: 'Processing Fee 3.5%',
-      });
-    }
+    await this.stripe.invoiceItems.create({
+      customer: customer.id,
+      invoice: invoice.id,
+      amount: processingFeeCents,
+      currency,
+      description: 'Processing Fee 3.5%',
+    });
 
     const finalized = await this.stripe.invoices.finalizeInvoice(invoice.id, {
       expand: ['customer'],
