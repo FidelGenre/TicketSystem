@@ -1054,6 +1054,7 @@ function ItemView({ item, isSelected, editMode, zoomRef, touchedItemRef, onSelec
     <View
       onStartShouldSetResponder={() => true}
       onMoveShouldSetResponder={() => editMode}
+      onResponderTerminationRequest={() => false}
       onResponderGrant={(e) => {
         touchedItemRef.current = true;
         start.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY, ix: item.x, iy: item.y, moved: false };
@@ -1097,6 +1098,7 @@ function SeatDot({ id, itemId, baseX, baseY, left, top, size, fill, active, edit
     <View
       onStartShouldSetResponder={() => true}
       onMoveShouldSetResponder={() => editMode}
+      onResponderTerminationRequest={() => false}
       onResponderGrant={(e) => { seatTouchRef.current = true; start.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY, moved: false }; }}
       onResponderMove={(e) => {
         if (!editMode) return;
