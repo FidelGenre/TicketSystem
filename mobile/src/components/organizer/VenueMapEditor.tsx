@@ -294,8 +294,9 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
   // the canvas pan can yield to dragging that item.
   const itemAtPoint = (locX: number, locY: number): VenueItem | null => {
     const z = viewRef.current.zoom || 1;
-    const cx = (locX - viewRef.current.pan.x) / z;
-    const cy = (locY - viewRef.current.pan.y) / z;
+    // Invert the canvas transform: screen = pan + halfCanvas*(z-1) + canvasPos*z.
+    const cx = (locX - viewRef.current.pan.x - (CANVAS_WIDTH / 2) * (z - 1)) / z;
+    const cy = (locY - viewRef.current.pan.y - (CANVAS_HEIGHT / 2) * (z - 1)) / z;
     // Topmost first (last drawn = on top).
     for (let i = itemsRef.current.length - 1; i >= 0; i -= 1) {
       const it = itemsRef.current[i];
