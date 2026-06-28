@@ -841,7 +841,7 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
             </View>
 
             {selected && (
-              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.inspectorContent}>
+              <ScrollView style={{ maxHeight: 280 }} showsVerticalScrollIndicator={true} nestedScrollEnabled contentContainerStyle={styles.inspectorContent}>
                 {selectedSeat && (selected.type === 'table' || selected.type === 'seat') && (() => {
                   const ov: SeatOverride = selected.seatConfig?.[selectedSeat] || {};
                   // Default row/number derived from the canonical key:
@@ -1047,16 +1047,18 @@ function ItemView({ item, isSelected, editMode, zoomRef, touchedItemRef, onSelec
   style: any; children: React.ReactNode;
 }) {
   const start = useRef({ x: 0, y: 0, ix: 0, iy: 0, lastX: 0, lastY: 0, moved: false });
-  const viewRef = useRef<View>(null);
+  // Animated translate applied on top of left/top so we can move per-frame without
+  // a React re-render (works on web + native, unlike setNativeProps).
+  const offset = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
   return (
-    <View
-      ref={viewRef}
+    <Animated.View
       onStartShouldSetResponder={() => true}
       onMoveShouldSetResponder={() => editMode}
       onResponderTerminationRequest={() => false}
       onResponderGrant={(e) => {
         touchedItemRef.current = true;
         start.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY, ix: item.x, iy: item.y, lastX: item.x, lastY: item.y, moved: false };
+        offset.setValue({ x: 0, y: 0 });
         onSelect(item.id);
         onScrollLock?.(true); // block page scroll the instant the item is touched
       }}
@@ -1070,30 +1072,29 @@ function ItemView({ item, isSelected, editMode, zoomRef, touchedItemRef, onSelec
           const nx = Math.max(0, Math.min(CANVAS_WIDTH - item.width, start.current.ix + dx));
           const ny = Math.max(0, Math.min(CANVAS_HEIGHT - item.height, start.current.iy + dy));
           start.current.lastX = nx; start.current.lastY = ny;
-          // Move only this View per frame (no React re-render → smooth, no warp).
-          viewRef.current?.setNativeProps({ style: { left: nx, top: ny } });
+          // Translate relative to the item's base left/top (item.x/item.y).
+          offset.setValue({ x: nx - item.x, y: ny - item.y });
         }
       }}
       onResponderRelease={(e) => {
         if (start.current.moved) {
-          // Commit the final position to state once, on release.
+          offset.setValue({ x: 0, y: 0 });
           onDragMove(item, start.current.lastX, start.current.lastY);
         } else {
-          // A tap (no drag) shows the item's info.
           onShowInfo(item, e.nativeEvent.pageX, e.nativeEvent.pageY);
         }
         touchedItemRef.current = false;
         onDragEnd();
       }}
       onResponderTerminate={() => {
-        if (start.current.moved) onDragMove(item, start.current.lastX, start.current.lastY);
+        if (start.current.moved) { offset.setValue({ x: 0, y: 0 }); onDragMove(item, start.current.lastX, start.current.lastY); }
         touchedItemRef.current = false;
         onDragEnd();
       }}
-      style={style}
+      style={[style, { transform: [{ translateX: offset.x }, { translateY: offset.y }] }]}
     >
       {children}
-    </View>
+    </Animated.View>
   );
 }
 
@@ -1108,14 +1109,13 @@ function SeatDot({ id, itemId, baseX, baseY, left, top, size, fill, active, edit
   onSeatDrag: (seatId: string, itemId: string, baseX: number, baseY: number, dx: number, dy: number) => void;
 }) {
   const start = useRef({ x: 0, y: 0, dx: 0, dy: 0, moved: false });
-  const dotRef = useRef<View>(null);
+  const offset = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
   return (
-    <View
-      ref={dotRef}
+    <Animated.View
       onStartShouldSetResponder={() => true}
       onMoveShouldSetResponder={() => editMode}
       onResponderTerminationRequest={() => false}
-      onResponderGrant={(e) => { seatTouchRef.current = true; start.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY, dx: 0, dy: 0, moved: false }; }}
+      onResponderGrant={(e) => { seatTouchRef.current = true; offset.setValue({ x: 0, y: 0 }); start.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY, dx: 0, dy: 0, moved: false }; }}
       onResponderMove={(e) => {
         if (!editMode) return;
         const z = zoomRef.current.zoom || 1;
@@ -1124,12 +1124,12 @@ function SeatDot({ id, itemId, baseX, baseY, left, top, size, fill, active, edit
         if (Math.abs(dx) > 2 || Math.abs(dy) > 2) start.current.moved = true;
         if (start.current.moved) {
           start.current.dx = dx; start.current.dy = dy;
-          // Move only this dot per frame (no React re-render → smooth).
-          dotRef.current?.setNativeProps({ style: { left: left + dx, top: top + dy } });
+          offset.setValue({ x: dx, y: dy });
         }
       }}
       onResponderRelease={(e) => {
         if (start.current.moved) {
+          offset.setValue({ x: 0, y: 0 });
           onSeatDrag(id, itemId, baseX, baseY, start.current.dx, start.current.dy);
         } else {
           onSeatPress(id, e.nativeEvent.pageX, e.nativeEvent.pageY, itemId);
@@ -1137,7 +1137,7 @@ function SeatDot({ id, itemId, baseX, baseY, left, top, size, fill, active, edit
         seatTouchRef.current = false;
       }}
       onResponderTerminate={() => {
-        if (start.current.moved) onSeatDrag(id, itemId, baseX, baseY, start.current.dx, start.current.dy);
+        if (start.current.moved) { offset.setValue({ x: 0, y: 0 }); onSeatDrag(id, itemId, baseX, baseY, start.current.dx, start.current.dy); }
         seatTouchRef.current = false;
       }}
       style={[
@@ -1146,7 +1146,7 @@ function SeatDot({ id, itemId, baseX, baseY, left, top, size, fill, active, edit
           left, top, width: size, height: size, borderRadius: size / 2,
           backgroundColor: fill,
           zIndex: active ? 10 : 5,
-          transform: [{ scale: active ? 1.35 : 1 }],
+          transform: [{ scale: active ? 1.35 : 1 }, { translateX: offset.x }, { translateY: offset.y }],
           borderColor: active ? '#ffffff' : 'rgba(255,255,255,0.55)',
           borderWidth: active ? 2 : 1,
         },
