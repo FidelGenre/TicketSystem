@@ -1046,15 +1046,17 @@ function ItemView({ item, isSelected, editMode, zoomRef, touchedItemRef, onSelec
   onScrollLock?: (locked: boolean) => void;
   style: any; children: React.ReactNode;
 }) {
-  const start = useRef({ x: 0, y: 0, ix: 0, iy: 0, moved: false });
+  const start = useRef({ x: 0, y: 0, ix: 0, iy: 0, lastX: 0, lastY: 0, moved: false });
+  const viewRef = useRef<View>(null);
   return (
     <View
+      ref={viewRef}
       onStartShouldSetResponder={() => true}
       onMoveShouldSetResponder={() => editMode}
       onResponderTerminationRequest={() => false}
       onResponderGrant={(e) => {
         touchedItemRef.current = true;
-        start.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY, ix: item.x, iy: item.y, moved: false };
+        start.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY, ix: item.x, iy: item.y, lastX: item.x, lastY: item.y, moved: false };
         onSelect(item.id);
         onScrollLock?.(true); // block page scroll the instant the item is touched
       }}
@@ -1064,15 +1066,30 @@ function ItemView({ item, isSelected, editMode, zoomRef, touchedItemRef, onSelec
         const dx = (e.nativeEvent.pageX - start.current.x) / z;
         const dy = (e.nativeEvent.pageY - start.current.y) / z;
         if (Math.abs(dx) > 2 || Math.abs(dy) > 2) start.current.moved = true;
-        if (start.current.moved) onDragMove(item, start.current.ix + dx, start.current.iy + dy);
+        if (start.current.moved) {
+          const nx = Math.max(0, Math.min(CANVAS_WIDTH - item.width, start.current.ix + dx));
+          const ny = Math.max(0, Math.min(CANVAS_HEIGHT - item.height, start.current.iy + dy));
+          start.current.lastX = nx; start.current.lastY = ny;
+          // Move only this View per frame (no React re-render → smooth, no warp).
+          viewRef.current?.setNativeProps({ style: { left: nx, top: ny } });
+        }
       }}
       onResponderRelease={(e) => {
-        // A tap (no drag) shows the item's info.
-        if (!start.current.moved) onShowInfo(item, e.nativeEvent.pageX, e.nativeEvent.pageY);
+        if (start.current.moved) {
+          // Commit the final position to state once, on release.
+          onDragMove(item, start.current.lastX, start.current.lastY);
+        } else {
+          // A tap (no drag) shows the item's info.
+          onShowInfo(item, e.nativeEvent.pageX, e.nativeEvent.pageY);
+        }
         touchedItemRef.current = false;
         onDragEnd();
       }}
-      onResponderTerminate={() => { touchedItemRef.current = false; onDragEnd(); }}
+      onResponderTerminate={() => {
+        if (start.current.moved) onDragMove(item, start.current.lastX, start.current.lastY);
+        touchedItemRef.current = false;
+        onDragEnd();
+      }}
       style={style}
     >
       {children}
@@ -1090,26 +1107,39 @@ function SeatDot({ id, itemId, baseX, baseY, left, top, size, fill, active, edit
   onSeatPress: (seatId: string, px: number, py: number, itemId: string) => void;
   onSeatDrag: (seatId: string, itemId: string, baseX: number, baseY: number, dx: number, dy: number) => void;
 }) {
-  const start = useRef({ x: 0, y: 0, moved: false });
+  const start = useRef({ x: 0, y: 0, dx: 0, dy: 0, moved: false });
+  const dotRef = useRef<View>(null);
   return (
     <View
+      ref={dotRef}
       onStartShouldSetResponder={() => true}
       onMoveShouldSetResponder={() => editMode}
       onResponderTerminationRequest={() => false}
-      onResponderGrant={(e) => { seatTouchRef.current = true; start.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY, moved: false }; }}
+      onResponderGrant={(e) => { seatTouchRef.current = true; start.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY, dx: 0, dy: 0, moved: false }; }}
       onResponderMove={(e) => {
         if (!editMode) return;
         const z = zoomRef.current.zoom || 1;
         const dx = (e.nativeEvent.pageX - start.current.x) / z;
         const dy = (e.nativeEvent.pageY - start.current.y) / z;
         if (Math.abs(dx) > 2 || Math.abs(dy) > 2) start.current.moved = true;
-        if (start.current.moved) onSeatDrag(id, itemId, baseX, baseY, dx, dy);
+        if (start.current.moved) {
+          start.current.dx = dx; start.current.dy = dy;
+          // Move only this dot per frame (no React re-render → smooth).
+          dotRef.current?.setNativeProps({ style: { left: left + dx, top: top + dy } });
+        }
       }}
       onResponderRelease={(e) => {
-        if (!start.current.moved) onSeatPress(id, e.nativeEvent.pageX, e.nativeEvent.pageY, itemId);
+        if (start.current.moved) {
+          onSeatDrag(id, itemId, baseX, baseY, start.current.dx, start.current.dy);
+        } else {
+          onSeatPress(id, e.nativeEvent.pageX, e.nativeEvent.pageY, itemId);
+        }
         seatTouchRef.current = false;
       }}
-      onResponderTerminate={() => { seatTouchRef.current = false; }}
+      onResponderTerminate={() => {
+        if (start.current.moved) onSeatDrag(id, itemId, baseX, baseY, start.current.dx, start.current.dy);
+        seatTouchRef.current = false;
+      }}
       style={[
         styles.seatDot,
         {
