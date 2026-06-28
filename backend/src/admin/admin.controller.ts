@@ -3,6 +3,8 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AdminService } from './admin.service';
+import { AdminInvoicesService } from './admin-invoices.service';
+import { OrdersService } from '../orders/orders.service';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { UserRole } from '../database/entities';
@@ -11,12 +13,42 @@ import { UserRole } from '../database/entities';
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @Roles(UserRole.ADMIN)
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly adminInvoicesService: AdminInvoicesService,
+    private readonly ordersService: OrdersService,
+  ) {}
 
   // Dashboard stats
   @Get('stats')
   getStats() {
     return this.adminService.getDashboardStats();
+  }
+
+  @Get('manual-invoices')
+  getManualInvoices(@Query('limit') limit?: number) {
+    return this.adminInvoicesService.listManualInvoices(limit || 20);
+  }
+
+  @Post('manual-invoices')
+  createManualInvoice(@Body() body: {
+    customerName: string;
+    customerEmail: string;
+    companyName?: string;
+    customerPhone?: string;
+    addressLine1?: string;
+    addressLine2?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    country?: string;
+    concept: string;
+    description: string;
+    amount: number;
+    currency?: string;
+    dueDays?: number;
+  }) {
+    return this.adminInvoicesService.createManualInvoice(body);
   }
 
   // Users
@@ -72,6 +104,16 @@ export class AdminController {
   @Get('events/financials')
   getEventsFinancials() {
     return this.adminService.getEventsFinancials();
+  }
+
+  @Get('events/:id/post-event-report')
+  getPostEventReportPreview(@Param('id') id: string) {
+    return this.ordersService.getPostEventReportPreview(id);
+  }
+
+  @Post('events/:id/post-event-report/send')
+  sendPostEventReport(@Param('id') id: string, @Body('email') email?: string) {
+    return this.ordersService.sendManualPostEventReport(id, email);
   }
 
   @Patch('events/:id/approve')

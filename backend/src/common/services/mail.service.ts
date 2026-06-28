@@ -2,6 +2,48 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 
+type PostEventReportEmail = {
+  organizerName: string;
+  eventTitle: string;
+  eventDateLabel: string;
+  venueLabel: string;
+  flyerUrl?: string | null;
+  reportUrl: string;
+  currency: string;
+  totals: {
+    grossSales: number;
+    ticketRevenue: number;
+    lpFees: number;
+    processingFees: number;
+    netEstimated: number;
+    totalOrders: number;
+    totalTickets: number;
+    blockedTickets: number;
+    scannedTickets: number;
+    pendingTickets: number;
+    scanRate: number;
+    averageOrder: number;
+  };
+  topSections: Array<{ name: string; tickets: number; revenue: number }>;
+  salesByDay: Array<{ date: string; orders: number; tickets: number; revenue: number }>;
+  specialCodes: Array<{ code: string; orders: number; tickets: number; revenue: number; commission: number }>;
+  csv?: { filename: string; content: string };
+};
+
+type ManualInvoiceEmail = {
+  customerName: string;
+  concept: string;
+  description?: string | null;
+  baseAmount: number;
+  processingFee: number;
+  total: number;
+  currency: string;
+  dueDate?: string | null;
+  hostedInvoiceUrl: string;
+  invoiceNumber?: string | null;
+  notes?: string | null;
+};
+
 @Injectable()
 export class MailService {
   private transporter: nodemailer.Transporter;
@@ -307,6 +349,117 @@ export class MailService {
       console.error('Error sending email:', err);
     }
   }
+
+  async sendManualInvoiceEmail(to: string, invoice: ManualInvoiceEmail) {
+    const appUrl = this.getAppUrl();
+    const currency = invoice.currency || 'USD';
+    const money = (value: number) => `${Number(value || 0).toFixed(2)} ${currency}`;
+    const escapeHtml = (value?: string | null) => String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+    const safeCustomerName = escapeHtml(invoice.customerName);
+    const safeConcept = escapeHtml(invoice.concept);
+    const safeDescription = escapeHtml(invoice.description);
+    const safeNotes = escapeHtml(invoice.notes);
+    const safePayUrl = escapeHtml(invoice.hostedInvoiceUrl);
+    const dueLabel = invoice.dueDate
+      ? new Date(invoice.dueDate).toLocaleDateString('es-US', { month: 'long', day: 'numeric', year: 'numeric' })
+      : 'Próximamente';
+    const subject = `Factura LPTicket${invoice.invoiceNumber ? ` ${invoice.invoiceNumber}` : ''} - ${invoice.concept}`;
+    const text = [
+      `Hola ${invoice.customerName},`,
+      'Tu factura de LPTicket está lista para pago.',
+      `Concepto: ${invoice.concept}`,
+      invoice.description ? `Detalle: ${invoice.description}` : '',
+      `Base: ${money(invoice.baseAmount)}`,
+      invoice.processingFee > 0 ? `Processing Fee 3.5%: ${money(invoice.processingFee)}` : '',
+      `Total: ${money(invoice.total)}`,
+      `Pagar factura: ${invoice.hostedInvoiceUrl}`,
+    ].filter(Boolean).join('\n');
+
+    const html = `<!doctype html>
+<html>
+<body style="margin:0;padding:0;background:#f3f6fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f6fb;padding:30px 14px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:680px;background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 18px 55px rgba(15,23,42,0.16);">
+          <tr>
+            <td style="background:#0A375A;padding:28px 28px 24px;">
+              <img src="${appUrl}/logo-email-orange.png" alt="LPTicket" width="190" style="display:block;width:190px;max-width:190px;height:auto;border:0;" />
+              <p style="margin:22px 0 0;color:#fb923c;font-size:12px;font-weight:900;letter-spacing:3px;text-transform:uppercase;">Factura disponible</p>
+              <h1 style="margin:8px 0 0;color:#ffffff;font-size:30px;line-height:1.15;font-weight:900;">${safeConcept}</h1>
+              <p style="margin:10px 0 0;color:#cbd5e1;font-size:15px;line-height:1.5;">Hola ${safeCustomerName}, ya puedes completar tu pago de forma segura por Stripe.</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:26px 28px 8px;background:#ffffff;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding:14px 16px;border:1px solid #e2e8f0;border-radius:16px;background:#f8fafc;">
+                    <p style="margin:0;color:#64748b;font-size:11px;font-weight:900;letter-spacing:2px;text-transform:uppercase;">Total a pagar</p>
+                    <p style="margin:6px 0 0;color:#F97316;font-size:34px;line-height:1;font-weight:900;">${money(invoice.total)}</p>
+                    <p style="margin:8px 0 0;color:#64748b;font-size:13px;">Vence: ${escapeHtml(dueLabel)}</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:12px 28px;background:#ffffff;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;">
+                <tr>
+                  <td style="padding:16px;color:#64748b;font-size:14px;">Concepto</td>
+                  <td align="right" style="padding:16px;color:#0f172a;font-size:14px;font-weight:900;">${safeConcept}</td>
+                </tr>
+                ${safeDescription ? `<tr><td colspan="2" style="padding:0 16px 16px;color:#64748b;font-size:13px;line-height:1.5;">${safeDescription}</td></tr>` : ''}
+                <tr>
+                  <td style="padding:12px 16px;color:#64748b;font-size:14px;border-top:1px solid #e2e8f0;">Monto base</td>
+                  <td align="right" style="padding:12px 16px;color:#0f172a;font-size:14px;font-weight:900;border-top:1px solid #e2e8f0;">${money(invoice.baseAmount)}</td>
+                </tr>
+                <tr>
+                  <td style="padding:12px 16px;color:#64748b;font-size:14px;border-top:1px solid #e2e8f0;">Processing Fee 3.5%</td>
+                  <td align="right" style="padding:12px 16px;color:#0f172a;font-size:14px;font-weight:900;border-top:1px solid #e2e8f0;">${money(invoice.processingFee)}</td>
+                </tr>
+                <tr>
+                  <td style="padding:14px 16px;color:#F97316;font-size:15px;font-weight:900;border-top:1px solid #F97316;">Total</td>
+                  <td align="right" style="padding:14px 16px;color:#F97316;font-size:18px;font-weight:900;border-top:1px solid #F97316;">${money(invoice.total)}</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          ${safeNotes ? `<tr><td style="padding:0 28px 12px;background:#ffffff;"><p style="margin:0;padding:14px 16px;border-radius:14px;background:#fff7ed;color:#9a3412;font-size:13px;line-height:1.5;white-space:pre-line;">${safeNotes}</p></td></tr>` : ''}
+          <tr>
+            <td align="center" style="padding:22px 28px 30px;background:#ffffff;">
+              <a href="${safePayUrl}" target="_blank" style="display:inline-block;background:#F97316;color:#ffffff;text-decoration:none;border-radius:14px;padding:15px 30px;font-size:14px;font-weight:900;">Pagar factura</a>
+              <p style="margin:14px 0 0;color:#64748b;font-size:12px;line-height:1.5;">El pago se procesa de forma segura por Stripe. También recibirás la factura oficial de Stripe para tu respaldo.</p>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="background:#0A375A;padding:22px 28px;">
+              <p style="margin:0;color:#fb923c;font-size:13px;font-weight:900;">LPTicket</p>
+              <p style="margin:5px 0 0;color:#cbd5e1;font-size:11px;">Tus tickets. Tus eventos.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+    return this.transporter.sendMail({
+      from: `"LPTicket" <${this.configService.get('SMTP_FROM')}>`,
+      to,
+      subject,
+      text,
+      html,
+    });
+  }
+
   /**
    * Sends a branded event reminder email to a list of attendees.
    * Sent from info@lpticket.com
@@ -833,6 +986,315 @@ export class MailService {
       });
     } catch (e: any) {
       console.error('Password reset email failed:', e?.message || e);
+    }
+  }
+
+  async sendPostEventReportEmail(to: string, report: PostEventReportEmail) {
+    if (!to) return false;
+    const appUrl = this.getAppUrl();
+    const year = new Date().getFullYear();
+    const adminEmail = String(this.configService.get('ADMIN_EMAIL') || '').trim();
+    const money = (value: number) => `${Number(value || 0).toFixed(2)} ${report.currency || 'USD'}`;
+    const paidTicketAverage = report.totals.totalTickets > 0 ? report.totals.ticketRevenue / report.totals.totalTickets : 0;
+    const safe = (value: any) => String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+    const metric = (label: string, value: string, accent = false) => `
+      <td style="width:50%;padding:8px;">
+        <div style="background:#0f1d2b;border:1px solid rgba(246,198,95,0.14);border-radius:16px;padding:16px;">
+          <p style="margin:0 0 6px;color:#8ea3b8;font-size:11px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;font-family:'Helvetica Neue',Arial,sans-serif;">${label}</p>
+          <p style="margin:0;color:${accent ? '#F97316' : '#ffffff'};font-size:24px;font-weight:900;font-family:'Helvetica Neue',Arial,sans-serif;">${value}</p>
+        </div>
+      </td>`;
+    const sectionRows = report.topSections.slice(0, 8).map((item) => `
+      <tr>
+        <td style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);color:#e2e8f0;font-size:13px;font-weight:800;">${safe(item.name)}</td>
+        <td align="right" style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);color:#9fb2c6;font-size:12px;">${item.tickets}</td>
+        <td align="right" style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);color:#F97316;font-size:12px;font-weight:900;">${money(item.revenue)}</td>
+      </tr>`).join('');
+    const dayRows = report.salesByDay.slice(-7).map((item) => `
+      <tr>
+        <td style="padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.06);color:#e2e8f0;font-size:12px;font-weight:800;">${safe(item.date)}</td>
+        <td align="right" style="padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.06);color:#9fb2c6;font-size:12px;">${item.orders}</td>
+        <td align="right" style="padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.06);color:#9fb2c6;font-size:12px;">${item.tickets}</td>
+        <td align="right" style="padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.06);color:#F97316;font-size:12px;font-weight:900;">${money(item.revenue)}</td>
+      </tr>`).join('');
+    const codeRows = report.specialCodes.slice(0, 8).map((item) => `
+      <tr>
+        <td style="padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.06);color:#e2e8f0;font-size:12px;font-weight:900;">${safe(item.code)}</td>
+        <td align="right" style="padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.06);color:#9fb2c6;font-size:12px;">${item.tickets}</td>
+        <td align="right" style="padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.06);color:#F97316;font-size:12px;font-weight:900;">${money(item.revenue)}</td>
+      </tr>`).join('');
+    const flyerUrl = report.flyerUrl
+      ? (String(report.flyerUrl).startsWith('http') ? report.flyerUrl : `${appUrl}${String(report.flyerUrl).startsWith('/') ? '' : '/'}${report.flyerUrl}`)
+      : null;
+
+    const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head>
+<body style="margin:0;padding:0;background:#f4f7fb;">
+  <span style="display:none;visibility:hidden;opacity:0;color:transparent;height:0;width:0;overflow:hidden;">Resumen final de ventas, asistencia y base de datos de ${safe(report.eventTitle)}.</span>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f7fb;padding:26px 12px;">
+    <tr><td align="center">
+      <table role="presentation" width="680" cellpadding="0" cellspacing="0" style="width:680px;max-width:680px;background:#0b1622;border:1px solid rgba(10,55,90,0.10);border-radius:24px;overflow:hidden;box-shadow:0 24px 70px rgba(10,20,32,0.26),0 8px 24px rgba(10,20,32,0.14);">
+        <tr>
+          <td style="background:#0A375A;padding:24px 28px;">
+            <img src="${appUrl}/logo-email-orange.png" alt="LPTicket" width="190" style="display:block;width:190px;max-width:190px;height:auto;border:0;" />
+          </td>
+        </tr>
+        ${flyerUrl ? `<tr><td><img src="${flyerUrl}" alt="${safe(report.eventTitle)}" width="680" style="display:block;width:100%;max-height:330px;object-fit:cover;border:0;" /></td></tr>` : ''}
+        <tr>
+          <td style="padding:30px 30px 10px;">
+            <p style="margin:0 0 8px;color:#F97316;font-size:11px;font-weight:900;letter-spacing:.18em;text-transform:uppercase;font-family:'Helvetica Neue',Arial,sans-serif;">Resumen final del evento</p>
+            <h1 style="margin:0 0 10px;color:#ffffff;font-size:28px;line-height:1.12;font-weight:900;font-family:'Helvetica Neue',Arial,sans-serif;">${safe(report.eventTitle)}</h1>
+            <p style="margin:0;color:#9fb2c6;font-size:14px;line-height:1.6;font-family:'Helvetica Neue',Arial,sans-serif;">Hola ${safe(report.organizerName || 'organizador')}, aquí tienes el cierre completo de tu evento.</p>
+            <p style="margin:12px 0 0;color:#cbd5e1;font-size:13px;line-height:1.55;font-family:'Helvetica Neue',Arial,sans-serif;"><strong style="color:#ffffff;">Fecha:</strong> ${safe(report.eventDateLabel)}<br /><strong style="color:#ffffff;">Lugar:</strong> ${safe(report.venueLabel)}</p>
+          </td>
+        </tr>
+        <tr><td style="padding:12px 22px 4px;"><table role="presentation" width="100%"><tr>${metric('Ventas cobradas', money(report.totals.grossSales), true)}${metric('Entradas pagadas', String(report.totals.totalTickets))}</tr><tr>${metric('Bloqueadas', String(report.totals.blockedTickets))}${metric('Asistentes escaneados', `${report.totals.scannedTickets} / ${report.totals.totalTickets}`)}</tr><tr>${metric('Asistencia', `${report.totals.scanRate}%`, true)}${metric('Órdenes', String(report.totals.totalOrders))}</tr><tr>${metric('Orden promedio', money(report.totals.averageOrder))}</tr></table></td></tr>
+        <tr>
+          <td style="padding:8px 30px 6px;">
+            <div style="background:#08111c;border:1px solid rgba(255,255,255,0.07);border-radius:18px;padding:18px;">
+              <p style="margin:0 0 12px;color:#ffffff;font-size:15px;font-weight:900;font-family:'Helvetica Neue',Arial,sans-serif;">Resumen financiero</p>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-family:'Helvetica Neue',Arial,sans-serif;">
+                <tr><td style="padding:6px 0;color:#9fb2c6;font-size:13px;">Venta de tickets</td><td align="right" style="color:#ffffff;font-weight:900;">${money(report.totals.ticketRevenue)}</td></tr>
+                <tr><td style="padding:6px 0;color:#9fb2c6;font-size:13px;">Cargos de servicio LPTicket</td><td align="right" style="color:#ffffff;font-weight:900;">${money(report.totals.lpFees)}</td></tr>
+                <tr><td style="padding:6px 0;color:#9fb2c6;font-size:13px;">Procesamiento</td><td align="right" style="color:#ffffff;font-weight:900;">${money(report.totals.processingFees)}</td></tr>
+                <tr><td style="padding:10px 0 0;color:#F97316;font-size:14px;font-weight:900;border-top:1px solid rgba(255,255,255,0.08);">Neto estimado organizador</td><td align="right" style="padding-top:10px;color:#F97316;font-size:18px;font-weight:900;border-top:1px solid rgba(255,255,255,0.08);">${money(report.totals.netEstimated)}</td></tr>
+              </table>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:12px 30px;">
+            <div style="background:#0f1d2b;border:1px solid rgba(246,198,95,0.14);border-radius:18px;padding:18px;">
+              <p style="margin:0 0 12px;color:#ffffff;font-size:15px;font-weight:900;font-family:'Helvetica Neue',Arial,sans-serif;">Ventas por sección / mesa</p>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-family:'Helvetica Neue',Arial,sans-serif;">${sectionRows || `<tr><td style="color:#9fb2c6;font-size:13px;">No hubo ventas registradas.</td></tr>`}</table>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 30px 12px;">
+            <div style="background:#0f1d2b;border:1px solid rgba(246,198,95,0.14);border-radius:18px;padding:18px;">
+              <p style="margin:0 0 12px;color:#ffffff;font-size:15px;font-weight:900;font-family:'Helvetica Neue',Arial,sans-serif;">Ventas por día</p>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-family:'Helvetica Neue',Arial,sans-serif;">${dayRows || `<tr><td style="color:#9fb2c6;font-size:13px;">No hubo ventas registradas.</td></tr>`}</table>
+            </div>
+          </td>
+        </tr>
+        ${report.specialCodes.length ? `<tr><td style="padding:0 30px 12px;"><div style="background:#0f1d2b;border:1px solid rgba(246,198,95,0.14);border-radius:18px;padding:18px;"><p style="margin:0 0 12px;color:#ffffff;font-size:15px;font-weight:900;font-family:'Helvetica Neue',Arial,sans-serif;">Códigos especiales</p><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-family:'Helvetica Neue',Arial,sans-serif;">${codeRows}</table></div></td></tr>` : ''}
+        <tr>
+          <td align="center" style="padding:18px 30px 34px;">
+            <a href="${report.reportUrl}" target="_blank" style="display:inline-block;background:#F97316;color:#ffffff;text-decoration:none;border-radius:14px;padding:14px 28px;font-size:14px;font-weight:900;font-family:'Helvetica Neue',Arial,sans-serif;">Ver reporte completo</a>
+            <p style="margin:14px 0 0;color:#8ea3b8;font-size:12px;line-height:1.5;font-family:'Helvetica Neue',Arial,sans-serif;">La administración de LPTicket recibe una copia con el CSV de asistentes para mantener el respaldo completo del evento.</p>
+          </td>
+        </tr>
+        <tr><td align="center" style="background:#08111c;padding:20px 28px;border-top:1px solid rgba(255,255,255,0.05);"><p style="margin:0 0 4px;color:#F97316;font-size:12px;font-weight:900;font-family:'Helvetica Neue',Arial,sans-serif;">LPTicket</p><p style="margin:0;color:#64748b;font-size:11px;font-family:'Helvetica Neue',Arial,sans-serif;">© ${year} LPTicket · Tus tickets. Tus eventos.</p></td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+    try {
+      const adminAttachments = report.csv ? [{
+        filename: report.csv.filename,
+        content: Buffer.from(report.csv.content, 'utf8'),
+        contentType: 'text/csv; charset=utf-8',
+      }] : undefined;
+      const text = [
+        `Resumen final del evento: ${report.eventTitle}`,
+        `Fecha: ${report.eventDateLabel}`,
+        `Lugar: ${report.venueLabel}`,
+        `Ventas cobradas: ${money(report.totals.grossSales)}`,
+        `Entradas pagadas: ${report.totals.totalTickets}`,
+        `Venta base de entradas: ${report.totals.totalTickets} x ${money(paidTicketAverage)} = ${money(report.totals.ticketRevenue)}`,
+        `Cargos LPTicket descontados: ${money(report.totals.lpFees)}`,
+        `Procesamiento descontado: ${money(report.totals.processingFees)}`,
+        `Formula del organizador: ${money(report.totals.grossSales)} - ${money(report.totals.lpFees)} - ${money(report.totals.processingFees)} = ${money(report.totals.netEstimated)}`,
+        `Bloqueadas / sin ingreso: ${report.totals.blockedTickets}`,
+        `Asistentes escaneados: ${report.totals.scannedTickets} / ${report.totals.totalTickets}`,
+        `Ordenes: ${report.totals.totalOrders}`,
+        `Neto estimado organizador: ${money(report.totals.netEstimated)}`,
+        `Reporte completo: ${report.reportUrl}`,
+      ].join('\n');
+      const organizerSectionRows = report.topSections.slice(0, 8).map((item) => `
+                <tr>
+                  <td style="padding:9px 0;border-bottom:1px solid #e2e8f0;color:#0f172a;font-size:12px;font-weight:800;">${safe(item.name)}</td>
+                  <td align="right" style="padding:9px 0;border-bottom:1px solid #e2e8f0;color:#64748b;font-size:12px;">${item.tickets}</td>
+                  <td align="right" style="padding:9px 0;border-bottom:1px solid #e2e8f0;color:#F97316;font-size:12px;font-weight:900;">${money(item.revenue)}</td>
+                </tr>`).join('');
+      const organizerDayRows = report.salesByDay.slice(-7).map((item) => `
+                <tr>
+                  <td style="padding:9px 0;border-bottom:1px solid #e2e8f0;color:#0f172a;font-size:12px;font-weight:800;">${safe(item.date)}</td>
+                  <td align="right" style="padding:9px 0;border-bottom:1px solid #e2e8f0;color:#64748b;font-size:12px;">${item.orders}</td>
+                  <td align="right" style="padding:9px 0;border-bottom:1px solid #e2e8f0;color:#64748b;font-size:12px;">${item.tickets}</td>
+                  <td align="right" style="padding:9px 0;border-bottom:1px solid #e2e8f0;color:#F97316;font-size:12px;font-weight:900;">${money(item.revenue)}</td>
+                </tr>`).join('');
+      const organizerCodeRows = report.specialCodes.slice(0, 8).map((item) => `
+                <tr>
+                  <td style="padding:9px 0;border-bottom:1px solid #e2e8f0;color:#0f172a;font-size:12px;font-weight:900;">${safe(item.code)}</td>
+                  <td align="right" style="padding:9px 0;border-bottom:1px solid #e2e8f0;color:#64748b;font-size:12px;">${item.orders}</td>
+                  <td align="right" style="padding:9px 0;border-bottom:1px solid #e2e8f0;color:#64748b;font-size:12px;">${item.tickets}</td>
+                  <td align="right" style="padding:9px 0;border-bottom:1px solid #e2e8f0;color:#F97316;font-size:12px;font-weight:900;">${money(item.revenue)}</td>
+                </tr>`).join('');
+      const organizerHtml = `
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
+</head>
+<body bgcolor="#ffffff" style="margin:0;padding:0;background:#ffffff!important;color:#0f172a!important;">
+  <span style="display:none;visibility:hidden;opacity:0;color:transparent;height:0;width:0;overflow:hidden;">Resumen final de ${safe(report.eventTitle)}.</span>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="width:100%;background:#ffffff!important;padding:28px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="width:100%;max-width:600px;background:#ffffff!important;border:1px solid #e2e8f0;border-radius:20px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.03);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+          <tr>
+            <td bgcolor="#ffffff" style="background:#ffffff!important;border-bottom:2px solid #f1f5f9;padding:24px;">
+              <img src="${appUrl}/logo-email-orange.png" alt="LPTicket" width="190" style="display:block;width:190px;max-width:70%;height:auto;border:0;">
+            </td>
+          </tr>
+          <tr>
+            <td bgcolor="#ffffff" style="background:#ffffff!important;padding:26px 24px 8px;">
+              <p style="margin:0 0 8px;color:#F97316;font-size:11px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;">Resumen final del evento</p>
+              <h1 style="margin:0 0 10px;color:#0A375A;font-size:25px;line-height:1.22;font-weight:900;">${safe(report.eventTitle)}</h1>
+              <p style="margin:0;color:#475569;font-size:14px;line-height:1.6;">Hola ${safe(report.organizerName || 'organizador')}, aquí tienes el cierre completo de tu evento.</p>
+              <p style="margin:12px 0 0;color:#334155;font-size:13px;line-height:1.55;"><strong>Fecha:</strong> ${safe(report.eventDateLabel)}<br><strong>Lugar:</strong> ${safe(report.venueLabel)}</p>
+            </td>
+          </tr>
+          <tr>
+            <td bgcolor="#ffffff" style="background:#ffffff!important;padding:14px 18px 4px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td width="50%" style="padding:6px;"><div style="border:1px solid #e2e8f0;border-radius:16px;padding:14px;background:#f8fafc;"><p style="margin:0 0 5px;color:#64748b;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.8px;">Ventas cobradas</p><p style="margin:0;color:#F97316;font-size:22px;font-weight:900;">${money(report.totals.grossSales)}</p></div></td>
+                  <td width="50%" style="padding:6px;"><div style="border:1px solid #e2e8f0;border-radius:16px;padding:14px;background:#f8fafc;"><p style="margin:0 0 5px;color:#64748b;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.8px;">Entradas pagadas</p><p style="margin:0;color:#0f172a;font-size:22px;font-weight:900;">${report.totals.totalTickets}</p></div></td>
+                </tr>
+                <tr>
+                  <td width="50%" style="padding:6px;"><div style="border:1px solid #e2e8f0;border-radius:16px;padding:14px;background:#ffffff;"><p style="margin:0 0 5px;color:#64748b;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.8px;">Bloqueadas / sin ingreso</p><p style="margin:0;color:#0f172a;font-size:22px;font-weight:900;">${report.totals.blockedTickets}</p></div></td>
+                  <td width="50%" style="padding:6px;"><div style="border:1px solid #e2e8f0;border-radius:16px;padding:14px;background:#ffffff;"><p style="margin:0 0 5px;color:#64748b;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.8px;">Asistencia</p><p style="margin:0;color:#F97316;font-size:22px;font-weight:900;">${report.totals.scanRate}%</p></div></td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td bgcolor="#ffffff" style="background:#ffffff!important;padding:12px 24px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;border-radius:16px;background:#ffffff;">
+                <tr><td colspan="2" style="padding:16px 16px 8px;color:#0A375A;font-size:15px;font-weight:900;">Resumen financiero</td></tr>
+                <tr><td style="padding:6px 16px;color:#64748b;font-size:13px;">Ventas cobradas al comprador</td><td align="right" style="padding:6px 16px;color:#0f172a;font-size:13px;font-weight:900;">${money(report.totals.grossSales)}</td></tr>
+                <tr><td style="padding:6px 16px;color:#64748b;font-size:13px;">Menos cargos de servicio LPTicket</td><td align="right" style="padding:6px 16px;color:#0f172a;font-size:13px;font-weight:900;">-${money(report.totals.lpFees)}</td></tr>
+                <tr><td style="padding:6px 16px;color:#64748b;font-size:13px;">Menos procesamiento</td><td align="right" style="padding:6px 16px;color:#0f172a;font-size:13px;font-weight:900;">-${money(report.totals.processingFees)}</td></tr>
+                <tr><td style="padding:6px 16px;color:#64748b;font-size:13px;">Base de entradas</td><td align="right" style="padding:6px 16px;color:#0f172a;font-size:13px;font-weight:900;">${money(report.totals.ticketRevenue)}</td></tr>
+                <tr><td style="padding:6px 16px;color:#64748b;font-size:13px;">Órdenes pagadas</td><td align="right" style="padding:6px 16px;color:#0f172a;font-size:13px;font-weight:900;">${report.totals.totalOrders}</td></tr>
+                <tr><td style="padding:6px 16px;color:#64748b;font-size:13px;">Orden promedio</td><td align="right" style="padding:6px 16px;color:#0f172a;font-size:13px;font-weight:900;">${money(report.totals.averageOrder)}</td></tr>
+                <tr><td style="padding:12px 16px 16px;color:#F97316;font-size:14px;font-weight:900;border-top:1px solid #e2e8f0;">Neto estimado organizador</td><td align="right" style="padding:12px 16px 16px;color:#F97316;font-size:17px;font-weight:900;border-top:1px solid #e2e8f0;">${money(report.totals.netEstimated)}</td></tr>
+                <tr><td colspan="2" style="padding:0 16px 16px;color:#64748b;font-size:12px;line-height:1.45;">Cálculo: ${money(report.totals.grossSales)} cobrados - ${money(report.totals.lpFees)} de LPTicket - ${money(report.totals.processingFees)} de procesamiento = ${money(report.totals.netEstimated)} para el organizador. La base de entradas equivale a ${report.totals.totalTickets} entradas pagadas × ${money(paidTicketAverage)} promedio.</td></tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td bgcolor="#ffffff" style="background:#ffffff!important;padding:0 24px 12px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;border-radius:16px;background:#f8fafc;">
+                <tr><td style="padding:16px 16px 6px;color:#0A375A;font-size:15px;font-weight:900;">Lectura rápida</td></tr>
+                <tr><td style="padding:0 16px 16px;color:#475569;font-size:13px;line-height:1.55;">Las <strong>entradas pagadas</strong> son las que generaron ingreso. Las <strong>bloqueadas / sin ingreso</strong> incluyen cortesías, invitaciones o espacios bloqueados que no deben contarse como ventas cobradas.</td></tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td bgcolor="#ffffff" style="background:#ffffff!important;padding:0 24px 12px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;border-radius:16px;background:#ffffff;">
+                <tr><td colspan="3" style="padding:16px 16px 4px;color:#0A375A;font-size:15px;font-weight:900;">Ventas por sección / mesa</td></tr>
+                <tr><td style="padding:0 16px 8px;color:#64748b;font-size:11px;">Sección</td><td align="right" style="padding:0 0 8px;color:#64748b;font-size:11px;">Tickets</td><td align="right" style="padding:0 16px 8px;color:#64748b;font-size:11px;">Ingresos</td></tr>
+                <tr><td colspan="3" style="padding:0 16px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">${organizerSectionRows || `<tr><td style="padding:10px 0;color:#64748b;font-size:13px;">No hubo ventas registradas por sección.</td></tr>`}</table></td></tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td bgcolor="#ffffff" style="background:#ffffff!important;padding:0 24px 12px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;border-radius:16px;background:#ffffff;">
+                <tr><td colspan="4" style="padding:16px 16px 4px;color:#0A375A;font-size:15px;font-weight:900;">Ventas por día</td></tr>
+                <tr><td style="padding:0 16px 8px;color:#64748b;font-size:11px;">Día</td><td align="right" style="padding:0 0 8px;color:#64748b;font-size:11px;">Órdenes</td><td align="right" style="padding:0 0 8px;color:#64748b;font-size:11px;">Tickets</td><td align="right" style="padding:0 16px 8px;color:#64748b;font-size:11px;">Ingresos</td></tr>
+                <tr><td colspan="4" style="padding:0 16px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">${organizerDayRows || `<tr><td style="padding:10px 0;color:#64748b;font-size:13px;">No hubo ventas registradas por día.</td></tr>`}</table></td></tr>
+              </table>
+            </td>
+          </tr>
+          ${report.specialCodes.length ? `<tr>
+            <td bgcolor="#ffffff" style="background:#ffffff!important;padding:0 24px 12px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;border-radius:16px;background:#ffffff;">
+                <tr><td colspan="4" style="padding:16px 16px 4px;color:#0A375A;font-size:15px;font-weight:900;">Códigos especiales</td></tr>
+                <tr><td style="padding:0 16px 8px;color:#64748b;font-size:11px;">Código</td><td align="right" style="padding:0 0 8px;color:#64748b;font-size:11px;">Órdenes</td><td align="right" style="padding:0 0 8px;color:#64748b;font-size:11px;">Tickets</td><td align="right" style="padding:0 16px 8px;color:#64748b;font-size:11px;">Ingresos</td></tr>
+                <tr><td colspan="4" style="padding:0 16px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">${organizerCodeRows}</table></td></tr>
+              </table>
+            </td>
+          </tr>` : ''}
+          <tr>
+            <td align="center" bgcolor="#ffffff" style="background:#ffffff!important;padding:18px 24px 30px;">
+              <a href="${report.reportUrl}" target="_blank" style="display:inline-block;background:#F97316;color:#ffffff;text-decoration:none;border-radius:14px;padding:13px 26px;font-size:13px;font-weight:900;">Ver reporte completo</a>
+              <p style="margin:14px 0 0;color:#64748b;font-size:12px;line-height:1.5;">LPTicket conserva el respaldo administrativo con el CSV completo de asistentes.</p>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" bgcolor="#f8fafc" style="background:#f8fafc!important;border-top:1px solid #e2e8f0;padding:20px 24px 34px;">
+              <p style="margin:0 0 4px;color:#F97316;font-size:12px;font-weight:900;">lpticket.com</p>
+              <p style="margin:0;color:#64748b;font-size:11px;line-height:1.5;">© ${year} LPTicket · Tus tickets. Tus eventos.</p>
+            </td>
+          </tr>
+          <tr><td bgcolor="#ffffff" style="background:#ffffff!important;height:18px;font-size:0;line-height:0;">&nbsp;</td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+      const info = await this.transporter.sendMail({
+        from: `"LPTicket" <${this.configService.get('SMTP_FROM')}>`,
+        to,
+        subject: `Resumen final de tu evento: ${report.eventTitle}`,
+        text,
+        html: organizerHtml,
+      });
+      const accepted = Array.isArray((info as any)?.accepted) ? (info as any).accepted : [];
+      const rejected = Array.isArray((info as any)?.rejected) ? (info as any).rejected : [];
+      console.log('[Mail] Post-event report accepted:', accepted, 'rejected:', rejected, 'messageId:', (info as any)?.messageId);
+      const target = String(to || '').trim().toLowerCase();
+      const targetRejected = rejected.some((email: string) => String(email || '').trim().toLowerCase() === target);
+      const targetAccepted = accepted.some((email: string) => String(email || '').trim().toLowerCase() === target);
+      if (targetRejected || (accepted.length > 0 && !targetAccepted)) {
+        console.error('[Mail] Post-event report target was not accepted:', to, 'accepted:', accepted, 'rejected:', rejected);
+        return false;
+      }
+      if (accepted.length === 0 && rejected.length > 0) return false;
+      let adminCopy: { accepted: string[]; rejected: string[]; messageId: string | null } | null = null;
+      if (adminEmail && adminEmail.toLowerCase() !== target) {
+        try {
+          const adminInfo = await this.transporter.sendMail({
+            from: `"LPTicket" <${this.configService.get('SMTP_FROM')}>`,
+            to: adminEmail,
+            subject: `[Copia admin] Resumen final de evento — ${report.eventTitle}`,
+            text,
+            html,
+            attachments: adminAttachments,
+          });
+          adminCopy = {
+            accepted: Array.isArray((adminInfo as any)?.accepted) ? (adminInfo as any).accepted : [],
+            rejected: Array.isArray((adminInfo as any)?.rejected) ? (adminInfo as any).rejected : [],
+            messageId: (adminInfo as any)?.messageId || null,
+          };
+          console.log('[Mail] Post-event admin copy accepted:', adminCopy.accepted, 'rejected:', adminCopy.rejected, 'messageId:', adminCopy.messageId);
+        } catch (adminError: any) {
+          console.error('Post-event report admin copy failed:', adminError?.message || adminError);
+        }
+      }
+      return { accepted, rejected, messageId: (info as any)?.messageId || null, adminCopy };
+    } catch (e: any) {
+      console.error('Post-event report email failed:', e?.message || e);
+      return false;
     }
   }
 
