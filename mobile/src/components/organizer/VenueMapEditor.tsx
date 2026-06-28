@@ -504,6 +504,8 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
   const infoDismissRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rootRef = useRef<any>(null);
   const rootYRef = useRef(0);
+  const canvasVpRef = useRef<any>(null);
+  const canvasVpYRef = useRef(0);
 
   const showSeatInfo = (info: SeatInfoCard) => {
     if (infoDismissRef.current) clearTimeout(infoDismissRef.current);
@@ -531,7 +533,7 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
       price: selected.price || 0,
       tone,
       px: pageX,
-      py: pageY - rootYRef.current,
+      py: pageY - canvasVpYRef.current,
     });
   };
 
@@ -637,7 +639,9 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
               empty spot on the moving canvas. Items still grab their own touches
               (in edit mode), so dragging an item doesn't also pan. */}
           <View
+            ref={canvasVpRef}
             style={styles.canvasViewport}
+            onLayout={() => { canvasVpRef.current?.measure((_x: number, _y: number, _w: number, _h: number, _px: number, py: number) => { canvasVpYRef.current = py; }); }}
             // Pan + pinch handled the SAME WAY as ClientVenueMap: onTouch* drives
             // the gesture (reliable multi-touch for pinch) and the responder
             // callbacks mirror it. Item dragging takes priority via the item's
