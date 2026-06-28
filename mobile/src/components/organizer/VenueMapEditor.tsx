@@ -504,7 +504,6 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
     setSaved(false);
     setItems((current) => current.map((entry) => {
       if (entry.id !== id || entry.locked) return entry;
-      console.log('[moveItemBy]', { id, entryX: entry.x, entryY: entry.y, dx, dy, newX: entry.x + dx, newY: entry.y + dy });
       return {
         ...entry,
         x: Math.max(0, Math.min(CANVAS_WIDTH - entry.width, entry.x + dx)),
