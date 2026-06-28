@@ -698,20 +698,20 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
               })}
             </Animated.View>
 
-            {/* Floating zoom bar over the canvas (like the web). */}
+            {/* Floating zoom bar over the canvas — same compact style as the
+                client map (ClientVenueMap): grey, single row, −/+/fit. */}
             <View style={styles.zoomFloat} pointerEvents="box-none">
-              <View style={styles.zoomFloatInner}>
-                <TouchableOpacity onPress={() => zoomBy(-ZOOM_STEP)} style={styles.zoomFloatBtn}>
-                  <Ionicons name="remove" size={18} color="#fb923c" />
+              <View style={styles.zoomControls}>
+                <TouchableOpacity onPress={() => zoomBy(-ZOOM_STEP)} style={styles.zoomCtrlBtn}>
+                  <Ionicons name="remove-outline" size={16} color="rgba(226,232,240,0.85)" />
                 </TouchableOpacity>
-                <Text style={styles.zoomFloatValue}>{zoomPct}%</Text>
-                <TouchableOpacity onPress={() => zoomBy(ZOOM_STEP)} style={styles.zoomFloatBtn}>
-                  <Ionicons name="add" size={18} color="#fb923c" />
+                <View style={styles.zoomCtrlDivider} />
+                <TouchableOpacity onPress={() => zoomBy(ZOOM_STEP)} style={styles.zoomCtrlBtn}>
+                  <Ionicons name="add-outline" size={16} color="rgba(226,232,240,0.85)" />
                 </TouchableOpacity>
-                <View style={styles.zoomFloatDivider} />
-                <TouchableOpacity onPress={() => fitToContent(items)} style={styles.zoomFloatBtn}>
-                  <Ionicons name="scan-outline" size={16} color="#fb923c" />
-                  <Text style={styles.zoomFloatFit}>{t('AJUSTAR', 'FIT')}</Text>
+                <View style={styles.zoomCtrlDivider} />
+                <TouchableOpacity onPress={() => fitToContent(items)} style={styles.zoomCtrlBtn}>
+                  <Ionicons name="contract-outline" size={14} color="rgba(226,232,240,0.85)" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -1139,12 +1139,10 @@ const styles = StyleSheet.create({
   tmplBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 34, paddingHorizontal: 12, borderRadius: 11, borderWidth: 1, borderColor: 'rgba(249,115,22,0.30)', backgroundColor: 'rgba(249,115,22,0.07)' },
   tmplBtnText: { color: '#fb923c', fontSize: 11, fontWeight: '800', letterSpacing: 0.4 },
   // Floating zoom bar over the canvas (web-style).
-  zoomFloat: { position: 'absolute', left: 0, right: 0, bottom: 14, alignItems: 'center', zIndex: 30 },
-  zoomFloatInner: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 6, borderRadius: 999, backgroundColor: 'rgba(7,20,35,0.92)', borderWidth: 1, borderColor: 'rgba(249,115,22,0.30)', shadowColor: '#000000', shadowOpacity: 0.35, shadowRadius: 14, shadowOffset: { width: 0, height: 6 } },
-  zoomFloatBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, minWidth: 36, height: 34, paddingHorizontal: 8, borderRadius: 999, justifyContent: 'center' },
-  zoomFloatValue: { color: '#F8FAFC', fontSize: 12, fontWeight: '800', minWidth: 42, textAlign: 'center' },
-  zoomFloatDivider: { width: 1, height: 20, backgroundColor: 'rgba(255,255,255,0.14)', marginHorizontal: 2 },
-  zoomFloatFit: { color: '#fb923c', fontSize: 10, fontWeight: '800' },
+  zoomFloat: { position: 'absolute', right: 12, top: 12, alignItems: 'flex-end', zIndex: 30 },
+  zoomControls: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(13,33,56,0.92)', borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', overflow: 'hidden' },
+  zoomCtrlBtn: { width: 34, height: 32, alignItems: 'center', justifyContent: 'center' },
+  zoomCtrlDivider: { width: 1, height: 18, backgroundColor: 'rgba(255,255,255,0.14)' },
   // Templates modal
   tmplOverlay: { flex: 1, backgroundColor: 'rgba(2,8,15,0.78)', alignItems: 'center', justifyContent: 'center', padding: 18 },
   tmplModal: { width: '100%', maxWidth: 460, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', backgroundColor: '#0A1420', padding: 16 },
@@ -1179,11 +1177,6 @@ const styles = StyleSheet.create({
   railZoomValue: { color: '#F8FAFC', fontSize: 11, fontWeight: '800', minWidth: 38, textAlign: 'center' },
   toolText: { color: 'rgba(226,232,240,0.70)', fontSize: 9, fontWeight: '700', letterSpacing: 0.2 },
   canvasViewport: { flex: 1, height: VP_H, overflow: 'hidden', position: 'relative', backgroundColor: '#0d2138' },
-  zoomControls: { position: 'absolute', right: 14, top: 14, height: 34, borderRadius: 17, backgroundColor: '#0A375A', flexDirection: 'row', alignItems: 'center', overflow: 'hidden', zIndex: 20 },
-  zoomButton: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center', backgroundColor: '#1f2937' },
-  zoomButtonText: { color: '#FFFFFF', fontSize: 18, fontWeight: '700' },
-  zoomValue: { width: 52, alignItems: 'center', justifyContent: 'center' },
-  zoomText: { color: '#FFFFFF', fontSize: 11, fontWeight: '700' },
   // Transparent so the viewport grid shows through the whole canvas area.
   canvas: { width: CANVAS_WIDTH, height: CANVAS_HEIGHT, position: 'relative', backgroundColor: 'transparent' },
   canvasTips: { position: 'absolute', left: 16, bottom: 14, gap: 6 },
