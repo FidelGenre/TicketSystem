@@ -38,6 +38,8 @@ type InvoiceForm = {
   notes: string;
 };
 
+const DEFAULT_INVOICE_NOTES = 'Gracias por confiar en LP Ticket. Esta factura corresponde a los servicios acordados. Si tienes alguna pregunta sobre el pago o necesitas asistencia, comunícate con nosotros al 281.625.6383.';
+
 const initialForm: InvoiceForm = {
   customerName: '',
   customerEmail: '',
@@ -48,7 +50,7 @@ const initialForm: InvoiceForm = {
   currency: 'USD',
   addProcessingFee: true,
   dueDays: '7',
-  notes: '',
+  notes: DEFAULT_INVOICE_NOTES,
 };
 
 export default function AdminInvoicesPage() {

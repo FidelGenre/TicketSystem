@@ -6,6 +6,8 @@ import { MailService } from '../common/services/mail.service';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const Stripe = require('stripe');
 
+const DEFAULT_INVOICE_NOTES = 'Gracias por confiar en LP Ticket. Esta factura corresponde a los servicios acordados. Si tienes alguna pregunta sobre el pago o necesitas asistencia, comunícate con nosotros al 281.625.6383.';
+
 type CreateManualInvoiceInput = {
   customerName: string;
   customerEmail: string;
@@ -94,7 +96,7 @@ export class AdminInvoicesService {
     const customerEmail = input.customerEmail?.trim().toLowerCase();
     const concept = input.concept?.trim();
     const description = input.description?.trim();
-    const notes = input.notes?.trim();
+    const notes = input.notes?.trim() || DEFAULT_INVOICE_NOTES;
     const companyName = input.companyName?.trim();
     const currency = (input.currency || 'USD').trim().toLowerCase();
     const dueDays = Math.max(1, Math.min(Number(input.dueDays) || 7, 90));
@@ -125,7 +127,7 @@ export class AdminInvoicesService {
       days_until_due: dueDays,
       auto_advance: false,
       description: description || concept,
-      footer: notes || 'Gracias por confiar en LPTicket. Puedes completar el pago de forma segura desde el enlace de Stripe.',
+      footer: notes,
       metadata: {
         source: 'lpticket_manual_invoice',
         lp_fee: input.addProcessingFee ? 'true' : 'false',
