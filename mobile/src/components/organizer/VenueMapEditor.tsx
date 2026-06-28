@@ -1023,23 +1023,15 @@ function SeatDots({ item, selectedSeat, selectedItemId, onSeatPress }: { item: V
         cx = w / 2 + w * 0.52 * Math.sin(rad);
         cy = h / 2 - h * 0.52 * Math.cos(rad);
       } else {
-        // Distribute seats around the real perimeter proportionally.
-        // sideRatio = h/w so vertical tables get more seats on the tall sides.
-        const sideRatio = h / w;
-        const perimeter = 2 * (1 + sideRatio);
-        const step = perimeter / Math.max(1, total);
+        // Same fixed perimeter formula as web VenueMapBuilder.
+        // xPct/yPct are percentages of w/h so they already scale with orientation.
+        const step = (2 * (1 + 0.55)) / Math.max(1, total);
         const pos = i * step;
-        // Bands: top=1 unit, right=sideRatio, bottom=1, left=sideRatio
         let xPct = 50; let yPct = 50;
-        if (pos < 1) {                              // top
-          xPct = 15 + pos * 70; yPct = 12;
-        } else if (pos < 1 + sideRatio) {           // right
-          xPct = 88; yPct = 15 + ((pos - 1) / sideRatio) * 70;
-        } else if (pos < 2 + sideRatio) {           // bottom
-          xPct = 85 - (pos - 1 - sideRatio) * 70; yPct = 88;
-        } else {                                     // left
-          xPct = 12; yPct = 85 - ((pos - 2 - sideRatio) / sideRatio) * 70;
-        }
+        if (pos < 1) { xPct = 15 + pos * 70; yPct = 12; }
+        else if (pos < 1.55) { xPct = 88; yPct = 15 + ((pos - 1) / 0.55) * 70; }
+        else if (pos < 2.55) { xPct = 85 - (pos - 1.55) * 70; yPct = 88; }
+        else { xPct = 12; yPct = 85 - ((pos - 2.55) / 0.55) * 70; }
         cx = (w * xPct) / 100;
         cy = (h * yPct) / 100;
       }
