@@ -722,8 +722,7 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
               })}
             </Animated.View>
 
-            {/* Floating zoom bar over the canvas — same compact style as the
-                client map (ClientVenueMap): grey, single row, −/+/fit. */}
+            {/* Floating zoom bar — bottom-right over canvas */}
             <View style={styles.zoomFloat} pointerEvents="box-none">
               <View style={styles.zoomControls}>
                 <TouchableOpacity onPress={() => zoomBy(-ZOOM_STEP)} style={styles.zoomCtrlBtn}>
@@ -739,25 +738,25 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
                 </TouchableOpacity>
               </View>
             </View>
+
+            {/* Seat info card — floats over canvas when a chair is tapped in view mode */}
+            {activeSeatInfo && (() => {
+              const toneColor = activeSeatInfo.tone === 'reserved' ? '#facc15' : activeSeatInfo.tone === 'disabled' ? '#94a3b8' : '#86efac';
+              return (
+                <View style={styles.seatInfoCard} pointerEvents="none">
+                  <View style={[styles.seatInfoTone, { backgroundColor: `${toneColor}22` }]}>
+                    <Text style={[styles.seatInfoToneText, { color: toneColor }]}>{activeSeatInfo.status}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.seatInfoTitle} numberOfLines={1}>{activeSeatInfo.title}</Text>
+                    {!!activeSeatInfo.subtitle && <Text style={styles.seatInfoSub} numberOfLines={1}>{activeSeatInfo.subtitle}</Text>}
+                  </View>
+                  {activeSeatInfo.price > 0 && <Text style={styles.seatInfoPrice}>${activeSeatInfo.price.toFixed(2)}</Text>}
+                </View>
+              );
+            })()}
           </View>
       </View>
-
-      {/* Seat info card — same look as ClientVenueMap, shown when a chair is tapped in view mode */}
-      {activeSeatInfo && (() => {
-        const toneColor = activeSeatInfo.tone === 'reserved' ? '#facc15' : activeSeatInfo.tone === 'disabled' ? '#94a3b8' : '#86efac';
-        return (
-          <View style={styles.seatInfoCard}>
-            <View style={[styles.seatInfoTone, { backgroundColor: `${toneColor}22` }]}>
-              <Text style={[styles.seatInfoToneText, { color: toneColor }]}>{activeSeatInfo.status}</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.seatInfoTitle} numberOfLines={1}>{activeSeatInfo.title}</Text>
-              {!!activeSeatInfo.subtitle && <Text style={styles.seatInfoSub} numberOfLines={1}>{activeSeatInfo.subtitle}</Text>}
-            </View>
-            {activeSeatInfo.price > 0 && <Text style={styles.seatInfoPrice}>${activeSeatInfo.price.toFixed(2)}</Text>}
-          </View>
-        );
-      })()}
 
       {editMode && (
       <View style={styles.inspector}>
@@ -1237,7 +1236,7 @@ const styles = StyleSheet.create({
   cornerTR: { right: -7, top: -7 },
   cornerBL: { left: -7, bottom: -7 },
   cornerBR: { right: -7, bottom: -7 },
-  seatInfoCard: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 12, marginTop: 8, marginBottom: 4, backgroundColor: 'rgba(11,34,54,0.96)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(246,198,95,0.20)', paddingHorizontal: 12, paddingVertical: 10 },
+  seatInfoCard: { position: 'absolute', bottom: 56, left: 12, right: 12, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(11,34,54,0.96)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(246,198,95,0.20)', paddingHorizontal: 12, paddingVertical: 10, zIndex: 40 },
   seatInfoTone: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3, flexShrink: 0 },
   seatInfoToneText: { fontSize: 10, fontWeight: '600' },
   seatInfoTitle: { color: '#ffffff', fontSize: 12, fontWeight: '600' },
