@@ -1070,6 +1070,11 @@ function ItemView({ item, isSelected, editMode, zoomRef, touchedItemRef, onSelec
   const start = useRef({ x: 0, y: 0, dx: 0, dy: 0, moved: false });
   const draggingRef = useRef(false);
   const offset = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+  // When item.x/y change (the commit landed), the new left/top already include the
+  // drag, so reset the translate to 0 in the SAME render → no snap-back frame.
+  useEffect(() => {
+    offset.setValue({ x: 0, y: 0 });
+  }, [item.x, item.y]);
   return (
     <Animated.View
       onStartShouldSetResponderCapture={() => { touchedItemRef.current = true; return false; }}
@@ -1097,7 +1102,8 @@ function ItemView({ item, isSelected, editMode, zoomRef, touchedItemRef, onSelec
         if (!draggingRef.current) return;
         draggingRef.current = false;
         if (start.current.moved) {
-          offset.setValue({ x: 0, y: 0 });
+          // Keep the translate (don't reset) and commit the delta. The useEffect
+          // above resets the translate exactly when the new left/top arrive.
           onDragMove(item, start.current.dx, start.current.dy);
         } else {
           onSelect(item.id);
@@ -1107,7 +1113,7 @@ function ItemView({ item, isSelected, editMode, zoomRef, touchedItemRef, onSelec
         onDragEnd();
       }}
       onResponderTerminate={() => {
-        if (draggingRef.current && start.current.moved) { offset.setValue({ x: 0, y: 0 }); onDragMove(item, start.current.dx, start.current.dy); }
+        if (draggingRef.current && start.current.moved) onDragMove(item, start.current.dx, start.current.dy);
         draggingRef.current = false;
         touchedItemRef.current = false;
         onDragEnd();
