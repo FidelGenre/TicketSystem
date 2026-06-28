@@ -167,10 +167,15 @@ export default function StaffScanAccessPage() {
                   event={item.event}
                   status="approved"
                   action={
-                    <Link href={`/verify?eventId=${item.event.id}`} className="btn-primary inline-flex items-center justify-center gap-2 px-4 py-3 text-xs">
-                      <HiOutlineCheckCircle className="h-4 w-4" />
-                      {labels.openScan}
-                    </Link>
+                    <div className="flex flex-wrap gap-2">
+                      <Link href={`/verify?eventId=${item.event.id}`} className="btn-primary inline-flex items-center justify-center gap-2 px-4 py-3 text-xs">
+                        <HiOutlineCheckCircle className="h-4 w-4" />
+                        {labels.openScan}
+                      </Link>
+                      <Link href={`/staff/door-sale?eventId=${item.event.id}`} className="rounded-lg border border-orange-400/40 bg-orange-500/10 px-4 py-3 text-xs font-black uppercase text-orange-200">
+                        {lang === 'es' ? 'Venta en puerta' : 'Door sale'}
+                      </Link>
+                    </div>
                   }
                 />
               ))}

@@ -325,6 +325,17 @@ export default function Header() {
                       </Link>
                     )}
 
+                    {(user.role === 'admin' || mode === 'organizer') && (
+                      <Link
+                        href="/organizer/door-sale"
+                        onClick={() => setProfileDropdown(false)}
+                        className="lp-menu-item mx-2 flex items-center gap-3 px-3 py-3 text-[13px] font-bold transition-colors"
+                      >
+                        <HiOutlineShoppingCart className="w-4 h-4 opacity-70" />
+                        {lang === 'es' ? 'Venta en puerta' : 'Door sale'}
+                      </Link>
+                    )}
+
                     <Link
                       href="/staff/scan-access"
                       onClick={() => setProfileDropdown(false)}
@@ -332,6 +343,15 @@ export default function Header() {
                     >
                       <HiOutlineQrcode className="w-4 h-4 opacity-70" />
                       {lang === 'es' ? 'Scan empleado' : 'Staff scan'}
+                    </Link>
+
+                    <Link
+                      href="/staff/door-sale"
+                      onClick={() => setProfileDropdown(false)}
+                      className="lp-menu-item mx-2 flex items-center gap-3 px-3 py-3 text-[13px] font-bold transition-colors"
+                    >
+                      <HiOutlineShoppingCart className="w-4 h-4 opacity-70" />
+                      {lang === 'es' ? 'Venta empleado' : 'Staff sale'}
                     </Link>
 
                     {/* Admin Panel Link */}
@@ -465,9 +485,21 @@ export default function Header() {
                   </Link>
                 )}
 
+                {(user?.role === 'admin' || mode === 'organizer') && (
+                  <Link href="/organizer/door-sale" onClick={() => setMobileMenuOpen(false)} className="hamburger-account-link lp-menu-item">
+                    <HiOutlineShoppingCart className="w-5 h-5 opacity-60" />
+                    {lang === 'es' ? 'Venta en puerta' : 'Door sale'}
+                  </Link>
+                )}
+
                 <Link href="/staff/scan-access" onClick={() => setMobileMenuOpen(false)} className="hamburger-account-link lp-menu-item">
                   <HiOutlineQrcode className="w-5 h-5 opacity-60" />
                   {lang === 'es' ? 'Scan empleado' : 'Staff scan'}
+                </Link>
+
+                <Link href="/staff/door-sale" onClick={() => setMobileMenuOpen(false)} className="hamburger-account-link lp-menu-item">
+                  <HiOutlineShoppingCart className="w-5 h-5 opacity-60" />
+                  {lang === 'es' ? 'Venta empleado' : 'Staff sale'}
                 </Link>
 
                 {user?.role === 'admin' && (

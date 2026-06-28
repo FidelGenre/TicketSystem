@@ -11,6 +11,7 @@ import {
   HiOutlineCalendar,
   HiOutlineUsers,
   HiOutlinePlusCircle,
+  HiOutlineShoppingCart,
   HiOutlineCog,
   HiOutlineMenu,
   HiOutlineX,
@@ -45,6 +46,7 @@ export default function OrganizerLayout({ children }: { children: React.ReactNod
     { href: '/organizer', label: t('orgDashboard'), icon: HiOutlineChartBar },
     { href: '/organizer/events', label: t('orgMyEvents'), icon: HiOutlineCalendar },
     { href: '/organizer/scanner-access', label: lang === 'es' ? 'Empleados scan' : 'Scan staff', icon: HiOutlineUsers },
+    { href: '/organizer/door-sale', label: lang === 'es' ? 'Venta en puerta' : 'Door sale', icon: HiOutlineShoppingCart },
     { href: '/organizer/events/create', label: t('orgCreateEvent'), icon: HiOutlinePlusCircle },
     // Standalone "Asistentes" removed — covered by the per-event Asistentes tab.
   ];
