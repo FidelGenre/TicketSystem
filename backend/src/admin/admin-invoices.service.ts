@@ -19,6 +19,13 @@ type CreateManualInvoiceInput = {
   customerName: string;
   customerEmail: string;
   companyName?: string;
+  customerPhone?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
   concept: string;
   description?: string;
   amount: number;
@@ -104,6 +111,13 @@ export class AdminInvoicesService {
     const description = input.description?.trim();
     const notes = DEFAULT_INVOICE_FOOTER;
     const companyName = input.companyName?.trim();
+    const customerPhone = input.customerPhone?.trim();
+    const addressLine1 = input.addressLine1?.trim();
+    const addressLine2 = input.addressLine2?.trim();
+    const city = input.city?.trim();
+    const state = input.state?.trim();
+    const postalCode = input.postalCode?.trim();
+    const country = (input.country?.trim() || 'US').toUpperCase();
     const currency = (input.currency || 'USD').trim().toLowerCase();
     const dueDays = Math.max(1, Math.min(Number(input.dueDays) || 7, 90));
 
@@ -113,6 +127,12 @@ export class AdminInvoicesService {
     }
     const suggestion = suggestEmailFix(customerEmail);
     if (suggestion) throw new BadRequestException(`Revisa el correo: ¿quisiste decir ${suggestion}?`);
+    if (!customerPhone) throw new BadRequestException('Ingresa el teléfono del cliente.');
+    if (!addressLine1) throw new BadRequestException('Ingresa la dirección del cliente.');
+    if (!city) throw new BadRequestException('Ingresa la ciudad del cliente.');
+    if (!state) throw new BadRequestException('Ingresa el estado del cliente.');
+    if (!postalCode) throw new BadRequestException('Ingresa el ZIP / código postal del cliente.');
+    if (!/^[A-Z]{2}$/.test(country)) throw new BadRequestException('El país debe tener 2 letras, por ejemplo US.');
     if (!concept) throw new BadRequestException('Ingresa el concepto de la factura.');
     if (!description) throw new BadRequestException('Ingresa la descripción exacta de lo que se va a cobrar.');
     if (!/^[a-z]{3}$/i.test(currency)) throw new BadRequestException('La moneda debe tener 3 letras, por ejemplo USD.');
@@ -121,10 +141,20 @@ export class AdminInvoicesService {
     const processingFeeCents = Math.round(baseCents * 0.035);
 
     const customer = await this.stripe.customers.create({
-      name: companyName ? `${customerName} - ${companyName}` : customerName,
+      name: customerName,
       email: customerEmail,
+      phone: customerPhone,
+      address: {
+        line1: addressLine1,
+        ...(addressLine2 ? { line2: addressLine2 } : {}),
+        city,
+        state,
+        postal_code: postalCode,
+        country,
+      },
       metadata: {
         source: 'lpticket_manual_invoice',
+        ...(companyName ? { companyName } : {}),
       },
     });
 

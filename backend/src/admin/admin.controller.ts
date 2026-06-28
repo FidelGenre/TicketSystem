@@ -35,6 +35,13 @@ export class AdminController {
     customerName: string;
     customerEmail: string;
     companyName?: string;
+    customerPhone?: string;
+    addressLine1?: string;
+    addressLine2?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    country?: string;
     concept: string;
     description: string;
     amount: number;

@@ -29,6 +29,13 @@ type InvoiceForm = {
   customerName: string;
   customerEmail: string;
   companyName: string;
+  customerPhone: string;
+  addressLine1: string;
+  addressLine2: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
   concept: string;
   description: string;
   amount: string;
@@ -40,6 +47,13 @@ const initialForm: InvoiceForm = {
   customerName: '',
   customerEmail: '',
   companyName: '',
+  customerPhone: '',
+  addressLine1: '',
+  addressLine2: '',
+  city: '',
+  state: '',
+  postalCode: '',
+  country: 'US',
   concept: '',
   description: '',
   amount: '',
@@ -76,7 +90,14 @@ export default function AdminInvoicesPage() {
       : 'Create manual invoices from LPTicket and keep them visible in Stripe.',
     customerName: lang === 'es' ? 'Nombre del cliente' : 'Customer name',
     customerEmail: lang === 'es' ? 'Correo del cliente' : 'Customer email',
-    companyName: lang === 'es' ? 'Empresa opcional' : 'Optional company',
+    companyName: lang === 'es' ? 'Compañía / empresa' : 'Company',
+    customerPhone: lang === 'es' ? 'Teléfono' : 'Phone',
+    addressLine1: lang === 'es' ? 'Dirección' : 'Address',
+    addressLine2: lang === 'es' ? 'Apto / suite opcional' : 'Optional apt / suite',
+    city: lang === 'es' ? 'Ciudad' : 'City',
+    state: lang === 'es' ? 'Estado' : 'State',
+    postalCode: lang === 'es' ? 'ZIP / código postal' : 'ZIP / postal code',
+    country: lang === 'es' ? 'País' : 'Country',
     concept: lang === 'es' ? 'Concepto' : 'Concept',
     description: lang === 'es' ? 'Descripción detallada' : 'Detailed description',
     amount: lang === 'es' ? 'Monto base' : 'Base amount',
@@ -211,6 +232,40 @@ export default function AdminInvoicesPage() {
               <span className="text-xs font-black uppercase tracking-wider text-gray-500">{labels.companyName}</span>
               <input className="input" value={form.companyName} onChange={(event) => updateField('companyName', event.target.value)} />
             </label>
+            <label className="space-y-1.5">
+              <span className="text-xs font-black uppercase tracking-wider text-gray-500">{labels.customerPhone}</span>
+              <input className="input" type="tel" value={form.customerPhone} onChange={(event) => updateField('customerPhone', event.target.value)} required />
+            </label>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <label className="space-y-1.5">
+              <span className="text-xs font-black uppercase tracking-wider text-gray-500">{labels.addressLine1}</span>
+              <input className="input" value={form.addressLine1} onChange={(event) => updateField('addressLine1', event.target.value)} required />
+            </label>
+            <label className="space-y-1.5">
+              <span className="text-xs font-black uppercase tracking-wider text-gray-500">{labels.addressLine2}</span>
+              <input className="input" value={form.addressLine2} onChange={(event) => updateField('addressLine2', event.target.value)} />
+            </label>
+            <label className="space-y-1.5">
+              <span className="text-xs font-black uppercase tracking-wider text-gray-500">{labels.city}</span>
+              <input className="input" value={form.city} onChange={(event) => updateField('city', event.target.value)} required />
+            </label>
+            <label className="space-y-1.5">
+              <span className="text-xs font-black uppercase tracking-wider text-gray-500">{labels.state}</span>
+              <input className="input" value={form.state} onChange={(event) => updateField('state', event.target.value)} required />
+            </label>
+            <label className="space-y-1.5">
+              <span className="text-xs font-black uppercase tracking-wider text-gray-500">{labels.postalCode}</span>
+              <input className="input" value={form.postalCode} onChange={(event) => updateField('postalCode', event.target.value)} required />
+            </label>
+            <label className="space-y-1.5">
+              <span className="text-xs font-black uppercase tracking-wider text-gray-500">{labels.country}</span>
+              <input className="input uppercase" value={form.country} maxLength={2} onChange={(event) => updateField('country', event.target.value.toUpperCase())} required />
+            </label>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <label className="space-y-1.5">
               <span className="text-xs font-black uppercase tracking-wider text-gray-500">{labels.concept}</span>
               <input className="input" value={form.concept} onChange={(event) => updateField('concept', event.target.value)} required placeholder="LP Ticket / Evento / Servicio" />
