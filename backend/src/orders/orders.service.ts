@@ -2043,7 +2043,7 @@ export class OrdersService {
   }
 
   private async buildPostEventReport(event: Event) {
-    const [orders, tickets, blockedTickets] = await Promise.all([
+    const [orders, tickets, permanentlyBlockedSeats] = await Promise.all([
       this.orderRepo.find({
         where: { eventId: event.id, status: OrderStatus.PAID },
         relations: ['user'],
@@ -2065,6 +2065,8 @@ export class OrdersService {
     const paidOrderIds = new Set(orders.map((order) => order.id));
     const paidTickets = tickets.filter((ticket) => paidOrderIds.has(ticket.orderId) && ticket.status !== TicketStatus.CANCELLED);
     const paidAdmissionTickets = paidTickets.filter((ticket) => Number(ticket.price || 0) > 0);
+    const noRevenueTickets = paidTickets.filter((ticket) => Number(ticket.price || 0) <= 0).length;
+    const blockedTickets = permanentlyBlockedSeats + noRevenueTickets;
     const paidTicketsByOrderId = paidAdmissionTickets.reduce<Record<string, number>>((acc, ticket) => {
       acc[ticket.orderId] = (acc[ticket.orderId] || 0) + 1;
       return acc;
