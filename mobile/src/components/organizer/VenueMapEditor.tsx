@@ -735,7 +735,7 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
                     ]}
                   >
                     {(item.type === 'table' || item.type === 'seat') && (
-                      <SeatDots item={item} selectedSeat={selectedSeat} onSeatPress={toggleSeat} />
+                      <SeatDots item={item} selectedSeat={selectedSeat} selectedItemId={selectedId} onSeatPress={toggleSeat} />
                     )}
 
                     <Text style={[
@@ -988,7 +988,7 @@ function shapeStyle(item: VenueItem) {
   return { borderRadius: 8 };
 }
 
-function SeatDots({ item, selectedSeat, onSeatPress }: { item: VenueItem; selectedSeat: string | null; onSeatPress: (seatId: string, px: number, py: number) => void }) {
+function SeatDots({ item, selectedSeat, selectedItemId, onSeatPress }: { item: VenueItem; selectedSeat: string | null; selectedItemId: string; onSeatPress: (seatId: string, px: number, py: number) => void }) {
   const seats = [];
   const rows = Math.max(1, item.rows);
   const cols = Math.max(1, item.seatsPerRow);
@@ -1062,7 +1062,7 @@ function SeatDots({ item, selectedSeat, onSeatPress }: { item: VenueItem; select
         style={[
           styles.seatDot,
           { left: cx - dot / 2 + ox, top: cy - dot / 2 + oy, width: dot, height: dot, borderRadius: dot / 2, backgroundColor: fill, zIndex: 5 },
-          selectedSeat === id && styles.seatSelected,
+          selectedSeat === id && selectedItemId === item.id && styles.seatSelected,
         ]}
       />
     );
