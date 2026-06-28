@@ -1084,21 +1084,22 @@ function ItemView({ item, isSelected, editMode, zoomRef, touchedItemRef, onSelec
       onResponderMove={(e) => {
         if (!editMode) return;
         const z = zoomRef.current.zoom || 1;
-        const dx = (e.nativeEvent.pageX - start.current.x) / z;
-        const dy = (e.nativeEvent.pageY - start.current.y) / z;
-        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) start.current.moved = true;
-        if (start.current.moved) {
-          // Store the raw delta and move the visual offset (exactly like SeatDot).
-          start.current.dx = dx; start.current.dy = dy;
-          offset.setValue({ x: dx, y: dy });
-        }
+        // Accumulate the delta frame-by-frame from the LAST point, not the start —
+        // react-native-web's pageX can drift on a transformed canvas, so a running
+        // sum from the previous move is reliable.
+        const px = e.nativeEvent.pageX, py = e.nativeEvent.pageY;
+        const fx = (px - start.current.x) / z;
+        const fy = (py - start.current.y) / z;
+        start.current.x = px; start.current.y = py;
+        start.current.dx += fx; start.current.dy += fy;
+        if (Math.abs(start.current.dx) > 2 || Math.abs(start.current.dy) > 2) start.current.moved = true;
+        if (start.current.moved) offset.setValue({ x: start.current.dx, y: start.current.dy });
       }}
       onResponderRelease={(e) => {
         if (start.current.moved && !start.current.committed) {
           start.current.committed = true;
-          const dx = start.current.dx, dy = start.current.dy;
           offset.setValue({ x: 0, y: 0 });
-          onDragMove(item, dx, dy);
+          onDragMove(item, start.current.dx, start.current.dy);
         } else if (!start.current.moved) {
           onSelect(item.id);
           onShowInfo(item, e.nativeEvent.pageX, e.nativeEvent.pageY);
@@ -1109,9 +1110,8 @@ function ItemView({ item, isSelected, editMode, zoomRef, touchedItemRef, onSelec
       onResponderTerminate={() => {
         if (start.current.moved && !start.current.committed) {
           start.current.committed = true;
-          const dx = start.current.dx, dy = start.current.dy;
           offset.setValue({ x: 0, y: 0 });
-          onDragMove(item, dx, dy);
+          onDragMove(item, start.current.dx, start.current.dy);
         }
         touchedItemRef.current = false;
         onDragEnd();
