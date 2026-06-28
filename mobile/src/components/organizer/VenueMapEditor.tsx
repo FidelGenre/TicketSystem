@@ -744,7 +744,7 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
 
                 return (
                   <ItemView
-                    key={`${item.id || item.name || 'map-item'}-${index}`}
+                    key={item.id || `map-item-${index}`}
                     item={item}
                     isSelected={isSelected}
                     editMode={editMode}
@@ -1064,8 +1064,8 @@ function ItemView({ item, isSelected, editMode, zoomRef, touchedItemRef, onSelec
         touchedItemRef.current = true;
         start.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY, ix: item.x, iy: item.y, dx: 0, dy: 0, moved: false };
         offset.setValue({ x: 0, y: 0 });
-        onSelect(item.id);
-        onScrollLock?.(true); // block page scroll the instant the item is touched
+        // NOTE: don't call onSelect here — setSelectedId re-renders the parent mid
+        // gesture and can reset the drag. Select on release instead.
       }}
       onResponderMove={(e) => {
         if (!editMode) return;
@@ -1088,6 +1088,7 @@ function ItemView({ item, isSelected, editMode, zoomRef, touchedItemRef, onSelec
           offset.setValue({ x: 0, y: 0 });
           onDragMove(item, start.current.ix + ox, start.current.iy + oy);
         } else {
+          onSelect(item.id);
           onShowInfo(item, e.nativeEvent.pageX, e.nativeEvent.pageY);
         }
         touchedItemRef.current = false;
