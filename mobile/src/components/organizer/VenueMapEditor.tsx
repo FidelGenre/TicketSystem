@@ -1103,6 +1103,7 @@ function ItemView({ item, isSelected, editMode, zoomRef, touchedItemRef, onSelec
           const fx = (e.nativeEvent.pageX - start.current.x) / z;
           const fy = (e.nativeEvent.pageY - start.current.y) / z;
           const finalX = start.current.ix + fx, finalY = start.current.iy + fy;
+          console.log('[release]', item.type, item.name, 'ix:', start.current.ix, 'iy:', start.current.iy, 'fx:', fx.toFixed(1), 'fy:', fy.toFixed(1), 'final:', finalX.toFixed(1), finalY.toFixed(1));
           pos.setValue({ x: finalX, y: finalY });
           onDragMove(item, finalX, finalY);
         } else {
