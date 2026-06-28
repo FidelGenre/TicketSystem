@@ -190,10 +190,7 @@ export class AdminInvoicesService {
     const finalized = await this.stripe.invoices.finalizeInvoice(invoice.id, {
       expand: ['customer'],
     });
-    const sent = await this.stripe.invoices.sendInvoice(finalized.id, {
-      expand: ['customer'],
-    });
-    const formattedInvoice = this.formatInvoice(sent);
+    const formattedInvoice = this.formatInvoice(finalized);
 
     let premiumEmailSent = false;
     if (formattedInvoice.hostedInvoiceUrl) {

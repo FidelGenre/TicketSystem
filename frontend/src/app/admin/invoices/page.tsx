@@ -215,7 +215,7 @@ export default function AdminInvoicesPage() {
             </div>
             <div>
               <h2 className="font-black text-gray-950">{labels.create}</h2>
-              <p className="text-xs text-gray-500 font-medium">Stripe enviará el correo oficial con enlace seguro de pago.</p>
+              <p className="text-xs text-gray-500 font-medium">LPTicket enviará un solo correo con el enlace seguro de pago de Stripe.</p>
             </div>
           </div>
 
