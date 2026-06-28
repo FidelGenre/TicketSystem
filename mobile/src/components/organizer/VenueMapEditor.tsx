@@ -1055,14 +1055,22 @@ function SeatDots({ item, selectedSeat, selectedItemId, onSeatPress }: { item: V
     const fill = blocked ? '#F97316' : ov.isWheelchair ? '#1a73e8' : item.color;
     const ox = ov.xOffset || 0;
     const oy = ov.yOffset || 0;
+    const isActiveSeat = selectedSeat === id && selectedItemId === item.id;
     seats.push(
       <TouchableOpacity
         key={id}
         onPress={(e) => onSeatPress(id, e.nativeEvent.pageX, e.nativeEvent.pageY)}
         style={[
           styles.seatDot,
-          { left: cx - dot / 2 + ox, top: cy - dot / 2 + oy, width: dot, height: dot, borderRadius: dot / 2, backgroundColor: fill, zIndex: 5 },
-          selectedSeat === id && selectedItemId === item.id && styles.seatSelected,
+          {
+            left: cx - dot / 2 + ox, top: cy - dot / 2 + oy,
+            width: dot, height: dot, borderRadius: dot / 2,
+            backgroundColor: isActiveSeat ? '#f97316' : fill,
+            zIndex: isActiveSeat ? 10 : 5,
+            transform: [{ scale: isActiveSeat ? 1.35 : 1 }],
+            borderColor: isActiveSeat ? '#ffffff' : 'rgba(255,255,255,0.55)',
+            borderWidth: isActiveSeat ? 2 : 1,
+          },
         ]}
       />
     );
