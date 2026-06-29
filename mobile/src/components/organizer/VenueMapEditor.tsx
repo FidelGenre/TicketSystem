@@ -284,15 +284,20 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
     return dx > 2 || dy > 2;
   };
 
+  // Pinch centre in viewport-local coords. Prefer locationX/locationY (relative to
+  // the viewport element); fall back to pageX minus the measured viewport offset.
+  const pinchCenter = (t1: any, t2: any) => {
+    const lx1 = t1.locationX, ly1 = t1.locationY, lx2 = t2.locationX, ly2 = t2.locationY;
+    if (lx1 != null && lx2 != null && ly1 != null && ly2 != null) {
+      return { cx: (lx1 + lx2) / 2, cy: (ly1 + ly2) / 2 };
+    }
+    return { cx: (t1.pageX + t2.pageX) / 2 - canvasVpXRef.current, cy: (t1.pageY + t2.pageY) / 2 - canvasVpYRef.current };
+  };
+
   const beginPinch = (touches: any[]) => {
     if (touches.length >= 2) {
       const t1 = touches[0], t2 = touches[1];
-      // Use pageX/pageY (absolute screen coords) for BOTH fingers — locationX is
-      // per-target and inconsistent across fingers on real touch devices, which
-      // made the pinch centre jump and warp the map. Subtract the viewport's
-      // on-screen offset so the centre is in viewport-local space.
-      const cx = (t1.pageX + t2.pageX) / 2 - canvasVpXRef.current;
-      const cy = (t1.pageY + t2.pageY) / 2 - canvasVpYRef.current;
+      const { cx, cy } = pinchCenter(t1, t2);
       touchRef.current = { x: 0, y: 0, panX: viewRef.current.pan.x, panY: viewRef.current.pan.y, isPinch: true, pinchDist: Math.hypot(t1.pageX - t2.pageX, t1.pageY - t2.pageY), pinchZoom: viewRef.current.zoom, pinchCx: cx, pinchCy: cy, moved: false };
     }
   };
@@ -338,9 +343,8 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
       const t1 = touches[0], t2 = touches[1];
       const dist = Math.hypot(t1.pageX - t2.pageX, t1.pageY - t2.pageY);
       if (!touchRef.current.pinchDist) return;
-      // Same coordinate space as beginPinch (pageX/pageY minus viewport offset).
-      const cx = (t1.pageX + t2.pageX) / 2 - canvasVpXRef.current;
-      const cy = (t1.pageY + t2.pageY) / 2 - canvasVpYRef.current;
+      // Same coordinate space as beginPinch.
+      const { cx, cy } = pinchCenter(t1, t2);
       const newZ = clamp(touchRef.current.pinchZoom * Math.pow(dist / touchRef.current.pinchDist, 1.18), fitRef.current.zoom, MAX_ZOOM);
       const ratio = newZ / touchRef.current.pinchZoom;
       syncAnimated(newZ, { x: cx - (touchRef.current.pinchCx - touchRef.current.panX) * ratio, y: cy - (touchRef.current.pinchCy - touchRef.current.panY) * ratio });
