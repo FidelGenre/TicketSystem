@@ -406,7 +406,7 @@ export default function Header() {
                 className="h-8 px-2 sm:px-2.5 bg-[#F97316] text-white rounded-md flex items-center gap-1 transition-all shadow-md active:scale-95 shrink-0"
               >
                 <HiOutlineQrcode className="w-3.5 h-3.5" />
-                <span className="text-[10px] font-black uppercase">SCAN</span>
+                <span className="text-[10px] font-black uppercase hidden xs:inline">SCAN</span>
               </Link>
             ) : (
               <Link
