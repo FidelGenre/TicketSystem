@@ -285,22 +285,13 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
     return dx > 2 || dy > 2;
   };
 
-  // Pinch centre in viewport-local space. The viewport's screen offset is derived
-  // from the SAME event (pageX - locationX = target's left), which is reliable on
-  // web and native — unlike a separately-measured offset that can be stale/wrong.
-  const pinchCenter = (e: any, t1: any, t2: any) => {
-    const ne = e.nativeEvent;
-    const offX = (ne.pageX != null && ne.locationX != null) ? ne.pageX - ne.locationX : canvasVpXRef.current;
-    const offY = (ne.pageY != null && ne.locationY != null) ? ne.pageY - ne.locationY : canvasVpYRef.current;
-    const r = { cx: (t1.pageX + t2.pageX) / 2 - offX, cy: (t1.pageY + t2.pageY) / 2 - offY };
-    console.log('[pinch]', 'evPage', Math.round(ne.pageX), Math.round(ne.pageY), 'evLoc', Math.round(ne.locationX), Math.round(ne.locationY), 'off', Math.round(offX), Math.round(offY), 'centre', Math.round(r.cx), Math.round(r.cy), 'measRef', Math.round(canvasVpYRef.current));
-    return r;
-  };
-
-  const beginPinch = (e: any, touches: any[]) => {
+  const beginPinch = (touches: any[]) => {
     if (touches.length >= 2) {
       const t1 = touches[0], t2 = touches[1];
-      const { cx, cy } = pinchCenter(e, t1, t2);
+      // EXACT same as ClientVenueMap: locationX/Y centre (works because the touch
+      // handlers live on an absoluteFill that exactly covers the viewport).
+      const cx = ((t1.locationX ?? t1.pageX) + (t2.locationX ?? t2.pageX)) / 2;
+      const cy = ((t1.locationY ?? t1.pageY) + (t2.locationY ?? t2.pageY)) / 2;
       touchRef.current = { x: 0, y: 0, panX: viewRef.current.pan.x, panY: viewRef.current.pan.y, isPinch: true, pinchDist: Math.hypot(t1.pageX - t2.pageX, t1.pageY - t2.pageY), pinchZoom: viewRef.current.zoom, pinchCx: cx, pinchCy: cy, moved: false };
     }
   };
@@ -324,7 +315,7 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
       onScrollLock?.(true);
       const a = touches[0];
       responderStart.current = { x: a?.pageX || 0, y: a?.pageY || 0 };
-      beginPinch(e, touches);
+      beginPinch(touches);
       return;
     }
     if (seatTouchRef.current || touchedItemRef.current) return; // an item/chair owns this touch
@@ -337,17 +328,18 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
     const touches = e.nativeEvent.touches || [];
     // Pinch handling takes priority and ignores item/seat flags.
     if (touches.length >= 2) {
-      if (!touchRef.current.isPinch) { beginPinch(e, touches); return; }
+      if (!touchRef.current.isPinch) { beginPinch(touches); return; }
     } else if (seatTouchRef.current || touchedItemRef.current) {
       return; // single finger on an item/chair — let it handle the gesture
     }
-    if (!touchRef.current.isPinch && touches.length >= 2) { beginPinch(e, touches); return; }
+    if (!touchRef.current.isPinch && touches.length >= 2) { beginPinch(touches); return; }
     if (touchRef.current.isPinch && touches.length >= 2) {
       const t1 = touches[0], t2 = touches[1];
       const dist = Math.hypot(t1.pageX - t2.pageX, t1.pageY - t2.pageY);
       if (!touchRef.current.pinchDist) return;
-      // Same coordinate space as beginPinch (pageX/pageY minus viewport offset).
-      const { cx, cy } = pinchCenter(e, t1, t2);
+      // EXACT same as ClientVenueMap: locationX/Y centre.
+      const cx = ((t1.locationX ?? t1.pageX) + (t2.locationX ?? t2.pageX)) / 2;
+      const cy = ((t1.locationY ?? t1.pageY) + (t2.locationY ?? t2.pageY)) / 2;
       const newZ = clamp(touchRef.current.pinchZoom * Math.pow(dist / touchRef.current.pinchDist, 1.18), fitRef.current.zoom, MAX_ZOOM);
       const ratio = newZ / touchRef.current.pinchZoom;
       syncAnimated(newZ, { x: cx - (touchRef.current.pinchCx - touchRef.current.panX) * ratio, y: cy - (touchRef.current.pinchCy - touchRef.current.panY) * ratio });
@@ -791,22 +783,24 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
             // touchAction:'none' (web only) stops the browser from scrolling/zooming
             // the page while dragging inside the canvas. Ignored on native.
             style={[styles.canvasViewport, { touchAction: 'none' } as any]}
-            onLayout={() => { requestAnimationFrame(() => { canvasVpRef.current?.measureInWindow?.((x: number, y: number) => { canvasVpXRef.current = x || 0; canvasVpYRef.current = y || 0; }); }); }}
-            // The viewport claims the responder on START (not just move), so the
-            // parent ScrollView can never steal a vertical gesture mid-drag. Items
-            // and chairs sit above and win their own touches via their responders.
-            onStartShouldSetResponder={() => { onScrollLock?.(true); return true; }}
-            onMoveShouldSetResponder={() => true}
-            onResponderTerminationRequest={() => false}
-            onTouchStart={onCanvasTouchStart}
-            onTouchMove={onCanvasTouchMove}
-            onTouchEnd={onCanvasTouchEnd}
-            onTouchCancel={onCanvasTouchEnd}
-            onResponderGrant={onCanvasTouchStart}
-            onResponderMove={onCanvasTouchMove}
-            onResponderRelease={onCanvasTouchEnd}
-            onResponderTerminate={onCanvasTouchEnd}
           >
+            {/* Touch handlers live on an absoluteFill that EXACTLY covers the
+                viewport (same structure as ClientVenueMap), so locationX/locationY
+                are relative to the viewport → pinch zooms to the right point. */}
+            <View
+              style={StyleSheet.absoluteFill}
+              onStartShouldSetResponder={() => { onScrollLock?.(true); return true; }}
+              onMoveShouldSetResponder={() => true}
+              onResponderTerminationRequest={() => false}
+              onTouchStart={onCanvasTouchStart}
+              onTouchMove={onCanvasTouchMove}
+              onTouchEnd={onCanvasTouchEnd}
+              onTouchCancel={onCanvasTouchEnd}
+              onResponderGrant={onCanvasTouchStart}
+              onResponderMove={onCanvasTouchMove}
+              onResponderRelease={onCanvasTouchEnd}
+              onResponderTerminate={onCanvasTouchEnd}
+            >
             {/* Grid covers the whole viewport (fixed). */}
             <EditorGrid width={vpW} height={VP_H} />
             <Animated.View
@@ -868,6 +862,7 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
                 );
               })}
             </Animated.View>
+            </View>
 
             {/* Floating zoom bar — bottom-right over canvas */}
             <View style={styles.zoomFloat} pointerEvents="box-none">
