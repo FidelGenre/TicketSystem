@@ -493,8 +493,10 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
     setSaved(false);
     setItems((current) => current.map((entry) => entry.id === item.id ? {
       ...entry,
-      x: Math.max(0, Math.min(CANVAS_WIDTH - entry.width, x)),
-      y: Math.max(0, Math.min(CANVAS_HEIGHT - entry.height, y)),
+      // Allow moving freely right/down (like the web editor); only clamp the
+      // top-left so items can't be lost off the origin.
+      x: Math.max(0, Math.min(CANVAS_WIDTH, x)),
+      y: Math.max(0, Math.min(CANVAS_HEIGHT, y)),
     } : entry));
   };
 
@@ -1089,10 +1091,9 @@ function ItemView({ item, isSelected, editMode, zoomRef, touchedItemRef, onSelec
         const dy = (e.nativeEvent.pageY - start.current.y) / z;
         if (Math.abs(dx) > 2 || Math.abs(dy) > 2) start.current.moved = true;
         if (start.current.moved) {
-          // Final absolute position (clamped) for the commit, and the RELATIVE
-          // offset for the visual translate (= final - base).
-          start.current.fx = Math.max(0, Math.min(CANVAS_WIDTH - item.width, start.current.ix + dx));
-          start.current.fy = Math.max(0, Math.min(CANVAS_HEIGHT - item.height, start.current.iy + dy));
+          // Same clamp as moveItem: free to move right/down, only pinned at 0,0.
+          start.current.fx = Math.max(0, Math.min(CANVAS_WIDTH, start.current.ix + dx));
+          start.current.fy = Math.max(0, Math.min(CANVAS_HEIGHT, start.current.iy + dy));
           offset.setValue({ x: start.current.fx - start.current.ix, y: start.current.fy - start.current.iy });
         }
       }}
