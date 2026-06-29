@@ -299,7 +299,9 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
   const beginPan = (touches: any[]) => {
     const t = touches[0];
     if (!t) return;
-    touchRef.current = { x: t.locationX ?? t.pageX, y: t.locationY ?? t.pageY, panX: viewRef.current.pan.x, panY: viewRef.current.pan.y, isPinch: false, pinchDist: 0, pinchZoom: viewRef.current.zoom, pinchCx: 0, pinchCy: 0, moved: false };
+    // pageX/pageY are consistent across the gesture on real touch devices;
+    // locationX is per-target and jitters → warp.
+    touchRef.current = { x: t.pageX, y: t.pageY, panX: viewRef.current.pan.x, panY: viewRef.current.pan.y, isPinch: false, pinchDist: 0, pinchZoom: viewRef.current.zoom, pinchCx: 0, pinchCy: 0, moved: false };
   };
   const onCanvasTouchStart = (e: any) => {
     if (animatingRef.current) return;
@@ -343,11 +345,20 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
       const ratio = newZ / touchRef.current.pinchZoom;
       syncAnimated(newZ, { x: cx - (touchRef.current.pinchCx - touchRef.current.panX) * ratio, y: cy - (touchRef.current.pinchCy - touchRef.current.panY) * ratio });
     } else if (touchRef.current.isPinch && touches.length === 1) {
-      beginPan(touches);
+      // Lifted one finger during a pinch. Re-anchor the pan to the REMAINING
+      // finger's current page position WITHOUT moving, so it doesn't fling toward
+      // the other finger. The next move continues smoothly from here.
+      const t = touches[0];
+      touchRef.current.x = t.pageX;
+      touchRef.current.y = t.pageY;
+      touchRef.current.panX = viewRef.current.pan.x;
+      touchRef.current.panY = viewRef.current.pan.y;
+      touchRef.current.isPinch = false;
     } else if (!touchRef.current.isPinch && touches.length === 1) {
       const t = touches[0];
-      const dx = (t.locationX ?? t.pageX) - touchRef.current.x;
-      const dy = (t.locationY ?? t.pageY) - touchRef.current.y;
+      // Use pageX/pageY (consistent on real touch) instead of per-target locationX.
+      const dx = t.pageX - touchRef.current.x;
+      const dy = t.pageY - touchRef.current.y;
       syncAnimated(viewRef.current.zoom, { x: touchRef.current.panX + dx, y: touchRef.current.panY + dy });
     }
   };
@@ -775,7 +786,7 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
             // The viewport claims the responder on START (not just move), so the
             // parent ScrollView can never steal a vertical gesture mid-drag. Items
             // and chairs sit above and win their own touches via their responders.
-            onStartShouldSetResponder={() => true}
+            onStartShouldSetResponder={() => { onScrollLock?.(true); return true; }}
             onMoveShouldSetResponder={() => true}
             onResponderTerminationRequest={() => false}
             onTouchStart={onCanvasTouchStart}
