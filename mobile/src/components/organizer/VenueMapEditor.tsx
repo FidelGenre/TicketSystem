@@ -1062,16 +1062,19 @@ function ItemView({ item, isSelected, editMode, zoomRef, touchedItemRef, onSelec
   onScrollLock?: (locked: boolean) => void;
   style: any; children: React.ReactNode;
 }) {
-  // SAME mechanism as SeatDot (which works): move with an additive Animated
-  // translate, NEVER relayout left/top. The canvas is scaled from its centre, so
-  // changing left/top mid-drag reprojects the item (teleport). A translate child
-  // composes cleanly with the parent scale. On release we commit the DELTA via
-  // moveItemBy (applied to the item's live position) and reset the translate.
-  // ix/iy = item position captured at grant (like SeatDot's baseX/baseY). Commit
-  // uses ix+dx (absolute), so duplicate releases can't accumulate the delta.
-  const start = useRef({ x: 0, y: 0, ix: 0, iy: 0, dx: 0, dy: 0, moved: false });
+  // SINGLE source of truth for position: an Animated value `pos` holding the item's
+  // ABSOLUTE position. left/top stay 0; the whole position is the translate (so the
+  // centre-origin canvas scale never teleports it). On release we commit pos to
+  // state; the effect re-syncs pos to item.x/y — same value → no snap. Verified
+  // with a timing simulation that this never has a mismatched frame.
+  const start = useRef({ x: 0, y: 0, ix: 0, iy: 0, moved: false });
   const draggingRef = useRef(false);
-  const offset = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+  const pos = useRef(new Animated.ValueXY({ x: item.x, y: item.y })).current;
+  // Sync to the stored position whenever it changes and we're not mid-drag. During
+  // a drag, pos is driven by the move handler. After commit, item.x === pos already.
+  useEffect(() => {
+    if (!draggingRef.current) pos.setValue({ x: item.x, y: item.y });
+  }, [item.x, item.y]);
   return (
     <Animated.View
       onStartShouldSetResponderCapture={() => { touchedItemRef.current = true; return false; }}
@@ -1081,8 +1084,7 @@ function ItemView({ item, isSelected, editMode, zoomRef, touchedItemRef, onSelec
       onResponderGrant={(e) => {
         touchedItemRef.current = true;
         draggingRef.current = true;
-        offset.setValue({ x: 0, y: 0 });
-        start.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY, ix: item.x, iy: item.y, dx: 0, dy: 0, moved: false };
+        start.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY, ix: item.x, iy: item.y, moved: false };
       }}
       onResponderMove={(e) => {
         if (!editMode) return;
@@ -1091,17 +1093,25 @@ function ItemView({ item, isSelected, editMode, zoomRef, touchedItemRef, onSelec
         const dy = (e.nativeEvent.pageY - start.current.y) / z;
         if (Math.abs(dx) > 2 || Math.abs(dy) > 2) start.current.moved = true;
         if (start.current.moved) {
-          start.current.dx = dx; start.current.dy = dy;
-          offset.setValue({ x: dx, y: dy });
+          // pos = absolute base + delta, clamped to canvas like moveItem.
+          const nx = Math.max(0, Math.min(CANVAS_WIDTH - item.width, start.current.ix + dx));
+          const ny = Math.max(0, Math.min(CANVAS_HEIGHT - item.height, start.current.iy + dy));
+          pos.setValue({ x: nx, y: ny });
         }
       }}
-      onResponderRelease={() => {
+      onResponderRelease={(e) => {
         if (!draggingRef.current) return;
-        draggingRef.current = false;
         if (start.current.moved) {
-          offset.setValue({ x: 0, y: 0 });
-          onDragMove(item, start.current.ix + start.current.dx, start.current.iy + start.current.dy);
+          const z = zoomRef.current.zoom || 1;
+          const dx = (e.nativeEvent.pageX - start.current.x) / z;
+          const dy = (e.nativeEvent.pageY - start.current.y) / z;
+          const finalX = Math.max(0, Math.min(CANVAS_WIDTH - item.width, start.current.ix + dx));
+          const finalY = Math.max(0, Math.min(CANVAS_HEIGHT - item.height, start.current.iy + dy));
+          pos.setValue({ x: finalX, y: finalY }); // pos already holds final pos
+          draggingRef.current = false; // unblock the effect; item.x will equal pos → no snap
+          onDragMove(item, finalX, finalY);
         } else {
+          draggingRef.current = false;
           onSelect(item.id);
           onShowInfo(item, start.current.x, start.current.y);
         }
@@ -1109,12 +1119,12 @@ function ItemView({ item, isSelected, editMode, zoomRef, touchedItemRef, onSelec
         onDragEnd();
       }}
       onResponderTerminate={() => {
-        if (draggingRef.current && start.current.moved) { offset.setValue({ x: 0, y: 0 }); onDragMove(item, start.current.ix + start.current.dx, start.current.iy + start.current.dy); }
         draggingRef.current = false;
+        pos.setValue({ x: item.x, y: item.y });
         touchedItemRef.current = false;
         onDragEnd();
       }}
-      style={[style, { transform: [{ translateX: offset.x }, { translateY: offset.y }] }]}
+      style={[style, { left: 0, top: 0, transform: [{ translateX: pos.x }, { translateY: pos.y }] }]}
     >
       {children}
     </Animated.View>
