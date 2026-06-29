@@ -121,6 +121,8 @@ type VenueItem = {
 
 const CANVAS_WIDTH = 920;
 const CANVAS_HEIGHT = 640;
+// How far past the canvas edges items may be dragged, in every direction.
+const MOVE_MARGIN = 800;
 
 // Zoom/pan tuning — ported from ClientVenueMap so the editor navigates the same.
 const MIN_ZOOM = 0.12;
@@ -493,10 +495,9 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
     setSaved(false);
     setItems((current) => current.map((entry) => entry.id === item.id ? {
       ...entry,
-      // Allow moving freely right/down (like the web editor); only clamp the
-      // top-left so items can't be lost off the origin.
-      x: Math.max(0, Math.min(CANVAS_WIDTH, x)),
-      y: Math.max(0, Math.min(CANVAS_HEIGHT, y)),
+      // Wide free-move area in every direction (well beyond the canvas edges).
+      x: Math.max(-MOVE_MARGIN, Math.min(CANVAS_WIDTH + MOVE_MARGIN, x)),
+      y: Math.max(-MOVE_MARGIN, Math.min(CANVAS_HEIGHT + MOVE_MARGIN, y)),
     } : entry));
   };
 
@@ -1091,9 +1092,9 @@ function ItemView({ item, isSelected, editMode, zoomRef, touchedItemRef, onSelec
         const dy = (e.nativeEvent.pageY - start.current.y) / z;
         if (Math.abs(dx) > 2 || Math.abs(dy) > 2) start.current.moved = true;
         if (start.current.moved) {
-          // Same clamp as moveItem: free to move right/down, only pinned at 0,0.
-          start.current.fx = Math.max(0, Math.min(CANVAS_WIDTH, start.current.ix + dx));
-          start.current.fy = Math.max(0, Math.min(CANVAS_HEIGHT, start.current.iy + dy));
+          // Same wide bounds as moveItem.
+          start.current.fx = Math.max(-MOVE_MARGIN, Math.min(CANVAS_WIDTH + MOVE_MARGIN, start.current.ix + dx));
+          start.current.fy = Math.max(-MOVE_MARGIN, Math.min(CANVAS_HEIGHT + MOVE_MARGIN, start.current.iy + dy));
           offset.setValue({ x: start.current.fx - start.current.ix, y: start.current.fy - start.current.iy });
         }
       }}
