@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
-import { Alert, Linking, Modal, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Modal, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { colors } from '../../theme/colors';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { GradientButton } from '../GradientButton';
-import { apiPost, apiPut } from '../../services/api';
+import { apiGet, apiPost, apiPut } from '../../services/api';
 import { exportCsv } from '../../utils/csv';
 
 type Attendee = {
@@ -60,6 +60,10 @@ export function OrganizerAttendeesMobile({ attendees, revenueLabel, onToggle, on
   const [detailBuyer, setDetailBuyer] = useState<BuyerGroup | null>(null);
 
   // Reminder state
+  // Receipt modal
+  const [receipt, setReceipt] = useState<any | null>(null);
+  const [receiptLoading, setReceiptLoading] = useState(false);
+
   const [showReminder, setShowReminder] = useState(false);
   const [autoEnabled, setAutoEnabled] = useState(!!event?.autoReminderEnabled);
   const [autoDays, setAutoDays] = useState(String(event?.autoReminderDays || 0));
@@ -177,10 +181,30 @@ export function OrganizerAttendeesMobile({ attendees, revenueLabel, onToggle, on
     }
   };
 
-  const openTicketReceipt = (code?: string) => {
+  const openTicketReceipt = async (code?: string) => {
+    if (!code) return;
+    setReceiptLoading(true);
+    setReceipt({ ticketCode: code }); // open modal immediately with a spinner
+    try {
+      const data = await apiGet<any>(`/orders/ticket/${encodeURIComponent(code)}`);
+      setReceipt(data);
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || t('No se pudo cargar el recibo.', 'Could not load the receipt.'));
+      setReceipt(null);
+    } finally {
+      setReceiptLoading(false);
+    }
+  };
+
+  const openTicketInBrowser = (code?: string) => {
     if (!code) return;
     const url = ticketVerifyUrl(code);
     WebBrowser.openBrowserAsync(url).catch(() => Linking.openURL(url).catch(() => {}));
+  };
+
+  const money = (n: any, currency?: string) => {
+    const v = Number(n || 0);
+    return `${currency === 'PYG' ? '₲' : '$'}${v.toLocaleString(undefined, { minimumFractionDigits: currency === 'PYG' ? 0 : 2, maximumFractionDigits: 2 })}`;
   };
 
   return (
@@ -334,6 +358,81 @@ export function OrganizerAttendeesMobile({ attendees, revenueLabel, onToggle, on
           </View>
         </View>
       </Modal>
+
+      {/* Ticket receipt modal */}
+      <Modal visible={!!receipt} transparent animationType="fade" onRequestClose={() => setReceipt(null)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{t('Recibo de entrada', 'Ticket receipt')}</Text>
+              <TouchableOpacity onPress={() => setReceipt(null)}>
+                <Ionicons name="close" size={20} color="rgba(248,250,252,0.7)" />
+              </TouchableOpacity>
+            </View>
+
+            {receiptLoading ? (
+              <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+                <ActivityIndicator color={colors.orange} size="large" />
+              </View>
+            ) : receipt ? (
+              <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 460 }}>
+                {/* Event */}
+                {receipt.event && (
+                  <Text style={styles.rcEvent}>{receipt.event.title}</Text>
+                )}
+                {receipt.event?.eventDate && (
+                  <Text style={styles.rcSub}>{new Date(receipt.event.eventDate).toLocaleString()}</Text>
+                )}
+                {receipt.event?.venueName && (
+                  <Text style={styles.rcSub}>{receipt.event.venueName}{receipt.event.venueAddress ? ` · ${receipt.event.venueAddress}` : ''}</Text>
+                )}
+
+                {/* Status badge */}
+                <View style={{ flexDirection: 'row', marginTop: 12, marginBottom: 4 }}>
+                  <View style={[styles.badge, receipt.status === 'SCANNED' ? styles.badgeGreen : styles.badgeOrange]}>
+                    <Text style={[styles.badgeText, receipt.status === 'SCANNED' ? styles.badgeGreenText : styles.badgeOrangeText]}>{receipt.status || '—'}</Text>
+                  </View>
+                </View>
+
+                {/* Attendee + seat */}
+                <View style={styles.rcRow}><Text style={styles.rcKey}>{t('Asistente', 'Attendee')}</Text><Text style={styles.rcVal}>{receipt.attendeeName || '—'}</Text></View>
+                <View style={styles.rcRow}><Text style={styles.rcKey}>{t('Sección', 'Section')}</Text><Text style={styles.rcVal}>{receipt.sectionName || '—'}</Text></View>
+                <View style={styles.rcRow}>
+                  <Text style={styles.rcKey}>{t('Asiento', 'Seat')}</Text>
+                  <Text style={styles.rcVal}>{receipt.seatLabel || [receipt.rowLabel, receipt.seatNumber].filter(Boolean).join('-') || '—'}</Text>
+                </View>
+                <View style={styles.rcRow}><Text style={styles.rcKey}>{t('Código', 'Code')}</Text><Text style={[styles.rcVal, styles.rcCode]}>{receipt.ticketCode}</Text></View>
+                {receipt.createdAt && (
+                  <View style={styles.rcRow}><Text style={styles.rcKey}>{t('Fecha de compra', 'Purchase date')}</Text><Text style={styles.rcVal}>{new Date(receipt.createdAt).toLocaleDateString()}</Text></View>
+                )}
+
+                {/* Money breakdown */}
+                <View style={styles.rcDivider} />
+                <View style={styles.rcRow}><Text style={styles.rcKey}>{t('Precio entrada', 'Ticket price')}</Text><Text style={styles.rcVal}>{money(receipt.price, receipt.event?.currency)}</Text></View>
+                {receipt.order && (
+                  <>
+                    {receipt.order.subtotal != null && <View style={styles.rcRow}><Text style={styles.rcKey}>{t('Subtotal orden', 'Order subtotal')}</Text><Text style={styles.rcVal}>{money(receipt.order.subtotal, receipt.event?.currency)}</Text></View>}
+                    {Number(receipt.order.lpFee) > 0 && <View style={styles.rcRow}><Text style={styles.rcKey}>{t('Comisión LPTicket', 'LPTicket fee')}</Text><Text style={styles.rcVal}>{money(receipt.order.lpFee, receipt.event?.currency)}</Text></View>}
+                    {Number(receipt.order.processingFee) > 0 && <View style={styles.rcRow}><Text style={styles.rcKey}>{t('Procesamiento', 'Processing')}</Text><Text style={styles.rcVal}>{money(receipt.order.processingFee, receipt.event?.currency)}</Text></View>}
+                    {receipt.order.total != null && (
+                      <View style={[styles.rcRow, { marginTop: 4 }]}>
+                        <Text style={[styles.rcKey, styles.rcTotalKey]}>{t('Total orden', 'Order total')}</Text>
+                        <Text style={[styles.rcVal, styles.rcTotalVal]}>{money(receipt.order.total, receipt.event?.currency)}</Text>
+                      </View>
+                    )}
+                  </>
+                )}
+
+                {/* Open full ticket in browser */}
+                <TouchableOpacity onPress={() => openTicketInBrowser(receipt.ticketCode)} style={styles.rcOpenBtn}>
+                  <Ionicons name="open-outline" size={15} color="#F97316" />
+                  <Text style={styles.rcOpenText}>{t('Ver entrada completa', 'Open full ticket')}</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -427,4 +526,17 @@ const styles = StyleSheet.create({
   modalFieldLabel: { color: 'rgba(203,213,225,0.8)', fontSize: 12, fontWeight: '600', marginTop: 4 },
   modalInput: { borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', borderRadius: 12, backgroundColor: '#030B14', color: '#FFFFFF', fontSize: 14, paddingHorizontal: 12, paddingVertical: 11 },
   modalTextArea: { minHeight: 70, textAlignVertical: 'top' },
+
+  // Receipt modal
+  rcEvent: { color: '#F8FAFC', fontSize: 17, fontWeight: '700' },
+  rcSub: { color: 'rgba(203,213,225,0.7)', fontSize: 12, marginTop: 2 },
+  rcRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 7, gap: 12 },
+  rcKey: { color: 'rgba(203,213,225,0.7)', fontSize: 13 },
+  rcVal: { color: '#F8FAFC', fontSize: 13, fontWeight: '600', flexShrink: 1, textAlign: 'right' },
+  rcCode: { fontFamily: 'monospace', color: '#fb923c' },
+  rcDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.1)', marginVertical: 8 },
+  rcTotalKey: { color: '#F8FAFC', fontSize: 14, fontWeight: '700' },
+  rcTotalVal: { color: '#F97316', fontSize: 16, fontWeight: '800' },
+  rcOpenBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 16, height: 46, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(249,115,22,0.34)', backgroundColor: 'rgba(249,115,22,0.08)' },
+  rcOpenText: { color: '#F97316', fontSize: 13, fontWeight: '700' },
 });
