@@ -322,7 +322,12 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
       onScrollLock?.(true);
       const a = touches[0];
       responderStart.current = { x: a?.pageX || 0, y: a?.pageY || 0 };
-      beginPinch(touches);
+      // Don't call beginPinch here — locationX/Y in touchStart may be relative to a
+      // child element (the canvas), not the absoluteFill responder, causing a coord
+      // mismatch with onCanvasTouchMove where locationX/Y is always viewport-local.
+      // Instead just mark isPinch=true; the first onCanvasTouchMove will call beginPinch
+      // with correct locationX/Y (the first move event always fires on the responder).
+      touchRef.current = { ...touchRef.current, isPinch: true, pinchDist: 0, pinchCx: 0, pinchCy: 0 };
       return;
     }
     if (animatingRef.current) return;
@@ -344,7 +349,9 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
     if (touchRef.current.isPinch && touches.length >= 2) {
       const t1 = touches[0], t2 = touches[1];
       const dist = Math.hypot(t1.pageX - t2.pageX, t1.pageY - t2.pageY);
-      if (!touchRef.current.pinchDist) return;
+      // pinchDist===0 means we deferred beginPinch from touchStart to here so that
+      // locationX/Y is relative to the absoluteFill responder (not a canvas child).
+      if (!touchRef.current.pinchDist) { beginPinch(touches); return; }
       // EXACT same as ClientVenueMap: locationX/Y centre.
       const cx = ((t1.locationX ?? t1.pageX) + (t2.locationX ?? t2.pageX)) / 2;
       const cy = ((t1.locationY ?? t1.pageY) + (t2.locationY ?? t2.pageY)) / 2;
