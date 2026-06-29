@@ -1,7 +1,7 @@
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { LogBox, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Animated, Linking, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { Animated, AppState, Linking, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 
 // react-native-web fires this warning whenever the canvas responder wins over
 // the parent ScrollView — it's a known RNW quirk, harmless on native. The console
@@ -216,6 +216,48 @@ function AppContent() {
       if (user) setCurrentUser(user);
     });
   }, []);
+
+  // ── Navigation persistence ────────────────────────────────────────────────
+  // Remember where the user was (tab + view mode + organizer/admin section) so
+  // backgrounding the app and returning shortly after doesn't dump them on the
+  // home screen. Only restored if they come back within NAV_RESTORE_WINDOW.
+  const NAV_RESTORE_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+  const navRestoredRef = useRef(false);
+
+  // Restore navigation once on launch.
+  useEffect(() => {
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem('lp_nav_state');
+        if (!raw) { navRestoredRef.current = true; return; }
+        const saved = JSON.parse(raw);
+        if (saved && typeof saved.ts === 'number' && Date.now() - saved.ts < NAV_RESTORE_WINDOW_MS) {
+          if (saved.viewMode) setViewMode(saved.viewMode);
+          if (saved.tab) setTab(saved.tab);
+          if (saved.organizerSection) setOrganizerSection(saved.organizerSection);
+          if (saved.adminSection) setAdminSection(saved.adminSection);
+        }
+      } catch {}
+      navRestoredRef.current = true;
+    })();
+  }, []);
+
+  // Save navigation whenever it changes (after the initial restore).
+  useEffect(() => {
+    if (!navRestoredRef.current) return;
+    AsyncStorage.setItem('lp_nav_state', JSON.stringify({ tab, viewMode, organizerSection, adminSection, ts: Date.now() })).catch(() => {});
+  }, [tab, viewMode, organizerSection, adminSection]);
+
+  // Refresh the timestamp when the app goes to the background, so the 10-min
+  // window counts from when you LEFT (not from the last navigation change).
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'background' || state === 'inactive') {
+        AsyncStorage.setItem('lp_nav_state', JSON.stringify({ tab, viewMode, organizerSection, adminSection, ts: Date.now() })).catch(() => {});
+      }
+    });
+    return () => sub.remove();
+  }, [tab, viewMode, organizerSection, adminSection]);
 
   // Load cart on mount from last active event, and reload whenever selected event changes
   useEffect(() => {
