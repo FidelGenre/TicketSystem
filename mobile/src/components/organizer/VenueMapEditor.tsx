@@ -292,7 +292,9 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
     const ne = e.nativeEvent;
     const offX = (ne.pageX != null && ne.locationX != null) ? ne.pageX - ne.locationX : canvasVpXRef.current;
     const offY = (ne.pageY != null && ne.locationY != null) ? ne.pageY - ne.locationY : canvasVpYRef.current;
-    return { cx: (t1.pageX + t2.pageX) / 2 - offX, cy: (t1.pageY + t2.pageY) / 2 - offY };
+    const r = { cx: (t1.pageX + t2.pageX) / 2 - offX, cy: (t1.pageY + t2.pageY) / 2 - offY };
+    console.log('[pinch]', 'evPage', Math.round(ne.pageX), Math.round(ne.pageY), 'evLoc', Math.round(ne.locationX), Math.round(ne.locationY), 'off', Math.round(offX), Math.round(offY), 'centre', Math.round(r.cx), Math.round(r.cy), 'measRef', Math.round(canvasVpYRef.current));
+    return r;
   };
 
   const beginPinch = (e: any, touches: any[]) => {
