@@ -1,5 +1,6 @@
 import { Alert, Animated, Dimensions, Easing, GestureResponderEvent, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { apiGet, apiPost } from '../../services/api';
@@ -717,14 +718,14 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
         </TouchableOpacity>
       </View>
 
-      {/* Row B: add-tools, only in edit mode, in their own clean row. */}
+      {/* Row B: add-tools, only in edit mode. SVG icons mirror the web editor. */}
       {editMode && (
         <View style={styles.toolsRow}>
-          <Tool icon="grid-outline" label={t('Mesa', 'Table')} onPress={() => addItem('table')} />
-          <Tool icon="square-outline" label={t('Área', 'Area')} onPress={() => addItem('area')} />
-          <Tool icon="remove-outline" label={t('Barra', 'Bar')} onPress={() => addItem('bar')} />
-          <Tool icon="tv-outline" label={t('Escenario', 'Stage')} onPress={() => addItem('stage')} />
-          <Tool icon="ellipse-outline" label={t('Asiento', 'Seat')} onPress={() => addItem('seat')} />
+          <Tool kind="table" label={t('Mesa', 'Table')} onPress={() => addItem('table')} />
+          <Tool kind="area" label={t('Área', 'Area')} onPress={() => addItem('area')} />
+          <Tool kind="bar" label={t('Barra', 'Bar')} onPress={() => addItem('bar')} />
+          <Tool kind="stage" label={t('Escenario', 'Stage')} onPress={() => addItem('stage')} />
+          <Tool kind="seat" label={t('Asiento', 'Seat')} onPress={() => addItem('seat')} />
         </View>
       )}
 
@@ -1327,10 +1328,67 @@ const EditorGrid = memo(function EditorGrid({ width, height }: { width: number; 
   );
 });
 
-function Tool({ icon, label, onPress }: { icon: string; label: string; onPress: () => void }) {
+// SVG tool icons that reproduce the web editor's left toolbar exactly.
+function ToolIcon({ kind, color }: { kind: string; color: string }) {
+  if (kind === 'table') {
+    // Round table with 4 chairs around it.
+    return (
+      <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.5}>
+        <Circle cx={12} cy={12} r={8} />
+        <Circle cx={12} cy={4} r={2} />
+        <Circle cx={12} cy={20} r={2} />
+        <Circle cx={4} cy={12} r={2} />
+        <Circle cx={20} cy={12} r={2} />
+      </Svg>
+    );
+  }
+  if (kind === 'area') {
+    // Dashed rounded rectangle.
+    return (
+      <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.5}>
+        <Rect x={4} y={4} width={16} height={16} rx={2} strokeDasharray="3 3" />
+      </Svg>
+    );
+  }
+  if (kind === 'stage') {
+    // Solid stage block with a line.
+    return (
+      <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+        <Rect x={3} y={7} width={18} height={11} rx={2} fill={color} opacity={0.85} />
+        <Rect x={8} y={12} width={8} height={1.4} rx={0.7} fill="#0b1220" />
+      </Svg>
+    );
+  }
+  if (kind === 'bar') {
+    // Bar / structure: block with a base strip.
+    return (
+      <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+        <Rect x={3} y={8} width={18} height={9} rx={2} fill={color} opacity={0.85} />
+        <Rect x={3} y={14} width={18} height={3} rx={1} fill="#0b1220" opacity={0.45} />
+      </Svg>
+    );
+  }
+  if (kind === 'rows') {
+    // Grid of rows.
+    return (
+      <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.5}>
+        <Rect x={3} y={5} width={18} height={14} rx={2} />
+        <Path d="M3 10h18M3 15h18M8 5v14M16 5v14" />
+      </Svg>
+    );
+  }
+  // seat — single circle
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2}>
+      <Circle cx={12} cy={12} r={6} />
+    </Svg>
+  );
+}
+
+function Tool({ kind, label, onPress }: { kind: string; label: string; onPress: () => void }) {
   return (
     <TouchableOpacity onPress={onPress} style={styles.tool} activeOpacity={0.8}>
-      <Ionicons name={icon as any} size={20} color="#fb923c" />
+      <ToolIcon kind={kind} color="#fb923c" />
       <Text style={styles.toolText} numberOfLines={1}>{label}</Text>
     </TouchableOpacity>
   );
