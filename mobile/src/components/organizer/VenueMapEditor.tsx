@@ -31,6 +31,27 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // Map a persisted backend section onto the editor's local item shape.
 function sectionToItem(s: any): VenueItem {
   const type = SECTION_TO_TYPE[String(s.sectionType).toLowerCase()] || 'table';
+  const seatConfig = parseSeatConfig(s.seatsConfig);
+  if (Array.isArray(s.seats)) {
+    s.seats.forEach((seat: any) => {
+      const key = type === 'table' ? `seat-${seat.seatNumber}` : `${seat.rowLabel || 'A'}-${seat.seatNumber}`;
+      const status = String(seat.status || '').toLowerCase();
+      const lockExpiresAt = seat.lockExpiresAt ? new Date(seat.lockExpiresAt).getTime() : null;
+      const isActiveHold = status === 'locked' && lockExpiresAt && lockExpiresAt > Date.now();
+      const next = { ...(seatConfig[key] || {}) } as SeatOverride;
+      if (status === 'sold') next.status = 'sold';
+      else if (status === 'locked') {
+        next.status = isActiveHold ? 'held' : 'reserved';
+        if (!isActiveHold) next.reserved = true;
+      } else {
+        delete next.status;
+        delete next.reserved;
+      }
+      const buyerName = seat.buyerName || seat.attendeeName || seat.userName || seat.ownerName;
+      if (buyerName) next.buyerName = buyerName;
+      if (Object.keys(next).length > 0) seatConfig[key] = next;
+    });
+  }
   return {
     id: s.id,
     type,
@@ -49,7 +70,7 @@ function sectionToItem(s: any): VenueItem {
     rotation: Number(s.rotation) || 0,
     locked: false,
     blockedSeats: [],
-    seatConfig: parseSeatConfig(s.seatsConfig),
+    seatConfig,
   };
 }
 
@@ -90,6 +111,23 @@ function itemToSection(item: VenueItem, index: number) {
   return section;
 }
 
+function seatKeysForItem(item: VenueItem) {
+  if (item.type === 'table') {
+    return Array.from({ length: Math.max(0, Number(item.seatsPerRow) || 0) }, (_, index) => `seat-${index + 1}`);
+  }
+  if (item.type === 'seat') {
+    const keys: string[] = [];
+    const rows = Math.max(0, Number(item.rows) || 0);
+    const seatsPerRow = Math.max(0, Number(item.seatsPerRow) || 0);
+    for (let row = 1; row <= rows; row += 1) {
+      const rowLabel = String.fromCharCode(64 + row);
+      for (let seat = 1; seat <= seatsPerRow; seat += 1) keys.push(`${rowLabel}-${seat}`);
+    }
+    return keys;
+  }
+  return [];
+}
+
 // Per-seat overrides keyed by seat id ("row-col"), mirroring the web seatsConfig.
 type SeatOverride = {
   isWheelchair?: boolean;
@@ -97,6 +135,8 @@ type SeatOverride = {
   disabled?: boolean;   // hidden seat
   rowLabel?: string;    // custom row/prefix
   seatNumber?: string;  // custom number
+  status?: 'available' | 'reserved' | 'held' | 'sold';
+  buyerName?: string;
   price?: number;       // individual price (undefined = use section price)
   xOffset?: number;
   yOffset?: number;
@@ -151,11 +191,12 @@ type Props = {
   eventId?: string;
   onScrollLock?: (locked: boolean) => void;
   onCanvasFrame?: (frame: { x: number; y: number; width: number; height: number }) => void;
+  seatBuyers?: Record<string, string>;
 };
 
 const VP_H = 440; // canvas viewport height (matches styles.workbench height)
 
-export function VenueMapEditor({ eventId, onScrollLock, onCanvasFrame }: Props) {
+export function VenueMapEditor({ eventId, onScrollLock, onCanvasFrame, seatBuyers }: Props) {
   const { t } = useLanguage();
   const [vpW, setVpW] = useState(Math.max(1, Dimensions.get('window').width - 32));
   const [items, setItems] = useState<VenueItem[]>(initialItems);
@@ -503,8 +544,14 @@ export function VenueMapEditor({ eventId, onScrollLock, onCanvasFrame }: Props) 
   useEffect(() => {
     if (!eventId) return;
     let mounted = true;
-    apiGet<any[]>(`/events/${eventId}/sections`)
-      .then((data) => {
+    const loadMap = async () => {
+      try {
+        let data: any[] = [];
+        try {
+          data = await apiGet<any[]>(`/events/${eventId}/seatmap`);
+        } catch {
+          data = await apiGet<any[]>(`/events/${eventId}/sections`);
+        }
         if (!mounted) return;
         const loaded = Array.isArray(data) && data.length > 0 ? data.map(sectionToItem) : initialItems;
         setItems(loaded);
@@ -512,8 +559,11 @@ export function VenueMapEditor({ eventId, onScrollLock, onCanvasFrame }: Props) 
         setSelectedSeat(null);
         setSaved(true);
         fitToContent(loaded);
-      })
-      .catch(() => fitToContent(initialItems));
+      } catch {
+        if (mounted) fitToContent(initialItems);
+      }
+    };
+    loadMap();
     return () => { mounted = false; };
   }, [eventId, fitToContent]);
 
@@ -576,8 +626,13 @@ export function VenueMapEditor({ eventId, onScrollLock, onCanvasFrame }: Props) 
           defaultViewZoom: parseFloat(defaultView.zoom.toFixed(4)),
         } : {}),
       });
-      if (Array.isArray(updated) && updated.length > 0) {
-        const reloaded = updated.map(sectionToItem);
+      let nextSections = Array.isArray(updated) ? updated : [];
+      try {
+        const freshSeatMap = await apiGet<any[]>(`/events/${eventId}/seatmap`);
+        if (Array.isArray(freshSeatMap) && freshSeatMap.length > 0) nextSections = freshSeatMap;
+      } catch {}
+      if (nextSections.length > 0) {
+        const reloaded = nextSections.map(sectionToItem);
         setItems(reloaded);
         setSelectedId((prev) => (reloaded.some((r) => r.id === prev) ? prev : reloaded[0].id));
       }
@@ -591,8 +646,9 @@ export function VenueMapEditor({ eventId, onScrollLock, onCanvasFrame }: Props) 
 
   const selected = useMemo(() => items.find((item) => item.id === selectedId) || null, [items, selectedId]);
   const capacity = items.reduce((sum, item) => sum + getCapacity(item), 0);
-  const soldSeats = Math.min(8, capacity);
-  const availableSeats = Math.max(capacity - soldSeats, 0);
+  const soldSeats = items.reduce((sum, item) => sum + Object.values(item.seatConfig || {}).filter((v: SeatOverride) => v.status === 'sold').length, 0);
+  const blockedSeats = items.reduce((sum, item) => sum + Object.values(item.seatConfig || {}).filter((v: SeatOverride) => v.disabled || v.reserved || v.status === 'reserved' || v.status === 'held').length, 0);
+  const availableSeats = Math.max(capacity - soldSeats - blockedSeats, 0);
 
   // Canvas transform: translate(pan) + scale, compensating RN's centre origin.
   const canvasTransformStyle = {
@@ -703,7 +759,7 @@ export function VenueMapEditor({ eventId, onScrollLock, onCanvasFrame }: Props) 
     setSelectedSeat(null);
   };
 
-  type SeatInfoCard = { title: string; subtitle: string; status: string; price: number; tone: 'available' | 'reserved' | 'disabled'; px: number; py: number };
+  type SeatInfoCard = { title: string; subtitle: string; status: string; price: number; tone: 'available' | 'reserved' | 'held' | 'sold' | 'disabled'; buyerName?: string; px: number; py: number };
   const [activeSeatInfo, setActiveSeatInfo] = useState<SeatInfoCard | null>(null);
   const infoDismissRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rootRef = useRef<any>(null);
@@ -736,17 +792,36 @@ export function VenueMapEditor({ eventId, onScrollLock, onCanvasFrame }: Props) 
       : it.type === 'bar' ? t('Barra', 'Bar')
       : it.type === 'stage' ? t('Escenario', 'Stage') : it.type;
     const totalSeats = it.rows > 0 && it.seatsPerRow > 0 ? it.rows * it.seatsPerRow : 0;
-    const blocked = Object.values(it.seatConfig || {}).filter((v: SeatOverride) => v.reserved || v.disabled).length;
-    const available = Math.max(0, totalSeats - blocked);
+    const sold = Object.values(it.seatConfig || {}).filter((v: SeatOverride) => v.status === 'sold').length;
+    const blocked = Object.values(it.seatConfig || {}).filter((v: SeatOverride) => v.reserved || v.disabled || v.status === 'reserved' || v.status === 'held').length;
+    const available = Math.max(0, totalSeats - blocked - sold);
+    const buyerKeySection = String(it.name || '').toLowerCase();
+    const soldBuyerNames = seatKeysForItem(it)
+      .map((key) => {
+        const ov = it.seatConfig?.[key] || {};
+        const seatNum = key.startsWith('seat-') ? key.replace('seat-', '') : key.split('-')[1];
+        const rowLabel = key.startsWith('seat-') ? 'mesa' : key.split('-')[0].toLowerCase();
+        return ov.status === 'sold'
+          ? (ov.buyerName
+            || seatBuyers?.[`${buyerKeySection}|${rowLabel}|${seatNum}`]
+            || seatBuyers?.[`${buyerKeySection}|${seatNum}`])
+          : undefined;
+      })
+      .filter(Boolean) as string[];
+    const uniqueBuyers = Array.from(new Set(soldBuyerNames));
+    const wholeTableBuyer = it.type === 'table' && it.saleMode === 'whole' && sold > 0 && uniqueBuyers.length === 1
+      ? uniqueBuyers[0]
+      : undefined;
     const subtitle = totalSeats > 0
-      ? `${available} ${t('disp.', 'avail.')} · ${blocked} ${t('bloq.', 'blocked')} · ${totalSeats} ${t('total', 'total')}`
+      ? `${available} ${t('disp.', 'avail.')} · ${sold} ${t('vend.', 'sold')} · ${blocked} ${t('bloq.', 'blocked')}`
       : typeLabel;
     showSeatInfo({
-      title: `${it.name} · ${typeLabel}`,
+      title: it.type === 'table' ? `${t('Mesa', 'Table')} ${it.name}` : `${it.name} · ${typeLabel}`,
       subtitle,
       status: it.saleMode === 'whole' ? t('Mesa completa', 'Whole table') : t('Por asiento', 'Per seat'),
       price: it.price || 0,
-      tone: 'available',
+      tone: sold > 0 ? 'sold' : 'available',
+      buyerName: wholeTableBuyer,
       px: 0, py: 0,
     });
   };
@@ -767,14 +842,31 @@ export function VenueMapEditor({ eventId, onScrollLock, onCanvasFrame }: Props) 
     const isTableKey = seatId.startsWith('seat-');
     const seatNum = isTableKey ? seatId.replace('seat-', '') : seatId.split('-')[1];
     const rowLabel = isTableKey ? '' : seatId.split('-')[0];
-    const status = ov.disabled ? t('Oculto', 'Hidden') : ov.reserved ? t('Bloqueado', 'Blocked') : t('Disponible', 'Available');
-    const tone: SeatInfoCard['tone'] = ov.disabled ? 'disabled' : ov.reserved ? 'reserved' : 'available';
+    const buyerKeySection = String(owner.name || '').toLowerCase();
+    const buyerName = ov.buyerName
+      || seatBuyers?.[`${buyerKeySection}|${rowLabel ? rowLabel.toLowerCase() : 'mesa'}|${seatNum}`]
+      || seatBuyers?.[`${buyerKeySection}|${seatNum}`];
+    const effectiveStatus: SeatInfoCard['tone'] = ov.disabled ? 'disabled'
+      : ov.status === 'sold' ? 'sold'
+      : ov.status === 'held' ? 'held'
+      : (ov.reserved || ov.status === 'reserved') ? 'reserved'
+      : 'available';
+    const status = effectiveStatus === 'disabled' ? t('Oculto', 'Hidden')
+      : effectiveStatus === 'sold' ? t('Vendido', 'Sold')
+      : effectiveStatus === 'held' ? t('Bloqueado', 'Held')
+      : effectiveStatus === 'reserved' ? t('Reservado', 'Reserved')
+      : t('Disponible', 'Available');
+    const tone: SeatInfoCard['tone'] = effectiveStatus;
+    const title = isTableKey
+      ? `${t('Mesa', 'Table')} ${owner.name} - ${t('Silla', 'Seat')} ${seatNum}`
+      : `${owner.name} - ${t('Silla', 'Seat')} ${seatNum}`;
     showSeatInfo({
-      title: `${owner.name} · ${t('Silla', 'Seat')} ${seatNum}`,
+      title,
       subtitle: rowLabel ? `${t('Fila', 'Row')} ${rowLabel}` : '',
       status,
       price: owner.price || 0,
       tone,
+      buyerName,
       px: pageX,
       py: pageY - canvasVpYRef.current,
     });
@@ -785,12 +877,53 @@ export function VenueMapEditor({ eventId, onScrollLock, onCanvasFrame }: Props) 
     if (!selected || !selectedSeat) return;
     const next = { ...(selected.seatConfig || {}) };
     const cur = { ...(next[selectedSeat] || {}) } as SeatOverride;
-    if (value === undefined || value === '' || value === false) delete (cur as any)[field];
+    if (field === 'reserved') {
+      if (value) {
+        cur.reserved = true;
+        cur.status = 'reserved';
+      } else {
+        delete cur.reserved;
+        if (cur.status === 'reserved' || cur.status === 'held') delete cur.status;
+      }
+    } else if (value === undefined || value === '' || value === false) delete (cur as any)[field];
     else (cur as any)[field] = value;
     if (Object.keys(cur).length === 0) delete next[selectedSeat];
     else next[selectedSeat] = cur;
     updateSelected({ seatConfig: next });
   };
+
+  const toggleAllSelectedSeatsReserved = () => {
+    if (!selected || (selected.type !== 'table' && selected.type !== 'seat')) return;
+    const keys = seatKeysForItem(selected);
+    if (keys.length === 0) return;
+    const current = selected.seatConfig || {};
+    const allBlocked = keys.every((key) => {
+      const ov = current[key] || {};
+      return !!ov.reserved || ov.status === 'reserved';
+    });
+    const shouldBlock = !allBlocked;
+    const next = { ...current };
+    keys.forEach((key) => {
+      const cur = { ...(next[key] || {}) } as SeatOverride;
+      if (cur.status === 'sold') return;
+      if (shouldBlock) {
+        cur.reserved = true;
+        cur.status = 'reserved';
+      } else {
+        delete cur.reserved;
+        if (cur.status === 'reserved' || cur.status === 'held') delete cur.status;
+      }
+      if (Object.keys(cur).length === 0) delete next[key];
+      else next[key] = cur;
+    });
+    updateSelected({ seatConfig: next, locked: false });
+  };
+
+  const selectedSeatKeys = selected ? seatKeysForItem(selected) : [];
+  const selectedAllBlocked = selectedSeatKeys.length > 0 && selectedSeatKeys.every((key) => {
+    const ov = selected?.seatConfig?.[key] || {};
+    return !!ov.reserved || ov.status === 'reserved';
+  });
 
   const resetSeatOverride = () => {
     if (!selected || !selectedSeat) return;
@@ -1002,19 +1135,31 @@ export function VenueMapEditor({ eventId, onScrollLock, onCanvasFrame }: Props) 
             {/* Seat info card — floats over canvas; use ref as source of truth so zoom re-renders don't clear it */}
             {(activeSeatInfo || activeSeatInfoRef.current) && (() => {
               const card = activeSeatInfo || activeSeatInfoRef.current!;
-              const toneColor = card.tone === 'reserved' ? '#facc15' : card.tone === 'disabled' ? '#94a3b8' : '#86efac';
+              const toneColor = card.tone === 'sold' ? '#94a3b8'
+                : card.tone === 'reserved' ? '#f97316'
+                : card.tone === 'held' ? '#facc15'
+                : card.tone === 'disabled' ? '#94a3b8'
+                : '#86efac';
               // Fixed position just above the zoom bar — never follows the finger.
               const cardTop = VP_H - 100;
               return (
                 <View style={[styles.seatInfoCard, { top: cardTop }]} pointerEvents="none">
-                  <View style={[styles.seatInfoTone, { backgroundColor: `${toneColor}22` }]}>
-                    <Text style={[styles.seatInfoToneText, { color: toneColor }]}>{card.status}</Text>
-                  </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.seatInfoTitle} numberOfLines={1}>{card.title}</Text>
-                    {!!card.subtitle && <Text style={styles.seatInfoSub} numberOfLines={1}>{card.subtitle}</Text>}
+                    <View style={styles.seatInfoMetaRow}>
+                      <View style={[styles.seatInfoTone, { backgroundColor: `${toneColor}22`, borderColor: `${toneColor}55` }]}>
+                        <Text style={[styles.seatInfoToneText, { color: toneColor }]}>{card.status}</Text>
+                      </View>
+                      {card.price > 0 && <Text style={styles.seatInfoPrice}>${card.price.toFixed(2)}</Text>}
+                    </View>
+                    {!!card.buyerName && (
+                      <View style={styles.seatInfoBuyerRow}>
+                        <Ionicons name="person" size={13} color="rgba(203,213,225,0.78)" />
+                        <Text style={styles.seatInfoSub} numberOfLines={1}>{card.buyerName}</Text>
+                      </View>
+                    )}
+                    {!card.buyerName && !!card.subtitle && <Text style={styles.seatInfoSub} numberOfLines={1}>{card.subtitle}</Text>}
                   </View>
-                  {card.price > 0 && <Text style={styles.seatInfoPrice}>${card.price.toFixed(2)}</Text>}
                 </View>
               );
             })()}
@@ -1049,7 +1194,7 @@ export function VenueMapEditor({ eventId, onScrollLock, onCanvasFrame }: Props) 
                       </View>
 
                       <SeatToggle label={t('Silla de ruedas', 'Wheelchair')} value={!!ov.isWheelchair} onPress={() => updateSeatOverride('isWheelchair', !ov.isWheelchair)} tone="blue" />
-                      <SeatToggle label={t('Bloquear para venta', 'Block / Reserve seat')} value={!!ov.reserved} onPress={() => updateSeatOverride('reserved', !ov.reserved)} tone="orange" />
+                      <SeatToggle label={t('Bloquear para venta', 'Block / Reserve seat')} value={!!ov.reserved || ov.status === 'reserved'} onPress={() => updateSeatOverride('reserved', !(!!ov.reserved || ov.status === 'reserved'))} tone="orange" />
                       <SeatToggle label={t('Ocultar silla', 'Hide seat')} value={!!ov.disabled} onPress={() => updateSeatOverride('disabled', !ov.disabled)} tone="gray" />
 
                       <Text style={styles.inputLabel}>{t('Personalizar nombre / etiqueta', 'Customize name / label')}</Text>
@@ -1117,8 +1262,8 @@ export function VenueMapEditor({ eventId, onScrollLock, onCanvasFrame }: Props) 
                   <Field label={t('Total Mesa', 'Table Total')} value={selected.price * Math.max(1, getCapacity(selected))} step={5} min={0} onChange={() => undefined} readonly />
                 </View>
 
-                <TouchableOpacity onPress={() => updateSelected({ locked: !selected.locked })} style={styles.blockButton}>
-                  <Text style={styles.blockText}>{selected.locked ? 'DESBLOQUEAR TODO' : 'BLOQUEAR / DESBLOQUEAR TODO'}</Text>
+                <TouchableOpacity onPress={toggleAllSelectedSeatsReserved} style={styles.blockButton}>
+                  <Text style={styles.blockText}>{selectedAllBlocked ? 'DESBLOQUEAR TODAS LAS SILLAS' : 'BLOQUEAR TODAS LAS SILLAS'}</Text>
                 </TouchableOpacity>
 
                 {(selected.type === 'table' || selected.type === 'seat') && (
@@ -1309,9 +1454,9 @@ function ItemView({ item, isSelected, editMode, zoomRef, touchedItemRef, itemInt
 
 // One chair: a tap selects it (info/inspector); a drag adjusts its xOffset/yOffset
 // (like the web editor). Uses its own responder so it doesn't fight the canvas.
-function SeatDot({ id, itemId, baseX, baseY, left, top, size, fill, active, editMode, zoomRef, seatTouchRef, itemInteractionRef, onScrollLock, onSeatPress, onSeatDrag }: {
+function SeatDot({ id, itemId, baseX, baseY, left, top, size, fill, seatStatus, active, editMode, zoomRef, seatTouchRef, itemInteractionRef, onScrollLock, onSeatPress, onSeatDrag }: {
   id: string; itemId: string; baseX: number; baseY: number;
-  left: number; top: number; size: number; fill: string; active: boolean;
+  left: number; top: number; size: number; fill: string; seatStatus: 'available' | 'reserved' | 'held' | 'sold' | 'disabled'; active: boolean;
   editMode: boolean; zoomRef: React.MutableRefObject<{ zoom: number; pan: { x: number; y: number } }>;
   seatTouchRef: React.MutableRefObject<boolean>;
   itemInteractionRef: React.MutableRefObject<boolean>;
@@ -1356,16 +1501,24 @@ function SeatDot({ id, itemId, baseX, baseY, left, top, size, fill, active, edit
       }}
       style={[
         styles.seatDot,
+        seatStatus === 'sold' && styles.seatDotSold,
+        (seatStatus === 'reserved' || seatStatus === 'held') && styles.seatDotReserved,
         {
           left, top, width: size, height: size, borderRadius: size / 2,
           backgroundColor: fill,
           zIndex: active ? 10 : 5,
           transform: [{ scale: active ? 1.35 : 1 }, { translateX: offset.x }, { translateY: offset.y }],
-          borderColor: active ? '#ffffff' : 'rgba(255,255,255,0.55)',
+          borderColor: active ? '#ffffff' : seatStatus === 'sold' ? '#94a3b8' : (seatStatus === 'reserved' || seatStatus === 'held') ? '#F97316' : 'rgba(255,255,255,0.55)',
           borderWidth: active ? 2 : 1,
         },
       ]}
-    />
+    >
+      {seatStatus === 'sold' ? (
+        <Ionicons name="person" size={Math.max(7, size * 0.55)} color="#cbd5e1" />
+      ) : (seatStatus === 'reserved' || seatStatus === 'held') ? (
+        <View style={[styles.seatReservedCore, { width: Math.max(5, size * 0.38), height: Math.max(5, size * 0.38), borderRadius: Math.max(5, size * 0.38) / 2 }]} />
+      ) : null}
+    </Animated.View>
   );
 }
 
@@ -1442,8 +1595,15 @@ function SeatDots({ item, selectedSeat, selectedItemId, editMode, zoomRef, seatT
   positions.forEach(({ id, cx, cy }) => {
     const ov: SeatOverride = item.seatConfig?.[id] || {};
     if (ov.disabled) return; // hidden seat — don't render
-    const blocked = item.blockedSeats.includes(id) || !!ov.reserved;
-    const fill = blocked ? '#F97316' : ov.isWheelchair ? '#1a73e8' : item.color;
+    const seatStatus: 'available' | 'reserved' | 'held' | 'sold' | 'disabled' = ov.disabled ? 'disabled'
+      : ov.status === 'sold' ? 'sold'
+      : ov.status === 'held' ? 'held'
+      : (item.blockedSeats.includes(id) || ov.reserved || ov.status === 'reserved') ? 'reserved'
+      : 'available';
+    const fill = seatStatus === 'sold' ? '#22384d'
+      : (seatStatus === 'reserved' || seatStatus === 'held') ? '#102235'
+      : ov.isWheelchair ? '#1a73e8'
+      : item.color;
     const ox = ov.xOffset || 0;
     const oy = ov.yOffset || 0;
     const isActiveSeat = selectedSeat === id && selectedItemId === item.id;
@@ -1458,6 +1618,7 @@ function SeatDots({ item, selectedSeat, selectedItemId, editMode, zoomRef, seatT
         top={cy - dot / 2 + oy}
         size={dot}
         fill={isActiveSeat ? '#f97316' : fill}
+        seatStatus={seatStatus}
         active={isActiveSeat}
         editMode={editMode}
         zoomRef={zoomRef}
@@ -1720,15 +1881,20 @@ const styles = StyleSheet.create({
   seatsLayer: { ...StyleSheet.absoluteFill, overflow: 'visible', zIndex: 4 },
   // Match ClientVenueMap's chair look: solid colored dot with a thin white
   // border (not a dark heavy outline), so seats read as robust filled circles.
-  seatDot: { position: 'absolute', borderWidth: 1, borderColor: 'rgba(255,255,255,0.55)' },
+  seatDot: { position: 'absolute', borderWidth: 1, borderColor: 'rgba(255,255,255,0.55)', alignItems: 'center', justifyContent: 'center' },
+  seatDotSold: { backgroundColor: '#22384d' },
+  seatDotReserved: { backgroundColor: '#102235' },
+  seatReservedCore: { backgroundColor: '#F97316', borderWidth: 1, borderColor: '#0b1726' },
   seatSelected: { borderColor: '#FFFFFF', borderWidth: 2 },
   corner: { position: 'absolute', width: 12, height: 12, borderRadius: 6, backgroundColor: '#F97316', borderWidth: 2, borderColor: '#FFFFFF', zIndex: 8 },
   cornerTL: { left: -7, top: -7 },
   cornerTR: { right: -7, top: -7 },
   cornerBL: { left: -7, bottom: -7 },
   cornerBR: { right: -7, bottom: -7 },
-  seatInfoCard: { position: 'absolute', left: 12, right: 12, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(11,34,54,0.96)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(246,198,95,0.20)', paddingHorizontal: 12, paddingVertical: 10, zIndex: 40 },
-  seatInfoTone: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3, flexShrink: 0 },
+  seatInfoCard: { position: 'absolute', left: 12, right: 12, backgroundColor: 'rgba(11,34,54,0.96)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(246,198,95,0.24)', paddingHorizontal: 12, paddingVertical: 10, zIndex: 40 },
+  seatInfoMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 6 },
+  seatInfoBuyerRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 7 },
+  seatInfoTone: { borderRadius: 999, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 3, flexShrink: 0 },
   seatInfoToneText: { fontSize: 10, fontWeight: '600' },
   seatInfoTitle: { color: '#ffffff', fontSize: 12, fontWeight: '600' },
   seatInfoSub: { color: '#94a3b8', fontSize: 10, fontWeight: '600', marginTop: 1 },
