@@ -377,7 +377,6 @@ export function VenueMapEditor({ eventId, onScrollLock }: Props) {
       const newZ = clamp(touchRef.current.pinchZoom * Math.pow(dist / touchRef.current.pinchDist, 1.18), fitRef.current.zoom, MAX_ZOOM);
       const ratio = newZ / touchRef.current.pinchZoom;
       const newPan = { x: cx - (touchRef.current.pinchCx - touchRef.current.panX) * ratio, y: cy - (touchRef.current.pinchCy - touchRef.current.panY) * ratio };
-      console.log('PINCH_MOVE', { cx, cy, dist, ratio, pinchCx: touchRef.current.pinchCx, pinchCy: touchRef.current.pinchCy, panX: touchRef.current.panX, panY: touchRef.current.panY, newPan });
       syncAnimated(newZ, newPan);
     } else if (touchRef.current.isPinch && touches.length === 1) {
       // Lifted one finger during a pinch — start a fresh single-finger pan anchored
