@@ -74,7 +74,7 @@
       [
         "@stripe/stripe-terminal-react-native",
         {
-          "bluetoothBackgroundMode": true,
+          "bluetoothBackgroundMode": false,
           "locationWhenInUsePermission": "LPTicket necesita ubicación para aceptar pagos presenciales.",
           "bluetoothPeripheralPermission": "LPTicket usa Bluetooth para lectores de pago compatibles.",
           "bluetoothAlwaysUsagePermission": "LPTicket usa Bluetooth para conectar lectores de pago compatibles.",

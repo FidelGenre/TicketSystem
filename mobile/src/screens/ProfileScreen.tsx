@@ -140,11 +140,11 @@ export function ProfileScreen({ initialTab = 'account', user, onUserUpdated, onL
 
   return (
     <ScrollView ref={scrollRef} style={styles.root} showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-      {activeTab === 'account' && <AccountMobile user={user} onUserUpdated={onUserUpdated} tabs={tabs} />}
+      {activeTab === 'account' && <AccountMobile user={user} onUserUpdated={onUserUpdated} onAccountDeleted={onLogout} tabs={tabs} />}
 
       {activeTab === 'payments' && (
         <>
-          <AccountMobile user={user} onUserUpdated={onUserUpdated} tabs={tabs} showSections={false} />
+          <AccountMobile user={user} onUserUpdated={onUserUpdated} onAccountDeleted={onLogout} tabs={tabs} showSections={false} />
 
           <PaymentMethodsMobile />
           <OrdersMobile />
@@ -153,7 +153,7 @@ export function ProfileScreen({ initialTab = 'account', user, onUserUpdated, onL
 
       {activeTab === 'codes' && (
         <>
-          <AccountMobile user={user} onUserUpdated={onUserUpdated} tabs={tabs} showSections={false} />
+          <AccountMobile user={user} onUserUpdated={onUserUpdated} onAccountDeleted={onLogout} tabs={tabs} showSections={false} />
           <MySpecialCodesMobile />
         </>
       )}

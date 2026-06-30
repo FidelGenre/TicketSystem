@@ -1,13 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as WebBrowser from 'expo-web-browser';
-import * as Linking from 'expo-linking';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { useLanguage } from '../i18n/LanguageContext';
-import { API_URL, AuthUser, setAuthTokens, getApiErrorMessage } from '../services/api';
-import { login as loginRequest, register as registerRequest, forgotPassword as forgotPasswordRequest, refreshSession } from '../services/auth';
+import { AuthUser, getApiErrorMessage } from '../services/api';
+import { login as loginRequest, register as registerRequest, forgotPassword as forgotPasswordRequest } from '../services/auth';
 import { getBiometricAvailability, saveBiometricLogin, signInWithBiometrics } from '../services/biometricAuth';
 import { GradientButton } from '../components/GradientButton';
 
@@ -125,31 +123,6 @@ export function LoginScreen({ onSignIn }: Props) {
       );
     } finally {
       setLoading(false);
-    }
-  };
-
-  const openSocialLogin = async (provider: 'google' | 'facebook') => {
-    // Build the OAuth URL with ?platform=mobile so the backend knows to
-    // redirect back to the lpticket:// deep link instead of the web app.
-    const redirectUri = Platform.OS === 'web' ? Linking.createURL('login/success') : 'lpticket://login/success';
-    const url = `${API_URL}/auth/${provider}?platform=mobile&redirectUri=${encodeURIComponent(redirectUri)}`;
-    try {
-      const result = await WebBrowser.openAuthSessionAsync(url, redirectUri);
-      if (result.type === 'success' && result.url) {
-        const parsed = Linking.parse(result.url);
-        const token = parsed.queryParams?.token as string | undefined;
-        const refreshToken = parsed.queryParams?.refreshToken as string | undefined;
-        if (token && refreshToken) {
-          // Exchange for a fresh session via the refresh endpoint
-          const user = await refreshSession(refreshToken);
-          onSignIn(user);
-        }
-      }
-    } catch {
-      Alert.alert(
-        t('No se pudo abrir', 'Could not open'),
-        t('Inténtalo nuevamente en unos segundos.', 'Please try again in a few seconds.'),
-      );
     }
   };
 
@@ -376,23 +349,6 @@ export function LoginScreen({ onSignIn }: Props) {
           style={[styles.button, loading ? styles.buttonDisabled : {}]}
           textStyle={styles.buttonText}
         />
-
-        <View style={styles.dividerRow}>
-          <View style={styles.divider} />
-          <Text style={styles.dividerText}>{t('O continúa con', 'Or continue with')}</Text>
-          <View style={styles.divider} />
-        </View>
-
-        <View style={styles.socialGrid}>
-          <TouchableOpacity style={styles.socialButton} onPress={() => openSocialLogin('google')} disabled={loading} activeOpacity={0.86}>
-            <FontAwesome5 name="google" size={16} color={colors.orange} />
-            <Text style={styles.socialText}>Google</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.socialButton} onPress={() => openSocialLogin('facebook')} disabled={loading} activeOpacity={0.86}>
-            <FontAwesome5 name="facebook-f" size={16} color={colors.orange} />
-            <Text style={styles.socialText}>Facebook</Text>
-          </TouchableOpacity>
-        </View>
 
         <TouchableOpacity style={styles.secondaryButton} onPress={() => switchMode(isRegister ? 'login' : 'register')}>
           <Text style={styles.secondaryText}>

@@ -97,6 +97,30 @@ export class AuthService {
     return this.getProfile(userId);
   }
 
+  async deleteAccount(userId: string) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException();
+
+    const suffix = user.id.replace(/-/g, '').slice(0, 24);
+    const passwordHash = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 12);
+
+    await this.userRepo.update(userId, {
+      email: `deleted-${suffix}@deleted.lpticket.local`,
+      username: `deleted_${suffix}`.slice(0, 40),
+      firstName: 'Deleted',
+      lastName: 'Account',
+      phone: null,
+      address: null,
+      avatarUrl: null,
+      passwordHash,
+      resetPasswordToken: null,
+      resetPasswordExpires: null,
+      isActive: false,
+    } as any);
+
+    return { success: true };
+  }
+
   async validateOAuthUser(profile: any) {
     const { email, firstName, lastName } = profile;
     let user = await this.userRepo.findOne({ where: { email } });

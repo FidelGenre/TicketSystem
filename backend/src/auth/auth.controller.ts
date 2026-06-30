@@ -142,6 +142,12 @@ export class AuthController {
   }
 
   @UseGuards(AuthGuard('jwt'))
+  @Post('delete-account')
+  deleteAccount(@Request() req: any) {
+    return this.authService.deleteAccount(req.user.id);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
   @Post('profile/avatar')
   @UseInterceptors(
     FileInterceptor('avatar', {

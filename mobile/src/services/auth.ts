@@ -91,6 +91,11 @@ export async function uploadAvatar(imageData: string): Promise<AuthUser> {
   return user;
 }
 
+export async function deleteAccount(): Promise<void> {
+  await apiPost('/auth/delete-account');
+  await logout();
+}
+
 /** Restore a saved session on app launch. Returns the user or null. */
 export async function restoreSession(): Promise<AuthUser | null> {
   try {

@@ -6,7 +6,7 @@ import { Feather } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { AuthUser, getImageUrl } from '../../services/api';
-import { updateProfile as updateProfileRequest, uploadAvatar as uploadAvatarRequest } from '../../services/auth';
+import { deleteAccount as deleteAccountRequest, updateProfile as updateProfileRequest, uploadAvatar as uploadAvatarRequest } from '../../services/auth';
 import { GradientButton } from '../GradientButton';
 
 type AccountForm = {
@@ -23,15 +23,17 @@ type AccountForm = {
 type Props = {
   user: AuthUser;
   onUserUpdated?: (user: AuthUser) => void;
+  onAccountDeleted?: () => void;
   tabs?: ReactNode;
   showSections?: boolean;
 };
 
-export function AccountMobile({ user, onUserUpdated, tabs, showSections = true }: Props) {
+export function AccountMobile({ user, onUserUpdated, onAccountDeleted, tabs, showSections = true }: Props) {
   const { t } = useLanguage();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const [account, setAccount] = useState<AccountForm>({
     firstName: user.firstName || '',
     lastName: user.lastName || '',
@@ -120,6 +122,42 @@ export function AccountMobile({ user, onUserUpdated, tabs, showSections = true }
     } finally {
       setUploadingAvatar(false);
     }
+  };
+
+  const confirmDeleteAccount = () => {
+    if (deletingAccount) return;
+    Alert.alert(
+      t('Eliminar cuenta', 'Delete account'),
+      t(
+        'Esta acción desactivará tu cuenta y eliminará tus datos personales del perfil. Tus registros transaccionales pueden conservarse cuando la ley lo requiera.',
+        'This will deactivate your account and remove your personal profile data. Transaction records may be retained when required by law.',
+      ),
+      [
+        { text: t('Cancelar', 'Cancel'), style: 'cancel' },
+        {
+          text: t('Eliminar cuenta', 'Delete account'),
+          style: 'destructive',
+          onPress: async () => {
+            setDeletingAccount(true);
+            try {
+              await deleteAccountRequest();
+              Alert.alert(
+                t('Cuenta eliminada', 'Account deleted'),
+                t('Tu cuenta fue eliminada correctamente.', 'Your account was deleted successfully.'),
+                [{ text: 'OK', onPress: onAccountDeleted }],
+              );
+            } catch (err: any) {
+              Alert.alert(
+                t('Error', 'Error'),
+                err?.message || t('No se pudo eliminar la cuenta. Intenta de nuevo.', 'Could not delete the account. Please try again.'),
+              );
+            } finally {
+              setDeletingAccount(false);
+            }
+          },
+        },
+      ],
+    );
   };
 
   return (
@@ -220,6 +258,26 @@ export function AccountMobile({ user, onUserUpdated, tabs, showSections = true }
                 <InfoRow label={t('Dirección', 'Address')} value={account.address} />
               </View>
             )}
+          </View>
+
+          <View style={[styles.card, styles.dangerCard]}>
+            <Text style={styles.dangerEyebrow}>{t('PRIVACIDAD', 'PRIVACY')}</Text>
+            <Text style={styles.dangerTitle}>{t('Eliminar cuenta', 'Delete account')}</Text>
+            <Text style={styles.dangerCopy}>
+              {t(
+                'Puedes solicitar la eliminación permanente de tu cuenta desde aquí. Cerraremos tu sesión al confirmar.',
+                'You can request permanent account deletion here. We will sign you out after confirmation.',
+              )}
+            </Text>
+            <TouchableOpacity
+              style={[styles.deleteButton, deletingAccount && { opacity: 0.6 }]}
+              onPress={confirmDeleteAccount}
+              disabled={deletingAccount}
+              activeOpacity={0.86}
+            >
+              <Feather name="trash-2" size={16} color="#FCA5A5" />
+              <Text style={styles.deleteText}>{deletingAccount ? t('ELIMINANDO...', 'DELETING...') : t('ELIMINAR CUENTA', 'DELETE ACCOUNT')}</Text>
+            </TouchableOpacity>
           </View>
         </>
       )}
@@ -381,4 +439,22 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   saveText: { color: '#FFFFFF', fontSize: 14, letterSpacing: 0, fontWeight: '600' },
+  dangerCard: {
+    borderColor: 'rgba(248,113,113,0.32)',
+  },
+  dangerEyebrow: { color: '#FCA5A5', fontSize: 12, letterSpacing: 0, fontWeight: '600', marginBottom: 7 },
+  dangerTitle: { color: '#F8FAFC', fontSize: 21, fontWeight: '600', marginBottom: 8 },
+  dangerCopy: { color: 'rgba(226,232,240,0.70)', fontSize: 13, lineHeight: 19, marginBottom: 14 },
+  deleteButton: {
+    minHeight: 52,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(248,113,113,0.42)',
+    backgroundColor: 'rgba(127,29,29,0.24)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  deleteText: { color: '#FCA5A5', fontSize: 13, letterSpacing: 0, fontWeight: '600' },
 });
